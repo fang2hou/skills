@@ -1,0 +1,14 @@
+[tools]
+node = "24"
+prek = "latest"
+cocogitto = "latest"
+gitleaks = "latest"
+oxfmt = "latest"
+
+[tasks.check]
+description = "Check Markdown formatting, validate skills, and scan for secrets"
+run = ["oxfmt --check .", "bash scripts/check-skills.sh", "gitleaks dir . --no-banner --redact"]
+
+[tasks.format]
+description = "Format Markdown in place"
+run = "oxfmt ."

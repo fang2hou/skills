@@ -1,0 +1,31 @@
+name: PR title
+
+on:
+  pull_request:
+    types: [opened, edited, reopened]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+      - name: Install toolchain (mise)
+        uses: jdx/mise-action@v4
+      - name: Configure Git identity
+        run: |
+          git config --global user.name "pr-title-check"
+          git config --global user.email "pr-title-check@users.noreply.github.com"
+      - name: Validate pull request title
+        run: cog verify "$PR_TITLE"
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}

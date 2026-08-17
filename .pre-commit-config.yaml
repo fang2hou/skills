@@ -1,0 +1,14 @@
+repos:
+  - repo: local
+    hooks:
+      - id: check
+        name: Run repository checks
+        entry: mise run check
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: conventional-commit
+        name: Validate Conventional Commit message
+        entry: cog verify --file
+        language: system
+        stages: [commit-msg]
