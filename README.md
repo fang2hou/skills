@@ -39,16 +39,16 @@ Install the skills globally, select the skills for the coding agents on a machin
 
 ## Skills
 
-| Skill                                                | Description                                                                      |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------- |
-| [create-skill](skills/create-skill/)                 | Creates spec-compliant Agent Skills from requirements to delivery                |
-| [git-branch-cleanup](skills/git-branch-cleanup/)     | Safely deletes local branches fully merged into the remote default branch        |
-| [github-repo-baseline](skills/github-repo-baseline/) | Applies the standard settings baseline to a GitHub repository via the gh CLI     |
-| [herdr-parallel-dev](skills/herdr-parallel-dev/)     | Orchestrates parallel multi-agent development with Herdr (one worktree per task) |
-| [improve-skill](skills/improve-skill/)               | Audits and improves Agent Skills for spec compliance and clarity                 |
-| [polish-japanese-docs](skills/polish-japanese-docs/) | Polishes Japanese technical docs into natural technical-document prose           |
-| [review-and-fix](skills/review-and-fix/)             | Senior-level diff review with an interactive fix workflow                        |
-| [test-design](skills/test-design/)                   | Designs structured test cases and coverage gaps from code, specs, or tickets     |
+| Skill                                                | Description                                                                                        |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| [create-skill](skills/create-skill/)                 | Creates spec-compliant Agent Skills from requirements to delivery                                  |
+| [git-branch-cleanup](skills/git-branch-cleanup/)     | Cleans up local worktrees and branches proved merged into the remote default or integration branch |
+| [github-repo-baseline](skills/github-repo-baseline/) | Applies the standard settings baseline to a GitHub repository via the gh CLI                       |
+| [herdr-parallel-dev](skills/herdr-parallel-dev/)     | Orchestrates parallel multi-agent development with Herdr (one worktree per task)                   |
+| [improve-skill](skills/improve-skill/)               | Audits and improves Agent Skills for spec compliance and clarity                                   |
+| [polish-japanese-docs](skills/polish-japanese-docs/) | Polishes Japanese technical docs into natural technical-document prose                             |
+| [review-and-fix](skills/review-and-fix/)             | Senior-level diff review with an interactive fix workflow                                          |
+| [test-design](skills/test-design/)                   | Designs structured test cases and coverage gaps from code, specs, or tickets                       |
 
 ## For AI coding agents
 
