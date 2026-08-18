@@ -44,7 +44,7 @@ fix(check): reject mismatched skill names
 docs(readme): clarify installation
 ```
 
-Only the pull request title reaches `main`: squash merging turns it into the commit message, so CI validates the title with Cocogitto and leaves the branch's own commit messages alone. The title must follow the same convention.
+Squash merging composes the `main` commit from two parts: the subject is the pull request title, and the body is the branch's commit messages concatenated (`PR_TITLE` + `COMMIT_MESSAGES`). CI validates the title with Cocogitto because that is the subject the history is read by; branch commit messages are not gated in CI, so a pull request never fails over them, but they do land in the body — keep them meaningful.
 
 ## AI-Assisted Pull Requests
 

@@ -34,7 +34,7 @@ mise run check
 1. Branch from `main`.
 2. Implement the smallest coherent change.
 3. Run `mise run check` and resolve every failure.
-4. Commit with Conventional Commits; the local Cocogitto commit-msg hook validates the message. Only the pull request title reaches `main` under squash merging, and CI validates that title.
+4. Commit with Conventional Commits; the local Cocogitto commit-msg hook validates the message. Squash merging builds the `main` commit subject from the pull request title and its body from these commit messages, and CI validates the title.
 5. Open a pull request using [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Layout
