@@ -2,7 +2,7 @@ name: PR title
 
 on:
   pull_request:
-    types: [opened, edited, reopened]
+    types: [opened, synchronize, reopened, edited]
 
 permissions:
   contents: read
@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate
+    name: Validate PR title
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
