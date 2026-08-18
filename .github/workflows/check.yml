@@ -24,21 +24,3 @@ jobs:
         uses: jdx/mise-action@v4
       - name: Run validation checks
         run: mise run check
-
-  validate-commit-history:
-    name: Validate commit history
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      # On pull_request, the default checkout ref is the ephemeral merge commit,
-      # whose "Merge <sha> into <sha>" message is never Conventional Commits
-      # compliant. Validate the commits the PR actually proposes instead.
-      - name: Check out repository history
-        uses: actions/checkout@v7
-        with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Install toolchain (mise)
-        uses: jdx/mise-action@v4
-      - name: Validate commit history
-        run: cog check

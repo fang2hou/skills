@@ -19,7 +19,7 @@ This repository does not require an issue-first process. For a bug fix or featur
 1. Branch from `main`.
 2. Implement the smallest coherent change and keep the diff scoped.
 3. Run `mise run check`; CI and the local command use the same validation entry point.
-4. Commit with Conventional Commits; Cocogitto validates the message.
+4. Commit with Conventional Commits; the local Cocogitto hook validates the message.
 5. Open a pull request with the required description sections and a passing CI check.
 6. The sole maintainer reviews the change and merges it, normally with squash merging.
 
@@ -36,7 +36,7 @@ The reviewer checks:
 
 ## Commit Conventions
 
-Use [Conventional Commits](https://www.conventionalcommits.org/), enforced by Cocogitto locally and in CI:
+Use [Conventional Commits](https://www.conventionalcommits.org/), validated locally by the Cocogitto commit-msg hook:
 
 ```text
 feat(skill): add a branch cleanup workflow
@@ -44,7 +44,7 @@ fix(check): reject mismatched skill names
 docs(readme): clarify installation
 ```
 
-When squash merging, the pull request title must follow the same convention because it becomes the commit message.
+Only the pull request title reaches `main`: squash merging turns it into the commit message, so CI validates the title with Cocogitto and leaves the branch's own commit messages alone. The title must follow the same convention.
 
 ## AI-Assisted Pull Requests
 

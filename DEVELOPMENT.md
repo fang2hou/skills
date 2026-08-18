@@ -10,13 +10,13 @@ All development tools are managed by mise.
 mise install
 ```
 
-| Tool      | Version | Purpose                                                              | Managed via |
-| --------- | ------- | -------------------------------------------------------------------- | ----------- |
-| Node.js   | 24      | Runs the `npx skills` distribution CLI                               | `mise.toml` |
-| prek      | latest  | Runs the configured Git hooks for staged changes and commit messages | `mise.toml` |
-| Cocogitto | latest  | Validates Conventional Commit messages                               | `mise.toml` |
-| Gitleaks  | latest  | Scans tracked content for secrets during validation                  | `mise.toml` |
-| oxfmt     | latest  | Formats and format-checks the repository's Markdown                  | `mise.toml` |
+| Tool      | Version | Purpose                                                                         | Managed via |
+| --------- | ------- | ------------------------------------------------------------------------------- | ----------- |
+| Node.js   | 24      | Runs the `npx skills` distribution CLI                                          | `mise.toml` |
+| prek      | latest  | Runs the configured Git hooks for staged changes and commit messages            | `mise.toml` |
+| Cocogitto | latest  | Validates Conventional Commit messages locally and the pull request title in CI | `mise.toml` |
+| Gitleaks  | latest  | Scans tracked content for secrets during validation                             | `mise.toml` |
+| oxfmt     | latest  | Formats and format-checks the repository's Markdown                             | `mise.toml` |
 
 Do not substitute these tools without explicit approval under the shared toolchain standards.
 
@@ -34,7 +34,7 @@ mise run check
 1. Branch from `main`.
 2. Implement the smallest coherent change.
 3. Run `mise run check` and resolve every failure.
-4. Commit with Conventional Commits; Cocogitto validates the message.
+4. Commit with Conventional Commits; the local Cocogitto commit-msg hook validates the message. Only the pull request title reaches `main` under squash merging, and CI validates that title.
 5. Open a pull request using [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Layout
