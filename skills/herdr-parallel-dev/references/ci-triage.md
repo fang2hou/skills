@@ -6,13 +6,13 @@ before Step 7 can continue. Nothing lands while the target branch's CI is red.
 ## Classify the failure
 
 Use the configured forge's verified run-inspection interface to read the failed
-step and its logs. Classify the first actionable failure, not downstream
+step and its logs. Classify the first failure that requires action, not downstream
 cancellations:
 
-- **Infrastructure** — runner setup, action download, or transient network
+- **Infrastructure**: runner setup, action download, or transient network
   failures (for example HTTP 429). Rerun only the failed jobs, then watch the
   new run to a terminal result.
-- **Regression** — a failure inside the project's own check or deploy steps.
+- **Regression**: a failure inside the project's own check or deploy steps.
   Stop the landing sequence, fix the owning branch, push the fix, and rerun the
   repository gate before resuming.
 

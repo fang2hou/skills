@@ -8,6 +8,7 @@ Proven patterns extracted from high-quality skills and the Agent Skills specific
 - Disclosure, failure, and validation structure: Patterns 4–7
 - Intent and input framing: Patterns 8–10
 - Evidence, safety, and authoring quality: Patterns 11–18
+- Model-behavior calibration: Patterns 19–20
 
 ## Pattern 1: Gate Checkpoints
 
@@ -20,7 +21,7 @@ Proven patterns extracted from high-quality skills and the Agent Skills specific
 
 [Instructions...]
 
-**Gate N** — Proceed only when ALL true:
+**Gate N (proceed only when all are true):**
 
 - [ ] [Verifiable condition 1]
 - [ ] [Verifiable condition 2]
@@ -41,14 +42,14 @@ _If gate fails_: [Specific recovery action, not "try again"]
 
 On success, return exactly:
 
-1. [Artifact 1 — format and content]
-2. [Artifact 2 — format and content]
+1. [Artifact 1: format and content]
+2. [Artifact 2: format and content]
 
 Example:
 [Concrete example of actual expected output]
 ```
 
-**Why**: Eliminates ambiguity about what "done" looks like. Makes the skill composable — other skills know what format to expect.
+**Why**: Eliminates ambiguity about what "done" looks like and makes the skill composable because other skills know what format to expect.
 
 ## Pattern 3: Hard Rules Section
 
@@ -74,7 +75,7 @@ Example:
 
 ```
 skill-dir/
-├── SKILL.md              (~200-400 lines — core workflow)
+├── SKILL.md              (~200-400 lines, core workflow)
 └── references/
     ├── detail-a.md       (loaded only when referenced)
     └── detail-b.md       (loaded only when referenced)
@@ -164,14 +165,14 @@ If any check in A-B fails:
 **When to apply**: Before modifying any existing skill. Captures the skill's identity to prevent optimization from drifting its purpose.
 
 ```
-Intent: [one sentence — what problem does this skill solve?]
+Intent: [one sentence: what problem does this skill solve?]
 Domain: [workflow | expertise | hybrid]
 Mandatory Rules: [list of untouchable constraints]
 Existing Gates: [list of current checkpoints, or "none"]
 Platform Dependencies: [list, or "none"]
 ```
 
-**Why**: Crystallizes what must NOT change before any changes are made. The mandatory rules list directly informs which optimizations are safe.
+**Why**: Records what must not change before any changes are made. The mandatory rules list directly informs which optimizations are safe.
 
 ## Pattern 9: When to Use Section
 
@@ -188,12 +189,12 @@ Use this skill when:
 - [Specific trigger scenario 2]
 - [Specific trigger scenario 3]
 
-Do NOT use this skill when:
+Do not use this skill when:
 
 - [Out-of-scope scenario]
 ```
 
-**Why**: Agents match skills to tasks based on description + this section. The "Do NOT use" list prevents false matches, which waste tokens and user time.
+**Why**: Agents match skills to tasks based on description + this section. The "Do not use" list prevents false matches, which waste tokens and user time.
 
 ## Pattern 10: Input Documentation
 
@@ -301,7 +302,7 @@ For the long or conditional form, load `assets/output-template.json` from SKILL.
 
 **When to apply**: A workflow contains both tolerant choices and operations where variation can cause failure.
 
-| High freedom — explain the goal                                                         | Low freedom — specify the exact operation                                                            |
+| High freedom (explain the goal)                                                         | Low freedom (specify the exact operation)                                                            |
 | --------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | “Choose any deterministic parser that preserves the stated fields; explain the choice.” | “Run the validator after editing. Do not add flags because its exit codes are part of the contract.” |
 
@@ -351,3 +352,31 @@ The following guidance is superseded. Keep it only for migration or compatibilit
 ```
 
 **Why**: Labeling superseded material preserves useful history without introducing time-sensitive instructions into the active procedure.
+
+## Pattern 19: Reasoned Constraint
+
+**Source**: Anthropic prompting guidance for current models; agentskills.io evaluating-skills guide
+
+**When to apply**: A rule relies on ALL-CAPS, "CRITICAL", or stacked MUST/NEVER instead of its reason.
+
+```markdown
+Before: IMPORTANT: NEVER push. ALWAYS ask first!!!
+After: Ask before pushing, because a push publishes the branch to collaborators and
+cannot be recalled. Local commits need no confirmation.
+```
+
+**Why**: The reason defines the rule's boundary, so the agent applies it where it matters and nowhere else. Emphatic wording makes current models over-apply the rule.
+
+## Pattern 20: Explicit Precedence
+
+**Source**: OpenAI GPT-5 prompting guide; general instruction-design practice
+
+**When to apply**: Two instructions can apply to the same situation with different outcomes.
+
+```markdown
+Delete no content without relocating it. Exception: content the agent already knows, or
+content a trial run shows to be harmful, may be removed; list each removal and its reason
+in the report.
+```
+
+**Why**: An explicit exception makes behavior consistent across runs. Without it, reasoning models spend effort reconciling the conflict and pick different resolutions each time.

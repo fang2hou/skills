@@ -1,6 +1,8 @@
 # Fix Patterns
 
-Principles and illustrative examples for Phase 3-4 (Plan and Execute). Use these as REFERENCE, not prescription — always adapt to the project's actual patterns and the specific context of the change.
+Principles and examples for Phases 3–4 (Plan and Execute). Treat these as reference patterns rather than rigid templates, and adapt them to the project's conventions.
+
+Contents: fix principles · illustrative patterns (silenced error, library panic, unsafe escape, deep nesting, boolean trap, SQL injection, sequential independent operations) · fix execution checklist
 
 ## Fix Principles (Apply to Every Fix)
 
@@ -8,17 +10,17 @@ Principles and illustrative examples for Phase 3-4 (Plan and Execute). Use these
 2. **Minimal scope.** Fix only the identified issue. Don't refactor adjacent code, don't "improve" unrelated names, don't add features.
 3. **Consider blast radius.** For library/SDK code, every fix is a potential breaking change. Ask: "could this fix cause a panic or behavioral change for downstream consumers?"
 4. **Preserve backward compatibility.** If the code being fixed is part of a public API, prefer adding over changing. Deprecate the old way, don't remove it.
-5. **Think about the next person.** A fix should leave the code clearer than you found it — but only for the thing you fixed. Don't "clean up" everything in sight.
+5. **Leave the fixed path clearer.** Make the touched logic easier to read without reformatting untouched surroundings.
 
 ## Illustrative Patterns
 
-These examples demonstrate THINKING, not templates. The languages shown reflect common project types (Rust, Go, Lua, TypeScript, Python). Adapt to whatever language you're actually working in.
+The examples below show how to fix common failure modes across Rust, Go, Lua, TypeScript, and Python. Adapt them to your target language.
 
 ### Error Handling: Silenced Error → Proper Propagation
 
 **The principle**: Errors should carry context and propagate to someone who can handle them. How you do this depends on the language's error model.
 
-**Rust** — use `Result` + `?`, add context with `.map_err()`:
+**Rust** (`Result` + `?`, adding context with `.map_err()`):
 
 ```rust
 // Think: what information does the caller need to debug this?
@@ -26,7 +28,7 @@ let user = fetch_user(id)
     .map_err(|e| AppError::UserFetchFailed { id, source: e })?;
 ```
 
-**Go** — wrap with `fmt.Errorf("doing what: %w", err)`:
+**Go** (wrapping with `fmt.Errorf("doing what: %w", err)`):
 
 ```go
 user, err := fetchUser(id)
@@ -35,7 +37,7 @@ if err != nil {
 }
 ```
 
-**Lua** — return nil + error message, propagate upward:
+**Lua** (returning `nil` + error message and propagating upward):
 
 ```lua
 local user, err = fetch_user(id)
@@ -69,7 +71,7 @@ pub fn parse_config(raw: &str) -> Result<Config, ConfigError> {
 
 **The principle**: If the type system can catch the error at compile time, let it. Don't bypass with assertions or casts.
 
-**Go** — replace `interface{}` with concrete types:
+**Go** (replacing `interface{}` with concrete types):
 
 ```go
 // Instead of: func process(data interface{}) string { ... }
@@ -81,7 +83,7 @@ func process(data Input) string {
 }
 ```
 
-**Rust** — replace `.unwrap()` with `Option`/`Result` propagation:
+**Rust** (replacing `.unwrap()` with `Option`/`Result` propagation):
 
 ```rust
 // Instead of: fn get_first(items: &[Item]) -> Item { items.first().unwrap().clone() }

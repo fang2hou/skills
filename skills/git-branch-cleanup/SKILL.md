@@ -1,22 +1,22 @@
 ---
 name: git-branch-cleanup
-description: Cleans up local Git worktrees and branches whose work is provably absorbed elsewhere, deleting each risk group only after its own confirmation. Use after merging pull requests or after parallel agent worktree sessions.
+description: Cleans up local Git worktrees and branches whose work is provably merged or absorbed, deleting each risk group only after its own confirmation. Use after merging PRs, after parallel agent worktree sessions, or to prune merged local branches.
 license: MIT
 compatibility: Requires the git CLI with worktree support, a remote named `origin` (or a supplied remote name), and a POSIX shell for the shown pipelines; a non-POSIX environment must supply equivalent extraction of worktree paths and their checked-out branch names. Check C additionally requires network access and a CLI that can query merged pull requests; every other check is offline git.
 metadata:
   author: fang2hou
-  version: "2.1"
+  version: "2.2"
   sources: "Validated in real multi-worktree sessions."
 ---
 
 # Git Branch Cleanup
 
-Remove local worktrees and branches whose changes are provably absorbed somewhere else — nothing else — and only after the user approves each group.
+Remove local worktrees and branches whose changes are provably absorbed somewhere else, and only after the user approves each group.
 
-Two independent groups are produced, because their risk differs:
+Produce two independent groups based on risk:
 
-- **Group 1 — landed**: the work is on the remote default branch. Deleting loses nothing; the remote holds it.
-- **Group 2 — absorbed locally**: the work is in the branch currently checked out in this worktree (the integration branch) but not yet on the remote default. Deleting loses nothing _as long as that integration branch survives_.
+- **Group 1 (landed)**: the work is on the remote default branch. Deleting loses nothing because the remote holds it.
+- **Group 2 (absorbed locally)**: the work is in the branch currently checked out in this worktree (the integration branch) but not yet on the remote default. Deleting loses nothing _as long as that integration branch survives_.
 
 A branch in Group 1 or Group 2 is a **candidate**. Every other branch is non-deletable here and is only reported.
 
@@ -28,10 +28,10 @@ A branch in Group 1 or Group 2 is a **candidate**. Every other branch is non-del
 
 ## When NOT to Use
 
-- Deleting **remote** branches — out of scope; remotes are read-only here.
+- Deleting **remote** branches (out of scope; remotes are read-only here).
 - Cleaning stashes, tags, or reflog entries.
 - Any repository where the user has not confirmed the deletion list.
-- Forcing removal of a dirty, locked, or unreadable worktree — always reported, never forced.
+- Forcing removal of a dirty, locked, or unreadable worktree (always reported, never forced).
 
 ## Inputs
 
@@ -44,21 +44,21 @@ A branch in Group 1 or Group 2 is a **candidate**. Every other branch is non-del
 ## Hard Rules
 
 1. **Never delete before the user confirms the exact list.** Group 1 and Group 2 are confirmed separately; approving one never implies the other. No batch shortcuts, no "obviously safe" exceptions.
-2. **`[gone]` upstream alone NEVER qualifies a branch for deletion.** A remote branch can be deleted while the work is unmerged. `[gone]` is only a hint to run the merge checks.
+2. **A `[gone]` upstream alone never qualifies a branch for deletion.** A remote branch can be deleted while the work is unmerged. `[gone]` is only a hint to run the merge checks.
 3. **Detect the default branch from `<remote>/HEAD`**, never hardcode `main`/`master`. If unset, run `git remote set-head <remote> --auto` first.
 4. A branch belongs to **Group 1** only if it passes at least one of, against `DEFAULT`:
    - **Check A**: it is an ancestor of `DEFAULT` (ordinary merge)
-   - **Check B**: `git cherry DEFAULT <branch>` prints only `-` lines (every commit patch-equivalent — single-commit squash merges)
-   - **Check C**: a merged PR whose head ref is this branch has `headRefOid` **equal to** the local tip AND `baseRefName` equal to the short name of `DEFAULT` — the merged PR is provably THIS branch state, landed on THIS target
+   - **Check B**: `git cherry DEFAULT <branch>` prints only `-` lines (every commit is patch-equivalent, covering single-commit squash merges)
+   - **Check C**: a merged PR whose head ref is this branch has `headRefOid` **equal to** the local tip AND `baseRefName` equal to the short name of `DEFAULT` (proving the merged PR is this exact branch state landed on this target)
 
    A branch belongs to **Group 2** only if it fails Group 1 and passes, against `INTEGRATION`, **Check A**, **Check B**, or **Check C with `baseRefName` equal to `INTEGRATION`** (same `headRefOid` equality). Group 1 always wins over Group 2.
 
    Everything else:
    - All applicable checks ran and failed → **unmerged** (report only)
-   - Check C returned merged PRs for the branch but none matches both the local tip and one of the two accepted bases (branch name reused, commits added after the PR merged, or the PR landed on a third branch such as a release line) → **manual review**
-   - Check C could not run (CLI missing, no network) and the branch failed A and B against both targets → **unverified**, treated exactly like manual review — never "unmerged", because a multi-commit squash merge could not be tested
+   - Check C returned merged PRs for the branch, but none matches both the local tip and one of the two accepted bases (branch name reused, commits added after the PR merged, or the PR landed on a third branch such as a release line) → **manual review**
+   - Check C could not run (CLI missing, no network) and the branch failed A and B against both targets → **unverified**, treated like manual review rather than "unmerged" because a multi-commit squash merge could not be tested
 
-   Manual-review, unverified, and unmerged branches are NEVER deleted by this skill — not even on request — because their status is unproven. The user deletes them outside this skill if they choose.
+   Never delete manual-review, unverified, or unmerged branches in this skill, even on request, because their status is unproven. The user can delete them manually outside this skill if they choose.
 
 5. **The current worktree and its branch are untouchable**, as is `INTEGRATION` and the local counterpart of `DEFAULT`. Build that untouchable set before classifying.
 6. **A branch held by another worktree is cleanable, but the worktree goes first.** Remove the worktree only when `git status --porcelain` in it is empty and it is not locked; then delete the branch. Never pass `--force` to `git worktree remove`, and never delete a branch still checked out somewhere.
@@ -87,7 +87,7 @@ git for-each-ref --format='%(refname:short)%09%(objectname)%09%(upstream:short)%
 
 `--prune` deletes stale **remote-tracking** refs only; it never touches local branches. `substr` is mandatory in both places: `$2` truncates any worktree path containing a space, and porcelain emits fully-qualified refs (`refs/heads/main`) while branches are compared by short name. Compare short names against short names only.
 
-If `$INTEGRATION` is empty — the current worktree is in detached HEAD and the user named no branch — there is no Group 2 target: skip Step 5's Group 2 entirely, state that in the report, and never substitute `DEFAULT` or `HEAD` for it. Every `--merged "$INTEGRATION"` and `git cherry "$INTEGRATION"` invocation is skipped in that case; running them with an empty value would compare against the wrong ref or fail.
+If `$INTEGRATION` is empty (the current worktree is in detached HEAD and the user named no branch), there is no Group 2 target. Skip Step 5's Group 2 entirely, state that in the report, and never substitute `DEFAULT` or `HEAD` for it. Skip every `--merged "$INTEGRATION"` and `git cherry "$INTEGRATION"` invocation in that case; running them with an empty value compares against the wrong ref or fails.
 
 Untouchable set: the branch of `$CURRENT_WT`, `$INTEGRATION` when non-empty, and the local branch matching `$DEFAULT`.
 
@@ -101,7 +101,7 @@ git branch --merged "$INTEGRATION" --format='%(refname:short)'   # Check A vs IN
 gh pr list --state merged --limit 100 --json number,title,headRefName,headRefOid,baseRefName
 ```
 
-The PR query is **one** call: index it by `headRefName`, then require both `headRefOid` equal to the local tip from Step 1 and `baseRefName` equal to the short name of `DEFAULT` (Group 1) or to `INTEGRATION` (Group 2). Any other base — a release line, another feature branch — is not proof for either group. Only when a branch is absent from that window, fall back to `gh pr list --state merged --search "head:<branch>" --json number,title,headRefOid,baseRefName` for that branch alone.
+The PR query is **one** call: index it by `headRefName`, then require both `headRefOid` equal to the local tip from Step 1 and `baseRefName` equal to the short name of `DEFAULT` (Group 1) or to `INTEGRATION` (Group 2). Any other base (a release line or another feature branch) is not proof for either group. Only when a branch is absent from that window, fall back to `gh pr list --state merged --search "head:<branch>" --json number,title,headRefOid,baseRefName` for that branch alone.
 
 Then run `git cherry` only on the branches still unclassified:
 
@@ -136,9 +136,9 @@ Show the Group 2 table with the same columns plus the proof target `$INTEGRATION
 
 Ask the user to opt in **per branch or subset**; the default is to delete nothing in this group. This group is never covered by the Group 1 answer.
 
-Also show, informationally, the manual-review/unverified and unmerged tables — these are not deletable here.
+Also show the manual-review/unverified and unmerged tables for reference; these are not deletable here.
 
-**Gate — proceed to Step 6 only when ALL are true:**
+**Gate (proceed to Step 6 only when all are true):**
 
 - The exact per-group sets were shown and explicitly confirmed.
 - Manual-review, unverified, unmerged, and blocked rows are excluded.
@@ -150,39 +150,41 @@ This gate is mandatory and cannot be bypassed by a caller, automation, or prompt
 
 ### Step 6: Remove worktrees, then delete branches
 
-Worktrees first — a branch held by a worktree cannot be deleted:
+Remove worktrees first, since Git refuses to delete a branch held by a worktree:
 
 ```bash
 git -C "$WT" status --porcelain      # must be empty
 git worktree remove "$WT"            # never --force
 ```
 
-Then the branches. Persist the approved list to a sorted file first — enumerating it
-from memory while executing is how a branch gets silently skipped. Any mechanism that
-writes the file works; some harnesses block shell redirection, so use their file-write
-facility instead of insisting on the pipeline below. Compute the flag per branch (Hard
-Rule 7):
+Then delete the branches. Write the approved list to a sorted file first; enumerating it
+from memory while executing risks silently skipping a branch. Keep the file inside this
+repository's git directory so a concurrent cleanup in another repository cannot overwrite
+it, and so the path survives separate shell calls. Use the harness's file-write tool if
+shell redirection is blocked. Compute the flag per branch (Hard Rule 7):
 
 ```bash
-printf '%s\n' <approved branches> | sort > /tmp/gbc-approved.txt   # sorted: comm requires it
+GBC="$(git rev-parse --absolute-git-dir)/gbc"   # per-repo, per-worktree scratch prefix
+printf '%s\n' <approved branches> | sort > "$GBC-approved.txt"   # sorted: comm requires it
 while read -r B; do
   if git merge-base --is-ancestor "$B" HEAD; then FLAG=-d; else FLAG=-D; fi
   git branch "$FLAG" "$B" || echo "FAILED: $B" >&2
-done < /tmp/gbc-approved.txt
+done < "$GBC-approved.txt"
 ```
 
 The flag reported for each branch in the tables must be the flag actually executed; compute it before presenting the tables so the two never diverge.
 
-Never include manual-review, unverified, unmerged, or blocked branches. If a deletion fails because the branch is still checked out somewhere, do NOT force it — report it as still active.
+Never include manual-review, unverified, unmerged, or blocked branches. If a deletion fails because the branch is still checked out somewhere, report it as still active instead of forcing it.
 
 **Reconcile before reporting anything as deleted.** Never state an outcome you did not observe:
 
 ```bash
-git for-each-ref --format='%(refname:short)' refs/heads | sort > /tmp/gbc-after.txt
-comm -12 /tmp/gbc-approved.txt /tmp/gbc-after.txt   # must be empty
+GBC="$(git rev-parse --absolute-git-dir)/gbc"
+git for-each-ref --format='%(refname:short)' refs/heads | sort > "$GBC-after.txt"
+comm -12 "$GBC-approved.txt" "$GBC-after.txt"   # must be empty
 ```
 
-Every line `comm` prints is an approved branch that still exists. For each one, either issue the missing deletion or report it with the error that blocked it. Only when this comparison is empty — or every remaining line has a recorded failure reason — may the report call a branch deleted.
+Every line `comm` prints is an approved branch that still exists. For each one, either issue the missing deletion or report it with the error that blocked it. Call a branch deleted only when this comparison is empty or every remaining line has a recorded failure reason.
 
 ### Step 7: Final state
 
@@ -190,6 +192,7 @@ Every line `comm` prints is an approved branch that still exists. For each one, 
 git worktree prune                   # drops registrations of already-deleted dirs only; safe
 git worktree list
 git branch -vv
+rm -f "$(git rev-parse --absolute-git-dir)"/gbc-approved.txt "$(git rev-parse --absolute-git-dir)"/gbc-after.txt
 ```
 
 Report the post-cleanup worktree list and branch list together, so the user sees both dimensions of the result.
@@ -202,7 +205,7 @@ The run is complete when all of these hold: every approved candidate is either d
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `git fetch` fails (offline, auth, unreachable remote)               | Continue with the stale remote-tracking refs, and mark every Group 1 result as based on unfetched state; do not delete Group 1 until a fetch succeeds. |
 | `<remote>/HEAD` still unresolved after `git remote set-head --auto` | Stop and ask which branch is the default. Never fall back to `main`/`master`.                                                                          |
-| PR query fails (CLI missing, no GitHub host, not authenticated)     | Check C is unavailable: report it once, and classify every branch that failed A and B as unverified — never as unmerged.                               |
+| PR query fails (CLI missing, no GitHub host, not authenticated)     | Check C is unavailable: report it once, and classify every branch that failed A and B as unverified, never as unmerged.                                |
 | PR query succeeds but returns no PR for a branch                    | Not evidence of anything: the branch keeps whatever A/B produced.                                                                                      |
 | `git worktree remove` refuses (dirty, untracked files, locked)      | Leave it; mark the branch blocked with the reason. Never add `--force`, and never delete a branch whose worktree survives.                             |
 | Worktree directory is already gone from disk                        | `git worktree prune` clears the registration; then treat the branch as unheld and proceed normally.                                                    |
@@ -215,15 +218,15 @@ Batch commands hide partial failure: `git branch -d a b` can delete `b` while re
 ## Gotchas
 
 - **Worktree-held branches are the common case after agent sessions.** Treating them as untouchable makes the skill a no-op exactly when it is needed; the correct order is prove merged → remove clean worktree → delete branch (Hard Rule 6).
-- **`INTEGRATION` equal to the local default branch collapses Group 2 to empty.** That is expected — say so explicitly instead of presenting an empty table as a finding.
-- **Multi-commit squash merges defeat patch-id.** When a PR with several commits is squash-merged, the single resulting commit matches NO individual patch-id: `git cherry` reports every branch commit as `+` even though the content is fully on the default branch (verified on a real two-commit squash). That is why Check C exists — PR merge status is authoritative there.
-- **Offline runs must not mislabel squash leftovers.** Without the PR query, a multi-commit-squash-merged branch is indistinguishable from a truly unmerged one — hence the unverified classification (kept, reported). Never present unverified branches as definitively unmerged.
-- **Check C's SHA equality is load-bearing.** Without comparing `headRefOid` to the local tip, two hazards slip through: a branch NAME reused by a later PR, and commits made locally AFTER the PR merged. SHA mismatch = manual review, never a candidate.
-- **`git cherry` false `-`**: patch-id can rarely match by coincidence. Mitigation: the tables always show tip subjects so the user can veto anything suspicious.
-- **Squash-merged branches look unmerged to git**: `git branch --merged` and `-d` both refuse, because the original commits are not ancestors of the target. Use `-D` for those.
-- **`gh pr merge --delete-branch` can delete the local branch currently checked out in a worktree**, leaving that worktree on an unexpected ref. After merging with gh, check `git branch -vv` and worktree integrity before running this skill.
-- **The default branch is usually checked out in the primary worktree** and lands in the untouchable set anyway. If it is merely behind, offer a fast-forward (`git merge --ff-only`) only when that worktree is clean, and separately from deletion.
-- **`<remote>/HEAD` may be unset in fresh clones** — always resolve it in Step 1; never hardcode the remote name in HEAD lookups.
+- **`INTEGRATION` equal to the local default branch collapses Group 2 to empty.** That is expected; say so explicitly instead of presenting an empty table as a finding.
+- **Multi-commit squash merges defeat patch-id.** When a PR with several commits is squash-merged, the single resulting commit matches no individual patch-id: `git cherry` reports every branch commit as `+` even though the content is on the default branch (verified on a real two-commit squash). Check C covers this case because PR merge status is authoritative there.
+- **Offline runs must not mislabel squash leftovers.** Without the PR query, a multi-commit squash-merged branch is indistinguishable from an unmerged one, so classify it as unverified (kept and reported). Never present unverified branches as definitively unmerged.
+- **Check C's SHA equality is load-bearing.** Without comparing `headRefOid` to the local tip, two hazards slip through: a branch name reused by a later PR, and commits made locally after the PR merged. SHA mismatch means manual review, never a candidate.
+- **`git cherry` false `-`**: patch-id can rarely match by coincidence. The tables always show tip subjects so the user can veto anything suspicious.
+- **Squash-merged branches look unmerged to git**: `git branch --merged` and `-d` both refuse because the original commits are not ancestors of the target. That is why Hard Rule 7 allows `-D`, and only for a branch whose Hard Rule 4 proof is recorded.
+- **`gh pr merge --delete-branch` can delete the local branch currently checked out in a worktree**, leaving that worktree on an unexpected ref. After merging with `gh`, check `git branch -vv` and worktree integrity before running this skill.
+- **The default branch is usually checked out in the primary worktree** and lands in the untouchable set anyway. If it is behind, offer a fast-forward (`git merge --ff-only`) only when that worktree is clean, and separately from deletion.
+- **`<remote>/HEAD` may be unset in fresh clones.** Always resolve it in Step 1, and never hardcode the remote name in HEAD lookups.
 - Branches with no upstream are treated like any other: run the checks; never delete them just for being orphaned.
 
 ## Output Contract

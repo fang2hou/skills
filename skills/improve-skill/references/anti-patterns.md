@@ -11,6 +11,7 @@ Common skill quality issues with detection signals and concrete fixes. Reference
 - Composability anti-patterns: AP-16–17
 - Cross-platform anti-patterns: AP-18–19
 - Context, authoring, and trial-run anti-patterns: AP-20–32
+- Model-behavior and collection anti-patterns: AP-33–37
 
 ## Frontmatter Anti-Patterns
 
@@ -34,13 +35,13 @@ Common skill quality issues with detection signals and concrete fixes. Reference
 
 **Detect**: Skill requires specific tools, CLI access, or network resources but has no `compatibility` field.
 
-**Fix**: Add `compatibility: Requires [specific requirements]`. Only add this when real requirements exist — not every skill needs it.
+**Fix**: Add `compatibility: Requires [specific requirements]`. Only add this when real requirements exist; not every skill needs it.
 
 ### AP-4: Description Too Long
 
-**Detect**: Description exceeds 250 characters. Will be truncated in skill listings, losing critical context.
+**Detect**: Description exceeds about 250 characters, or the key use case is not in the first sentence. Clients list descriptions under a shared context budget and truncate long ones, so the trigger-critical part can disappear.
 
-**Fix**: Front-load the key use case in the first 50 characters. Move detailed trigger examples to the "When to Use" section in the body.
+**Fix**: Front-load the key use case in the first sentence. Move detailed trigger examples to the "When to Use" section in the body.
 
 ## Structure Anti-Patterns
 
@@ -247,3 +248,39 @@ Common skill quality issues with detection signals and concrete fixes. Reference
 **Bad**: "The rewrite looks clearer, so it is complete."
 
 **Fix**: Snapshot before editing, run the same realistic task with improved and baseline versions, inspect traces, and record objective assertions that flipped.
+
+## Model-Behavior and Collection Anti-Patterns
+
+### AP-33: Emphasis Inflation
+
+**Detect**: ALL-CAPS words, "CRITICAL", "IMPORTANT", or stacked MUST/NEVER/ALWAYS outside genuinely destructive or security-relevant constraints; or a description that says "ALWAYS use this skill".
+
+**Bad**: "CRITICAL: You MUST ALWAYS read every reference file before ANY step."
+
+**Fix**: Rewrite as a plain instruction plus its reason: "Read `references/x.md` before Phase 3, because its rubric defines the scores." Current models follow plain wording precisely; emphasis makes them over-apply the rule and over-trigger the skill.
+
+### AP-34: Contradictory Instructions
+
+**Detect**: Two instructions can apply to the same situation with different outcomes and no stated priority, including a SKILL.md rule contradicted by a reference.
+
+**Bad**: "Never delete content" in Hard Rules and "remove agent-known explanations" in Principles.
+
+**Fix**: State which rule wins or narrow one rule's condition. Reasoning models spend effort reconciling contradictions and resolve them differently between runs.
+
+### AP-35: Sibling Trigger Overlap
+
+**Detect**: Two skills in the same collection claim the same trigger ("creating, reviewing, or upgrading skills" in both a creation skill and an improvement skill).
+
+**Fix**: Give each description a distinguishing intent (new vs existing, plan vs execute) and name the sibling in each body's When NOT to Use section.
+
+### AP-36: Client-Only Frontmatter in a Portable Skill
+
+**Detect**: Frontmatter contains keys outside `name`, `description`, `license`, `compatibility`, `metadata`, and `allowed-tools` (for example `when_to_use`, `disable-model-invocation`, `argument-hint`, `context`) in a skill meant for several clients.
+
+**Fix**: Remove the key and express its intent in the body (for example a confirmation step instead of `disable-model-invocation`), or record the target client in `compatibility` when the user requires that field. Some upload paths reject unknown keys outright.
+
+### AP-37: Over-Constrained Skill
+
+**Detect**: Trial-run traces show the agent performing checks, gates, or intermediate outputs that do not change the result; or pass rates stay flat while rules accumulate.
+
+**Fix**: Remove the instructions behind the wasted work and re-run the trial. Fewer, better instructions often outperform exhaustive rules; keep a removal only when results hold or improve.

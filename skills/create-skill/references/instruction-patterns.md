@@ -11,6 +11,8 @@ Contents:
 - [Worked input/output examples](#worked-inputoutput-examples)
 - [Defaults, not menus](#defaults-not-menus)
 - [Procedures over declarations](#procedures-over-declarations)
+- [Reasons instead of emphasis](#reasons-instead-of-emphasis)
+- [Explicit precedence](#explicit-precedence)
 
 ## Calibration model
 
@@ -169,5 +171,38 @@ response shape, then add one regression case for every failure observed.
 ```
 
 Why it works: the procedure generalizes to new endpoints and gives the agent evidence to
-check. A declaration such as “produce a robust API test” leaves the crucial decisions
+check. A declaration such as “produce a thorough API test” leaves the key decisions
 implicit.
+
+## Reasons instead of emphasis
+
+**When to apply:** Rewrite any instruction that relies on ALL-CAPS, "CRITICAL", "IMPORTANT",
+or a stack of MUST/NEVER/ALWAYS. Current models follow plain instructions precisely and
+over-apply emphatic ones: an emphasized rule gets applied to cases it was never meant for,
+and an emphatic description over-triggers on near misses.
+
+```markdown
+Bad: CRITICAL: NEVER run the migration without --check. ALWAYS ask first.
+Good: Run `tool migrate --check` before the real migration, because the real run cannot be
+rolled back. Ask the user before the real run only when the check reports warnings.
+```
+
+Why it works: the reason tells the agent where the rule's boundary is, so it can apply the
+rule to new cases and leave unrelated cases alone. Keep imperative wording for genuine hard
+constraints (destructive, irreversible, or security-relevant), and give those a reason too.
+State the desired behavior rather than only the forbidden one.
+
+## Explicit precedence
+
+**When to apply:** Whenever two instructions can apply to the same situation with different
+outcomes, such as "ask before writing" and "run without interruption", or a general rule and
+a gotcha that overrides it.
+
+```markdown
+Ask before deleting any branch. Exception: branches this skill created during the current
+run may be deleted without asking, because no one else can depend on them yet.
+```
+
+Why it works: reasoning models spend effort trying to satisfy both sides of a contradiction
+and resolve it differently between runs. A stated exception or priority makes behavior
+consistent. Check the whole skill, including references, for conflicts after each edit.

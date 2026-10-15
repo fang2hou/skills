@@ -3,6 +3,8 @@
 Verified against `docs/mcp.md` in storytold/figcraft (v0.6.0, 2026-10). The
 server lives in `crates/mcp` and is launched through the CLI.
 
+Contents: modes · protocol · client registration · tools · example calls · conventions
+
 ## Modes
 
 | Command                          | Backend                                                                   |
@@ -23,7 +25,7 @@ the newline; oversized input yields JSON-RPC error `-32600` and closes the
 session.
 
 Attached-mode caveat: calls are never auto-replayed after a transport
-failure, since the edit may have applied — inspect before retrying. The next
+failure because the edit may have applied; inspect before retrying. The next
 explicit call reconnects.
 
 ## Client registration
@@ -63,7 +65,7 @@ claude mcp add figcraft-app -- /path/to/figcraft-cli mcp --attach 7979
 | `pointer {kind, x, y, to?, steps?, tool?, shift, alt, cmd, pressure?}`            | Mouse gestures.                                                                                                                         |
 | `key {key, shift, alt, cmd}`                                                      | Shortcuts as if typed.                                                                                                                  |
 | `type_text {text, id?}`                                                           | Type into the edited text, or replace a text layer.                                                                                     |
-| `inspect_ui {}`                                                                   | Tool, view, status, and windows — attached mode.                                                                                        |
+| `inspect_ui {}`                                                                   | Tool, view, status, and windows (attached mode).                                                                                        |
 
 ## Example calls
 

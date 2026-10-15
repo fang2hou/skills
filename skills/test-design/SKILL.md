@@ -1,14 +1,14 @@
 ---
 name: test-design
 description: >
-  Designs structured test cases and coverage gaps from code, specs, or tickets. Use when
-  users ask to design tests, generate test cases, edge case tests, boundary value tests,
-  test plan, or /test-design.
+  Designs structured test cases, edge and boundary cases, and coverage gaps from code,
+  specs, or tickets, without writing test code. Use when the user asks for a test plan,
+  test cases, or edge-case analysis before or alongside implementation.
 license: MIT
 compatibility: Requires file read/search access. LSP and git access improve code/spec tracing and test gap analysis.
 metadata:
   author: fang2hou
-  version: "1.1"
+  version: "1.2"
   sources: "review-and-fix skill; a month-end billing incident's countermeasure context; Go time docs; MDN Date docs"
 ---
 
@@ -18,11 +18,10 @@ Design the test plan before implementation escapes into review or release: extra
 
 ## When to Use
 
-- User asks to design tests or generate test cases from code, specs, or a Jira ticket
+- User asks to design tests or generate test cases from code, specs, or a ticket ("design tests", "test plan", "/test-design")
 - User wants edge case tests or boundary value tests before writing or shipping code
 - User wants a feature-level test plan instead of test implementation
 - User wants to compare planned coverage against existing tests and find gaps
-- User says "design tests", "generate test cases", "edge case tests", "boundary value tests", "test plan", or "/test-design"
 
 ## When NOT to Use
 
@@ -35,7 +34,7 @@ Design the test plan before implementation escapes into review or release: extra
 
 | Input                   | Required | Format                                                       | Example                                                          |
 | ----------------------- | -------- | ------------------------------------------------------------ | ---------------------------------------------------------------- |
-| Implementation artifact | Yes      | File path, function signature, code snippet, spec, or ticket | `billing/date.go`, `calculateRenewalDate(user, now)`, Jira story |
+| Implementation artifact | Yes      | File path, function signature, code snippet, spec, or ticket | `billing/date.go`, `calculateRenewalDate(user, now)`, issue text |
 | Existing tests          | No       | Test files, test names, or "none"                            | `billing/date_test.go`, `renewal.spec.ts`                        |
 | Business rule source    | No       | Spec note, ticket acceptance criteria, or doc excerpt        | "Month-end users renew on the last valid day of target month"    |
 
@@ -43,10 +42,10 @@ If the user gives only a ticket or prose requirement, extract the implied operat
 
 ## Hard Rules
 
-1. **Design WHAT to test, not HOW to code the test**: Output test cases, not test implementation, unless the user explicitly asks for code later.
+1. **Design what to test, not how to code it**: Output test cases, not test code, unless the user explicitly asks for implementation.
 2. **Classify risk domains before generating cases**: Read the artifact and name which categories apply: date/time, boundary values, state transitions, concurrency, library/API gotchas, parsing/formatting, permissions, or external failures.
 3. **Happy path is required but never sufficient**: Always include boundary, edge, error, and abnormal-condition cases for every applicable category.
-4. **Every case needs an oracle**: Each test case must state expected behavior, not just input data.
+4. **Every case needs an oracle**: State the expected behavior for every test case, not only the input data.
 5. **Library semantics are part of test design**: If the implementation relies on standard library or framework behavior, add at least one case that confirms normalization, coercion, mutation, defaulting, panic/throw, or timezone semantics.
 6. **Record uncertainty explicitly**: If business behavior is unclear, create an `Open Question` instead of inventing an expectation.
 7. **Gap analysis is mandatory when tests exist**: Mark each planned case as `covered`, `partial`, or `missing` against the current test suite.
@@ -79,7 +78,7 @@ Existing Test Surface: [files or "none"]
 Unknowns: [missing rules, or "none"]
 ```
 
-**Gate 1 — Pass only when ALL are true:**
+**Gate 1 (pass only when ALL are true):**
 
 - [ ] Scope and source files are explicit
 - [ ] The operation under test is stated in one sentence
@@ -116,7 +115,7 @@ Failure Surface: month-end normalization changes Feb 29/30/31 into March dates
 Library Dependency: Go time.Time.AddDate
 ```
 
-**Gate 2 — Pass only when ALL are true:**
+**Gate 2 (pass only when ALL are true):**
 
 - [ ] Every selected category is tied to a concrete operation
 - [ ] Library/framework behavior is named where relevant
@@ -134,10 +133,10 @@ Create 1-3 happy-path cases that prove the intended flow works for representativ
 
 For each applicable category, generate cases in this order:
 
-1. **Boundary** — first legal value, last legal value, just-outside value
-2. **Edge** — calendar anomalies, empty values, zero values, invalid combinations, duplicate delivery, missing dependencies
-3. **Error / abnormal** — rejected input, thrown/panic path, timeout, parse failure, dependency failure
-4. **Library gotcha** — normalization, coercion, mutation, silent default, timezone/local-time behavior
+1. **Boundary**: first legal value, last legal value, just-outside value
+2. **Edge**: calendar anomalies, empty values, zero values, invalid combinations, duplicate delivery, missing dependencies
+3. **Error / abnormal**: rejected input, thrown/panic path, timeout, parse failure, dependency failure
+4. **Library gotcha**: normalization, coercion, mutation, silent default, timezone/local-time behavior
 
 Every generated row must include:
 
@@ -182,7 +181,7 @@ Examples:
 
 **Oracle validation loop:** Inspect every generated row's `Expected Behavior`. For a missing or non-observable oracle, trace the evidence and add the expected outcome; if the rule is genuinely unclear, move the scenario to `Open Questions` rather than retaining an oracle-less case. Re-check the full table and repeat until every retained case has an explicit oracle.
 
-**Gate 3 — Pass only when ALL are true:**
+**Gate 3 (pass only when ALL are true):**
 
 - [ ] Every applicable category produced concrete rows or an explicit `not applicable`
 - [ ] Existing coverage is marked `covered`, `partial`, or `missing`
@@ -193,7 +192,10 @@ Examples:
 
 ## Gotchas
 
-- Test the business contract over library documentation, target calendar anomalies rather than random dates, and do not infer boundary/oracle coverage from happy-path or similarly named tests.
+- Test the business contract, not the library's documented behavior: a case that asserts "matches `AddDate`" passes even when the business rule says otherwise.
+- Month arithmetic normalizes instead of clamping in common libraries: Go `AddDate(0, 1, 0)` and JavaScript `setMonth` turn Jan 31 + 1 month into early March. Always include Jan 29/30/31 and Feb 29 anchors when dates are added.
+- Pick calendar anomalies (month ends, leap days, DST transitions) deliberately; random dates almost never hit them.
+- A happy-path test or a similarly named test does not cover a boundary or oracle; mark it `partial` until the exact scenario and expected value match.
 
 ## Output Contract
 
@@ -209,8 +211,8 @@ On completion, return these sections in order:
 | --- | --- | --- | --- | --- | --- | --- | --- |
 ```
 
-4. **Coverage Gaps Summary** — grouped by `missing` and `partial`
-5. **Open Questions** — only if expectations are unclear
-6. **Recommended Execution Order** — `P0` first, then `P1`, then the rest
+4. **Coverage Gaps Summary**: grouped by `missing` and `partial`
+5. **Open Questions**: included when expected behavior is unspecified
+6. **Recommended Execution Order**: `P0` first, then `P1`, then the rest
 
 When date/time, boundary, concurrency, library, or state-machine logic appears in the artifact, consult [references/test-taxonomies.md](references/test-taxonomies.md) before finalizing the table.
