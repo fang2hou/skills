@@ -24,7 +24,7 @@ Project-specific overrides:
 
 - `.github/` — GitHub Actions workflows and the pull request template.
 - `scripts/` — repository validation scripts, including `check-skills.sh`.
-- `skills/` — the seven installable Agent Skills; each has a `SKILL.md` and may have one-level `references/` content.
+- `skills/` — the eight installable Agent Skills; each has a `SKILL.md` and may have one-level `references/` content.
 
 ## Boundaries
 
