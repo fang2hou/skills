@@ -1,17 +1,19 @@
 # Review Criteria
 
-Review dimensions for Phase 2 (Think). This is NOT a checklist to mechanically apply — it's a thinking framework. The weight you give each dimension depends on the change type, as defined in the SKILL.md context-rigor table.
+Review dimensions for Phase 2. Weight each dimension according to the change type in the `SKILL.md` rigor table rather than applying every check mechanically.
+
+Contents: how to use · dimensions 1–10 (correctness, error handling, security, type safety, API design, concurrency, complexity, performance, naming, downstream impact) · severity framework
 
 ## How to Use This Reference
 
 1. Identify the change type (hotfix, library, new feature, refactor, config)
 2. Check the rigor matrix in SKILL.md to know which dimensions matter most
 3. For each dimension your change type requires, read the guidance below
-4. **Adapt, don't follow blindly** — if the project has a reason to deviate, respect that reason
+4. **Adapt to project context**: if the project has a documented reason to deviate, respect it.
 
 ## Review Dimensions
 
-### 1. Correctness (Universal — always check)
+### 1. Correctness (Universal: always check)
 
 **The only dimension that applies to every change type equally.** A wrong hotfix is worse than no hotfix.
 
@@ -24,7 +26,7 @@ Review dimensions for Phase 2 (Think). This is NOT a checklist to mechanically a
 
 **When to research**: If the logic involves domain-specific rules (tax calculation, authentication flow, encoding), verify your understanding before flagging something as "wrong."
 
-### 2. Error Handling (Universal — always check)
+### 2. Error Handling (Universal: always check)
 
 **Think about**:
 
@@ -32,7 +34,7 @@ Review dimensions for Phase 2 (Think). This is NOT a checklist to mechanically a
 - Does the error carry enough context for someone debugging at 3am?
 - In library code: does the error type make sense for downstream consumers? Could an error path cause a panic?
 
-**Nuance for different contexts**:
+**By change type**:
 
 - **Hotfix**: Focus on "does the error path make the situation worse?" If the error handling is imperfect but doesn't make things worse, note it but don't block.
 - **Library**: Every public error is a compatibility commitment. Changing error types is a breaking change. Adding new error variants is usually fine.
@@ -60,9 +62,9 @@ Not every change needs a security review. Focus on:
 
 **Context-dependent**:
 
-- **Library**: Type safety is part of the API contract. An `interface{}` / `any` in a public API forces every caller to do their own type checking — that's a design smell.
+- **Library**: Type safety is part of the API contract. An `interface{}` or `any` in a public API forces every caller to write their own type checks.
 - **Hotfix**: If the existing code already has weak typing, fixing it is scope creep. Note it, don't fix it.
-- **Rust specific**: `.clone()` to satisfy the borrow checker is sometimes the right answer. Don't flag every clone — flag clones that mask an ownership design problem.
+- **Rust specific**: `.clone()` to satisfy the borrow checker is sometimes appropriate. Flag clones that mask an ownership design bug, not every clone on sight.
 
 ### 5. API Design
 
@@ -135,11 +137,11 @@ Not every change needs a security review. Focus on:
 - Could this change cause panics in consuming applications?
 - Is there a deprecation path, or is this a silent breaking change?
 
-**When to research**: For library changes, actually search for downstream consumers. Don't assume. If you can't find consumers (closed-source), be conservative — assume the most fragile usage pattern.
+**When to research**: For library changes, search for downstream consumers rather than assuming. If consumers aren't visible (e.g., external callers), assume fragile usage patterns.
 
 ## Severity Framework
 
-Severity is not absolute — it depends on context:
+Severity depends on the change type:
 
 | Context     | Critical                                      | Warning                         | Suggestion        |
 | ----------- | --------------------------------------------- | ------------------------------- | ----------------- |

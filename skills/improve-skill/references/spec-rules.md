@@ -7,6 +7,7 @@ Validation checklist derived from the Agent Skills specification. Run this check
 - Frontmatter validation
 - Directory structure
 - Content rules
+- Client constraints
 - Quality recommendations
 - Validation outcome
 
@@ -30,6 +31,7 @@ Validation checklist derived from the Agent Skills specification. Run this check
 - [ ] Describes what the skill does
 - [ ] Describes when to use it
 - [ ] Includes specific keywords that help agents identify relevant tasks
+- [ ] Contains no XML tags or `<` / `>` characters
 
 ### license (Optional)
 
@@ -59,9 +61,9 @@ Validation checklist derived from the Agent Skills specification. Run this check
 - [ ] `SKILL.md` exists at the root of the skill directory
 - [ ] Directory name matches the `name` field in frontmatter
 - [ ] Optional subdirectories follow convention:
-  - `scripts/` — executable code
-  - `references/` — additional documentation
-  - `assets/` — templates, images, data files
+  - `scripts/`: executable code
+  - `references/`: additional documentation
+  - `assets/`: templates, images, data files
 - [ ] No deeply nested reference chains: links resolve at most one level from SKILL.md; reference files do not require another reference to be loaded
 
 ## C. Content Rules
@@ -74,20 +76,30 @@ Validation checklist derived from the Agent Skills specification. Run this check
 - [ ] Detailed reference material is split into separate files, not inlined
 - [ ] Progressive disclosure structure: metadata (~100 tokens) → instructions (<5000 tokens) → resources (on demand)
 
-## D. Quality Recommendations
+## D. Client Constraints
+
+Not in the open specification, but enforced by at least one major client. A violation blocks portability, so treat it as FAIL unless the skill documents a single target client.
+
+- [ ] `name` does not contain `anthropic` or `claude`
+- [ ] Frontmatter keys are limited to `name`, `description`, `license`, `compatibility`, `metadata`, and `allowed-tools`; any other key (for example `when_to_use`, `disable-model-invocation`, `argument-hint`, `context`) is justified by a named target client
+- [ ] `allowed-tools`, when present, lists only tools the workflow uses; some clients pre-approve these tools without a trust prompt
+
+## E. Quality Recommendations
 
 These are not strict spec rules, but strongly recommended:
 
-- [ ] Description front-loads the key use case (first 50 chars should convey purpose)
-- [ ] Description stays under 250 characters for efficient listing display
+- [ ] Description front-loads the key use case in its first sentence
+- [ ] Description stays near 250 characters so listing truncation does not cut the use case
 - [ ] Scripts in `scripts/` are self-contained or clearly document dependencies
 - [ ] Scripts include helpful error messages for common failure modes
 - [ ] Reference files are focused and individually useful (not monolithic)
+- [ ] Reference files over 100 lines start with a contents list
+- [ ] Constraints carry reasons; no ALL-CAPS or stacked MUST/NEVER without one
 - [ ] Instructions include step-by-step guidance
 - [ ] Common edge cases are documented
 - [ ] Inputs and expected outputs are explicitly described
 
-## E. Validation Outcome
+## F. Validation Outcome
 
 For each check:
 
@@ -95,6 +107,6 @@ For each check:
 - **WARN**: Condition is partially met or a recommendation is not followed
 - **FAIL**: Required condition is not met (blocks spec compliance)
 
-Only items in sections A-C can produce FAIL outcomes. Section D items produce WARN at most.
+Only items in sections A-D can produce FAIL outcomes. Section E items produce WARN at most.
 
-A skill is **spec-compliant** when all A-C checks pass. A skill is **recommended-compliant** when all A-D checks pass.
+A skill is **spec-compliant** when all A-C checks pass, **portable** when A-D pass, and **recommended-compliant** when all A-E checks pass.

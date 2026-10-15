@@ -10,6 +10,7 @@
 - [5. Grade and analyze](#5-grade-and-analyze)
 - [6. Read execution traces](#6-read-execution-traces)
 - [Trigger eval when description changed](#trigger-eval-when-description-changed)
+- [Blind comparison](#blind-comparison)
 - [Cross-configuration coverage](#cross-configuration-coverage)
 - [Evidence record](#evidence-record)
 
@@ -29,17 +30,18 @@ Use **trigger eval** only for description activation testing; use **output-quali
 3. Record the snapshot identifier and timestamp in the evidence record. Do not reconstruct a baseline from the edited files.
 4. Keep the improved directory and baseline snapshot otherwise identical. If an input fixture must change, copy the same fixture into both runs and record the change.
 
-A compact run manifest can be plain JSON:
+Keep run outputs outside the skill directory so they never ship. Use the agentskills.io layout, with the snapshot as `old_skill`:
 
-```json
-{
-  "skill": "improve-skill",
-  "baseline_snapshot": "baseline/improve-skill-before",
-  "improved_path": "skills/improve-skill",
-  "fresh_context": true,
-  "cases": ["case-1", "case-2"]
-}
+```text
+<skill-name>-workspace/
+└── iteration-1/
+    ├── eval-<case-id>/
+    │   ├── with_skill/{outputs/, timing.json, grading.json}
+    │   └── old_skill/{outputs/, timing.json, grading.json}
+    └── benchmark.json
 ```
+
+If the skill keeps authored cases in `evals/evals.json`, reuse them and add new cases there.
 
 ## 2. Design realistic cases
 
@@ -60,11 +62,13 @@ Use the same prompt and inputs for the improved and baseline runs. Avoid adding 
 
 ## 3. Run improved and baseline versions
 
-1. Start a fresh context for the improved version and run the case once.
-2. Start another fresh context for the baseline snapshot and run the identical case once.
+1. Launch the improved run and the baseline run for every case at the same time, each in its own fresh context (a subagent or new session). Sequential runs let files, caches, or remote state drift between configurations.
+2. Give both runs the identical prompt and inputs; the only difference is which skill directory is loaded.
 3. Repeat both configurations for a second trial when behavior may vary. A third trial is useful for a high-risk or nondeterministic case.
-4. Capture final outputs, changed files, execution traces, elapsed time, and token or line-cost measurements available from the harness.
+4. As each run reports completion, write its tokens and duration to `timing.json` immediately; some harnesses expose those figures only in the completion notification. Capture final outputs, changed files, and execution traces.
 5. Never treat a successful process exit as proof that the output satisfies the case.
+
+For skills with external side effects (pushing, deleting branches, changing repository settings), run trial cases in plan or dry-run mode against a disposable fixture, and stop each run at the skill's confirmation gate. Grade the plan the agent would have executed.
 
 Use a run record with one row per configuration and trial:
 
@@ -103,14 +107,15 @@ Do not use “output is good,” subjective polish, or brittle exact-phrase matc
 
 ## 5. Grade and analyze
 
-Grade every assertion for every trial as PASS or FAIL. Quote the smallest output or trace excerpt that proves the result, and include the path or line range so another reviewer can reproduce it.
+Grade every assertion for every trial as PASS or FAIL. Use a script for mechanical checks (file exists, JSON parses, exit code). For the rest, quote the smallest output or trace excerpt that proves the result, and include the path or line range so another reviewer can reproduce it. An assertion without supporting evidence fails. In `grading.json`, record each assertion with the fields `text`, `passed`, and `evidence`.
 
 ```json
 {
   "assertion": "A-1",
   "configuration": "improved",
   "trial": 1,
-  "result": "PASS",
+  "text": "Every reference link in the report resolves to a non-empty file.",
+  "passed": true,
   "evidence": "references/trial-run.md exists and is non-empty"
 }
 ```
@@ -121,6 +126,8 @@ Apply these four pattern-analysis rules:
 2. Investigate assertions that fail in both configurations; the assertion may be broken or the case may be too hard.
 3. Study assertions that pass only with the improved version; they are the clearest evidence of capability gain.
 4. Tighten instructions when the same case passes inconsistently across runs; inconsistency usually signals ambiguity, not luck.
+
+If pass rates stay flat while the improvement added rules, test a version with those rules removed; an over-constrained skill often improves when instructions are cut.
 
 Compare the improved and baseline scorecards, then explain which flips matter to the user's task. Record cost and latency deltas beside the capability evidence rather than hiding them.
 
@@ -134,13 +141,13 @@ Read traces step by step, not only the final answer. Mark a step when the agent:
 - branches through an option menu instead of choosing a default;
 - skips a validator, repeats a failed action, or cannot identify the expected value.
 
-Map each recurring correction to one focused instruction or Gotcha in SKILL.md. Do not paste the failed prompt's keywords into the description; generalize the category of failure. Re-run the affected case after the change and keep the baseline unchanged.
+Map each recurring correction to one focused instruction or Gotcha in SKILL.md. Do not paste the failed prompt's keywords into the description; generalize the category of failure. If a problem resists, try a different explanation or working pattern rather than a stronger MUST. Re-run the affected case after the change and keep the baseline unchanged.
 
 ## Trigger eval when description changed
 
-Run a compact trigger eval whenever the improvement changes `description`. Build a labelled query set of roughly 20 realistic queries: about half `should_trigger: true` and half `should_trigger: false`. Positives should vary in phrasing, explicitness, detail, and step count; negatives should be near-misses that share keywords but need another skill.
+Run a compact trigger eval whenever the improvement changes `description`. Build a labelled query set of roughly 20 realistic queries: about half `should_trigger: true` and half `should_trigger: false`. Positives should vary in phrasing, explicitness, detail, and step count, and be substantive: agents usually skip skills for one-step requests they can handle with basic tools. Negatives should be near-misses that share keywords but need another skill; in collection mode, draw them from sibling skills' triggers.
 
-Run each query several times in a fresh context and compute its trigger rate as triggered runs divided by total runs. Treat roughly 0.5 as the useful decision threshold, then inspect borderline cases rather than tuning to one lucky run.
+Run each query about three times in a fresh context and compute its trigger rate as triggered runs divided by total runs. Treat roughly 0.5 as the useful decision threshold, then inspect borderline cases rather than tuning to one lucky run.
 
 Keep a fixed split of about 60% train and 40% validation. Tune only on train, stop after roughly five iterations, and select the iteration with the best validation pass rate, which may not be the last one. Re-check that the description remains within the 1024-character limit after every iteration. Generalize failed queries into category-level wording to avoid keyword overfitting.
 
@@ -156,17 +163,21 @@ Keep a fixed split of about 60% train and 40% validation. Tune only on train, st
 }
 ```
 
+## Blind comparison
+
+When both versions pass the assertions, give an independent judge (a fresh context that does not know which version is which) both outputs unlabelled, with a short rubric written before reading them, and ask which better serves the case. Use this for organization and usefulness, which assertions miss. Report the judge's preference beside the assertion matrix; it does not override a failed assertion.
+
 ## Cross-configuration coverage
 
 A skill augments the model and harness running it, so an improvement can help one configuration and hurt another. Add this step only when the target skill runs in more than one configuration; otherwise state that a single configuration is in scope.
 
-Re-run the smallest revealing subset — usually two cases plus any borderline trigger query — in each reasoning strength and each agent implementation the skill must support. Do not re-run everything. Then read failures by configuration instead of averaging them:
+Re-run the smallest revealing subset (usually two cases plus any borderline trigger query) in each reasoning strength and each agent implementation the skill must support. Do not re-run everything. Then read failures by configuration instead of averaging them:
 
 - Fails only on a lower-reasoning configuration: the change relies on inference the model does not perform. Restore the missing step, default, or worked example.
 - Fails only on a higher-reasoning configuration: the change over-constrains or over-explains, so the model follows instructions that do not apply. Cut them; this is a context-cost regression under Hard Rule 7.
 - Fails only on one agent implementation: the change assumed a tool, path, or runtime behavior that implementation lacks. Describe the action generically and move the real requirement into `compatibility`.
 
-Keep a single instruction set that works everywhere; fork per configuration only when a documented environment requirement makes one instruction impossible. Record which configurations were exercised — an untested configuration is an unknown, not a pass.
+Keep a single instruction set that works everywhere; fork per configuration only when a documented environment requirement makes one instruction impossible. Record which configurations were exercised; an untested configuration is an unknown, not a pass.
 
 ## Evidence record
 

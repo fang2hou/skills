@@ -2,6 +2,8 @@
 
 Full validation checklist for Agent Skills. Run during Phase 3 (Validation).
 
+Contents: A. Frontmatter · B. Directory structure · C. Content quality · D. Instruction quality · E. Progressive disclosure · F. Imported criteria policy · Validation outcome
+
 ## A. Frontmatter Validation
 
 ### name (Required)
@@ -21,12 +23,14 @@ Full validation checklist for Agent Skills. Run during Phase 3 (Validation).
 - [ ] Describes what the skill does
 - [ ] Describes when to use it
 - [ ] Includes specific keywords for agent matching
+- [ ] Contains no `<` or `>` characters
 
 ### Optional fields
 
 - [ ] `license`: Short name or file reference (if present)
 - [ ] `compatibility`: 1-500 chars, only if specific requirements exist (if present)
 - [ ] `metadata`: String keys to string values (if present)
+- [ ] No client-only fields (for example `when_to_use`, `disable-model-invocation`, `context`) unless the user targets that client
 
 ## B. Directory Structure
 
@@ -45,7 +49,8 @@ Full validation checklist for Agent Skills. Run during Phase 3 (Validation).
 - [ ] All file references resolve to existing files
 - [ ] No placeholder or TODO sections remain
 - [ ] No instruction lacks a condition, a default, or a verifiable result (signal phrases: "handle appropriately", "as needed", "ensure quality", "follow best practices")
-- [ ] Every section contains actionable content
+- [ ] No two instructions conflict without a stated precedence or exception
+- [ ] Every section contains concrete, executable guidance
 
 ## D. Instruction Quality
 
@@ -60,6 +65,7 @@ Full validation checklist for Agent Skills. Run during Phase 3 (Validation).
 - [ ] Detailed reference material is split into `references/`
 - [ ] SKILL.md links to references with context (when to load each file)
 - [ ] Reference files are focused and individually useful (not monolithic)
+- [ ] Reference files over 100 lines start with a contents list
 - [ ] Estimated token count: SKILL.md ~100-5000, references loaded on demand
 
 ## F. Imported Criteria Policy
@@ -69,7 +75,8 @@ The following new checks are mandatory workflow requirements and can be **FAIL**
 - [ ] **No time-sensitive content:** instructions do not depend on dates or temporary API behavior; superseded guidance is clearly labelled as deprecated/old patterns
 - [ ] **Forward-slash relative paths:** every path uses `/` and is relative to the skill root
 - [ ] **Gotchas in SKILL.md:** non-obvious facts that affect execution are visible in the navigation hub
-- [ ] **Trial-run evidence recorded:** the output states what was run, the with-skill and baseline outcomes, and what changed as a result
+- [ ] **Trial-run evidence recorded:** the output states what was run, the with-skill and baseline outcomes, token and time deltas, and what changed as a result
+- [ ] **No surprises:** the skill does only what its description says; it embeds no secrets or hidden network calls, and every external side effect follows an explicit confirmation step
 - [ ] **Script design (only when `scripts/` exists):** scripts meet the non-interactive, interface, robustness, and packaging requirements in `references/script-design.md`
 
 The following imported checks are quality recommendations and produce **WARN** at most:
@@ -78,6 +85,7 @@ The following imported checks are quality recommendations and produce **WARN** a
 - [ ] **Calibration:** sections with different fragility use high freedom or low freedom instructions appropriately
 - [ ] **Defaults, not menus:** one default approach is selected wherever alternatives exist
 - [ ] **Consistent terminology:** one term is used for each concept throughout the skill and references
+- [ ] **Reasons instead of emphasis:** constraints carry a reason; no ALL-CAPS or stacked MUST/NEVER directives without one
 
 Sections A-C and the mandatory checks above can FAIL. Sections D-E and the advisory checks
 above produce WARN at most. Apply the script check only when the skill ships `scripts/`.

@@ -41,12 +41,12 @@ Install the skills globally, select the skills for the coding agents on a machin
 
 | Skill                                                | Description                                                                                        |
 | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| [create-skill](skills/create-skill/)                 | Creates spec-compliant Agent Skills from requirements to delivery                                  |
+| [create-skill](skills/create-skill/)                 | Creates spec-compliant Agent Skills from requirements to evaluated delivery                        |
 | [figcraft](skills/figcraft/)                         | Drives FigCraft (the Rust design tool) via CLI, MCP, or control channel to edit and export designs |
 | [git-branch-cleanup](skills/git-branch-cleanup/)     | Cleans up local worktrees and branches proved merged into the remote default or integration branch |
 | [github-repo-baseline](skills/github-repo-baseline/) | Applies the standard settings baseline to a GitHub repository via the gh CLI                       |
 | [herdr-parallel-dev](skills/herdr-parallel-dev/)     | Orchestrates parallel multi-agent development with Herdr (one worktree per task)                   |
-| [improve-skill](skills/improve-skill/)               | Audits and improves Agent Skills for spec compliance and clarity                                   |
+| [improve-skill](skills/improve-skill/)               | Audits and improves existing Agent Skills against a baseline run                                   |
 | [review-and-fix](skills/review-and-fix/)             | Senior-level diff review with an interactive fix workflow                                          |
 | [test-design](skills/test-design/)                   | Designs structured test cases and coverage gaps from code, specs, or tickets                       |
 

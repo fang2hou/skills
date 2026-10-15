@@ -11,6 +11,16 @@ Use this guide before adding `scripts/` to a skill. Scripts are part of the skil
 interface: an agent must be able to run them, interpret them, and retry them without a
 conversation with the author.
 
+Add a script when trial-run traces show the agent rewriting the same logic on every run, or
+when the result must be deterministic (validation, parsing, format conversion). Otherwise
+prefer instructions. A script's source does not enter context when the agent only runs it;
+its output does.
+
+In `SKILL.md`, list each script and say whether the agent should execute it ("Run
+`scripts/validate.py <file>`") or read it as reference ("See `scripts/validate.py` for the
+rules it applies"). Ambiguity here makes agents read long scripts into context or rewrite
+them instead of running them.
+
 ## Hard requirements
 
 ### Non-interactive execution

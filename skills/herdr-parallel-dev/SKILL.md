@@ -1,15 +1,15 @@
 ---
 name: herdr-parallel-dev
 description: >
-  Parallel multi-agent development with Herdr: one worktree per task in the
-  project's own herdr space, one agent each, accept-or-send-back review,
-  landing as an integration branch or sequential CI-gated PRs, then safe
-  cleanup. Requires HERDR_ENV=1.
+  Runs parallel multi-agent development with Herdr: one worktree and agent per
+  task in the project's herdr space, accept-or-send-back review,
+  integration-branch or CI-gated PR landing, then cleanup. Use for multi-task
+  fan-out when HERDR_ENV=1.
 license: MIT
 compatibility: Requires HERDR_ENV=1, herdr CLI, git, gh, jq, Bash, and standard POSIX utilities inside a Herdr-managed pane.
 metadata:
   author: fang2hou
-  version: "2.1"
+  version: "2.2"
   sources: "Incident-proven workflow (2026-08-17 multi-project worktree misadventure + 3-PR sequential merge); herdr CLI behavior verified 2026-08-18"
 ---
 
@@ -26,9 +26,10 @@ Run N independent repo tasks as N herdr agents, each in its own git worktree tha
 
 ## When NOT to Use
 
-- Single sequential task — use a plain herdr agent in a sibling pane; no worktree is needed.
+- Single sequential task: use a plain herdr agent in a sibling pane; no worktree is needed.
 - Remote branch management or repo settings (out of scope).
-- The base herdr CLI reference — read the `herdr` skill first (install: `npx skills add ogulcancelik/herdr -g`; docs: https://herdr.dev/docs/cli-reference/). This skill adds only the multi-worktree orchestration layer.
+- Cleaning up branches or worktrees left by earlier sessions: use git-branch-cleanup. Step 9 here cleans only this run's objects.
+- Base herdr CLI reference: read the `herdr` skill first (install: `npx skills add ogulcancelik/herdr -g`; docs: https://herdr.dev/docs/cli-reference/). This skill adds only the multi-worktree orchestration layer.
 
 ## Inputs
 
@@ -43,7 +44,7 @@ Cap concurrency at 8 worktrees: queue anything beyond that and dispatch each que
 
 ## Forge boundaries
 
-The `gh` commands in this skill are **GitHub-forge-specific**: they are the verified baseline for GitHub-hosted repositories, not a requirement of the worktree, branch, validation, or cleanup rules. Load [Forge Adaptation](references/forge-adaptation.md) — **WHEN to load:** before Step 1 when the repository is not GitHub-hosted, `gh` is unavailable, or forge behavior differs. Use only a verified client or API that achieves the same review, merge, CI, and recovery outcomes; do not invent substitute commands.
+The `gh` commands in this skill are **GitHub-forge-specific**: they are the verified baseline for GitHub-hosted repositories, not a requirement of the worktree, branch, validation, or cleanup rules. Load [Forge Adaptation](references/forge-adaptation.md) before Step 1 when the repository is not GitHub-hosted, `gh` is unavailable, or forge behavior differs. Use only a verified client or API that achieves the same review, merge, CI, and recovery outcomes; do not invent substitute commands.
 
 ## Tool response contract
 
@@ -51,13 +52,13 @@ Herdr JSON responses used here expose the fields needed to rebuild the run table
 
 ## Hard Rules
 
-1. **NEVER let herdr guess the repo.** Every `worktree create` binds the repo explicitly with `--workspace <project-space-id>` (preferred — the project's own herdr space) or `--cwd <absolute-project-path>`. With neither, herdr can resolve its focused/recent project and create worktrees in a DIFFERENT repo. A workspace ID is trustworthy only when returned by `herdr worktree list --cwd "$PROJECT"` or from a space opened for `$PROJECT`, never from sidebar order or memory.
+1. **Never let herdr guess the repo.** Every `worktree create` binds the repo explicitly with `--workspace <project-space-id>` (preferred: the project's own herdr space) or `--cwd <absolute-project-path>`. With neither, herdr can resolve its focused/recent project and create worktrees in a different repo. A workspace ID is trustworthy only when returned by `herdr worktree list --cwd "$PROJECT"` or from a space opened for `$PROJECT`, never from sidebar order or memory.
 2. **Let herdr own the layout.** Use no `--path` (herdr places checkouts under `~/.herdr/worktrees/<repo>/<branch-slug>`), no `--label` (the branch is the sidebar handle), and `--no-focus` while dispatching. Switch with `herdr worktree open --cwd "$PROJECT" --branch <b> --focus` or `herdr workspace focus <id>`.
 3. **Verify every worktree before dispatching** with `<this-skill-dir>/scripts/verify-worktrees.sh "$PROJECT" <created-paths...>` (omit paths to auto-discover). A wrong origin URL means remove it, fix the binding, and recreate; never improvise on the wrong repo.
 4. **Every agent prompt starts with a GUARD block:** the agent runs `git remote get-url origin` and confirms one known path exists, then stops and reports if either check fails. Agents are the second defense; one once caught a mismatch the dispatcher missed.
 5. **One worktree = one branch = one agent.** Never share a worktree.
 6. **Agents start blank.** Every prompt is self-contained: guard, ground truth (files/line pointers), task, verification steps, commit rules, repo conventions from AGENTS.md, and “decide and document; do not ask.”
-7. **Nothing lands on a red gate.** Never merge while target CI is red or advance to the next branch on a red run. A green Deploy does NOT substitute for CI.
+7. **Nothing lands on a red gate.** Never merge while target CI is red or advance to the next branch on a red run. A green Deploy does not substitute for CI; only the CI workflow proves the project's checks passed.
 8. **Retire before removing.** Stop the agent (`send-keys ctrl+c`, then `ctrl+d`; confirm it left `herdr agent list`) before `herdr worktree remove`, which kills its pane.
 9. **Cleanup deletes only this run's objects**, and only after merge proof (content on target or PR shows merged). Squash-merged local branches need `git branch -D`; anything not tied to a task of this run, including an already-open space, stays.
 
@@ -87,8 +88,8 @@ grep -n "merge" AGENTS.md CONTRIBUTING.md 2>/dev/null | head       # repo merge 
 
 Record default branch, merge method (squash unless the repo says otherwise), head auto-delete behavior, and workflow names that must be green. Choose with the user's request as the deciding input:
 
-- **`integration`** — every task branches off one work branch not yet on default; children merge back and ship as one PR.
-- **`pr`** — every task ships its own PR to default.
+- **`integration`**: every task branches off one work branch not yet on default; children merge back and ship as one PR.
+- **`pr`**: every task ships its own PR to default.
 
 Bind the mode's base once and carry it in the run table:
 
@@ -163,7 +164,7 @@ herdr agent get <name>                     # idle | working | blocked | done
 herdr agent read <name> --source visible --lines 12   # TUI agents: viewport only
 ```
 
-Loop `wait` in ~5-minute cycles. Full-screen agents use the alternate screen, so `recent-unwrapped` is not useful; read `visible`. On `blocked` (approval/question UI), read the pane and resolve via `agent prompt` or `send-keys`. An agent in the WRONG repo gets `send-keys <name> ctrl+c` immediately; verify the foreign worktree is clean before touching it.
+Loop `wait` in ~5-minute cycles. Full-screen agents use the alternate screen, so `recent-unwrapped` is not useful; read `visible`. On `blocked` (approval/question UI), read the pane and resolve via `agent prompt` or `send-keys`. An agent in the wrong repo gets `send-keys <name> ctrl+c` immediately; verify the foreign worktree is clean before touching it.
 
 **Stall escalation:** `working` across two cycles (~10 min) with zero worktree changes (`git status --porcelain` before/after), or over ~60 min total, means read the pane and steer with a specific prompt. Still unresponsive → `ctrl+c` and take over in that worktree.
 
@@ -182,13 +183,13 @@ Run the repo gate in the worktree, then decide: **Accept** marks the row accepte
 
 ### Step 7: Land
 
-#### Phase A — Plan (Gate 7A)
+#### Phase A: Plan (Gate 7A)
 
 Order accepted branches by dependency edges first, then risk: isolated infra first for attribution; docs/style second as the baseline; widest-surface feature last so it rebases onto the final baseline. Write ordered branches, target base, landing mode, and rationale in the run and landing tables. The user decides ambiguous mode/order.
 
 **Gate 7A:** every row is accepted or explicitly dropped, every branch is tied to this run, and mode/base/order are recorded before any merge.
 
-#### Phase B — Validate (Gate 7B)
+#### Phase B: Validate (Gate 7B)
 
 ```bash
 for b in <ordered branches>; do
@@ -197,13 +198,13 @@ for b in <ordered branches>; do
 done
 ```
 
-Confirm touched files match tasks, no dropped task is included, the repository gate is green, and required review checks are green. In GitHub mode, `gh pr list --head <branch>` and run-status queries are the forge-specific baseline; use a verified equivalent elsewhere (load [Forge Adaptation](references/forge-adaptation.md) — **WHEN to load:** before this phase when the forge is not GitHub).
+Confirm touched files match tasks, no dropped task is included, the repository gate is green, and required review checks are green. In GitHub mode, `gh pr list --head <branch>` and run-status queries are the forge-specific baseline; use a verified equivalent elsewhere (load [Forge Adaptation](references/forge-adaptation.md) before this phase when the forge is not GitHub).
 
 **Gate 7B:** stop on unexpected scope/review state, required checks, or mergeability; record evidence before proceeding.
 
-#### Phase C — Execute (Gate 7C)
+#### Phase C: Execute (Gate 7C)
 
-**Mode `integration`** — children collapse into the work branch, which ships as one review request:
+**Mode `integration`** (children collapse into the work branch, which ships as one review request):
 
 ```bash
 git -C "$PROJECT" checkout <work-branch> && git -C "$PROJECT" pull --ff-only
@@ -218,13 +219,13 @@ git -C "$PROJECT" push
 gh pr create --base <default> --head <work-branch>  # GitHub-forge-specific
 ```
 
-**Mode `pr`** — one review request per task, strictly sequential and CI-gated. This is GitHub-forge-specific baseline syntax:
+**Mode `pr`** (one review request per task, strictly sequential and CI-gated; GitHub-forge-specific baseline syntax):
 
 ```bash
 gh pr merge <N> --squash                          # 1. merge, per repo convention
 gh run list --branch <default> --limit 2 --json databaseId,name
-gh run watch <ci-run-id> --exit-status            # 2. MUST be green (Hard Rule 7)
-git -C <next-worktree> fetch origin --prune       # 3. rebase the NEXT branch
+gh run watch <ci-run-id> --exit-status            # 2. green required (Hard Rule 7)
+git -C <next-worktree> fetch origin --prune       # 3. rebase the next branch
 git -C <next-worktree> rebase origin/<default>
 git -C <next-worktree> push --force-with-lease
 # 4. required checks COMPLETED/SUCCESS and mergeability CLEAN, then repeat
@@ -232,11 +233,11 @@ git -C <next-worktree> push --force-with-lease
 
 Another forge's equivalent must merge exactly one accepted review request, identify and await its required CI checks, and rebase the next branch only after green checks. Never advance on a red or ambiguous result.
 
-**Gate 7C:** after each merge, observe proof that expected content is on the target and required CI is green; record merge/run identifiers before advancing. Load [Conflict Resolution](references/conflict-resolution.md) — **WHEN to load:** when a Step 7 rebase reports conflicts. Load [CI Failure Triage](references/ci-triage.md) — **WHEN to load:** when a landing gate is red or a run needs classification.
+**Gate 7C:** after each merge, observe proof that expected content is on the target and required CI is green; record merge/run identifiers before advancing. Load [Conflict Resolution](references/conflict-resolution.md) when a Step 7 rebase reports conflicts. Load [CI Failure Triage](references/ci-triage.md) when a landing gate is red or a run needs classification.
 
 ### Step 8: Post-merge consistency audit
 
-Once everything is on the target branch and green: (1) **sync** — for squash merges compare each squash commit with its branch tip's touched files; (2) **coherence** — ADR index, architecture map, README/DEVELOPMENT commands, `mise.toml`/`package.json`, and shared concepts agree (`git log --oneline` plus targeted `git show <squash> -- <shared-files>`); (3) **style propagation** — if an early branch changed global style and a later branch touched the same files, verify conformance. Rebase merges CONTENT, not INTENT; re-prompt the later agent with “realign <files> to the structure from commit <A-squash>, keep B's facts, zero code changes,” then land the follow-up.
+Once everything is on the target branch and green: (1) **sync**: for squash merges, compare each squash commit with its branch tip's touched files; (2) **coherence**: check that the ADR index, architecture map, README/DEVELOPMENT commands, `mise.toml`/`package.json`, and shared concepts agree (`git log --oneline` plus targeted `git show <squash> -- <shared-files>`); (3) **style propagation**: if an early branch changed global style and a later branch touched the same files, verify conformance. Rebase merges content, not intent; re-prompt the later agent with “realign <files> to the structure from commit <A-squash>, keep B's facts, zero code changes,” then land the follow-up.
 
 ### Step 9: Retire agents, then remove worktrees
 
@@ -246,7 +247,7 @@ Only after merge proof (PR shows merged or content is on target), retire first b
 herdr agent send-keys <name> ctrl+c
 sleep 1
 if herdr agent get <name> >/dev/null 2>&1; then herdr agent send-keys <name> ctrl+d; sleep 2; fi
-herdr agent list | jq -r '.result.agents[].name'   # <name> MUST be absent before removal
+herdr agent list | jq -r '.result.agents[].name'   # <name> must be absent before removal
 herdr worktree remove --workspace <worktree-workspace-id>
 test ! -e <worktree-path> && echo "gone: <worktree-path>"
 herdr worktree list --cwd "$PROJECT" | jq -c '.result.worktrees[] | {branch, path}'
@@ -287,8 +288,8 @@ The bundled `scripts/verify-worktrees.sh` emits data only on stdout and diagnost
 | Agent stalled                   | no worktree change across two ~5-min cycles | Steer specifically, then `ctrl+c` and take over.                                                                                      |
 | Deliverable rejected twice      | same defect after two send-backs            | Take over and record it.                                                                                                              |
 | Rebase conflict, semantic       | conflicting files span a feature            | Hand to that branch's agent with both intents; never drop one side.                                                                   |
-| CI red — infra                  | setup/download/network (HTTP 429)           | GitHub: `gh run rerun <id> --failed`; otherwise use a verified equivalent; re-watch.                                                  |
-| CI red — regression             | failure inside project checks               | Stop landing, fix branch, rerun gates.                                                                                                |
+| CI red (infra)                  | setup/download/network (HTTP 429)           | GitHub: `gh run rerun <id> --failed`; otherwise use a verified equivalent; re-watch.                                                  |
+| CI red (regression)             | failure inside project checks               | Stop landing, fix branch, rerun gates.                                                                                                |
 | `dirty_worktree_requires_force` | `worktree remove` exits 1                   | Inspect/report uncommitted work; keep it; force only once worthless.                                                                  |
 | Interrupted run                 | table lost                                  | Rebuild from worktree/agent lists and GitHub `gh pr list` (or verified review-list equivalent); unmatched objects are someone else's. |
 
@@ -296,7 +297,7 @@ Stop and ask the user when landing mode is ambiguous, a merge needs force-pushin
 
 ## Gotchas
 
-- **`worktree create` without `--workspace` or `--cwd` targets the wrong project** — plausible paths expose the mistake only through `remote get-url origin` (Hard Rule 1).
+- **`worktree create` without `--workspace` or `--cwd` targets the wrong project.** Plausible paths expose the mistake only through `remote get-url origin` (Hard Rule 1).
 - Each create spawns a workspace and opens the project's space if closed; IDs come from JSON, never layout assumptions.
 - `--label` overwrites the branch handle in the sidebar (Hard Rule 2); `--no-focus` documents the API's false default.
 - A fresh pane rejects `agent start` with `agent_pane_busy` until its shell is interactive.
@@ -304,7 +305,7 @@ Stop and ask the user when landing mode is ambiguous, a merge needs force-pushin
 - An `idle`/`done` agent still holds its pane/name until it exits.
 - Squash-merged branches are not ancestors: `-d` refuses them, so `-D` is correct only after merge proof.
 - `deleteBranchOnMerge: true` makes remote heads vanish; local `[gone]` is expected.
-- Resolve rebase conflicts in the rebasing branch's WORKTREE, never the main checkout.
+- Resolve rebase conflicts in the rebasing branch's worktree, never the main checkout, because the main checkout may hold the integration branch or the user's work.
 
 ## Output Contract
 

@@ -7,13 +7,15 @@ with `cargo build --release -p figcraft-cli` →
 `target/release/figcraft-cli`. "The CLI never panics on input." Exit codes:
 bad arguments → usage on stderr and exit 2; failures → exit 1.
 
+Contents: global behavior · subcommands (`info`, `export`, `convert`, `render`, `run`, `commands`, `mcp`, `plugin publish`, `perf`) · related binary
+
 ## Global behavior
 
-- **Fonts** — built-in plus system fonts, identical to the desktop app. The
+- **Fonts**: built-in plus system fonts, identical to the desktop app. The
   first text layout indexes system fonts (~60 ms warm with ~900 files). Every
-  subcommand accepts `--no-system-fonts`; or set `FIGCRAFT_NO_SYSTEM_FONTS=1`
+  subcommand accepts `--no-system-fonts`, or set `FIGCRAFT_NO_SYSTEM_FONTS=1`
   for reproducible CI renders.
-- **File inputs** — every subcommand that reads a file also accepts public
+- **File inputs**: every subcommand that reads a file also accepts public
   REST API file JSON (a `GET /v1/files/:key` response saved as `.json`).
   Image fills load from `images/<imageRef>.png|jpg…` beside the JSON, else a
   grey placeholder. `.fig` files are read best-effort; `info` reports skips
@@ -39,7 +41,7 @@ style/variable/image counts. Repairs and import warnings go to stderr as
   in FigCraft. Omissions (styles, variables, comments, Dev-Mode data) print
   as `note:` lines.
 - SVG/PDF fail with an error (destination kept) when visible descendants
-  exceed 256 levels deep — use `--node` or reduce nesting.
+  exceed 256 levels deep; use `--node` or reduce nesting.
 - PDF: one page per top-level frame in reading order; vector shapes, text,
   gradients; real selectable text with subset fonts; clickable links;
   shadows and blurs rasterized. Print options: `--bleed` (points, or `3mm` /
@@ -75,12 +77,12 @@ Large pages are scaled to fit 16384 px.
 
 Headless command session. Each step replies as one JSON line, e.g.
 `{"command":"frame.create","ok":true,"result":{"id":2},"step":0}`. A failing
-step produces `"ok": false`, exit 1, and nothing is saved — `run` is atomic.
+step produces `"ok": false`, exit 1, and saves nothing (`run` is atomic).
 
 Accepted script formats: a JSON array of `{"command": id, "params": {...}}`,
 an object `{"commands": [...]}`, or JSON lines (blank and `//` comment lines
-skipped). Ids are assigned in order — the first page is 1, the first layer
-is 2. Start from templates via `template.list` / `file.newFromTemplate`.
+skipped). Ids are assigned in order (the first page is 1, the first layer
+is 2). Start from templates via `template.list` / `file.newFromTemplate`.
 
 ```json
 [

@@ -1,29 +1,28 @@
 ---
 name: improve-skill
-description: Audits and improves Agent Skills for spec compliance and clarity. Scores 8 dimensions, drafts an approval-gated plan, and applies changes with self-correction gates. Use when creating, reviewing, or upgrading skills.
+description: Audits and improves existing Agent Skills. Scores 8 quality dimensions, drafts an approval-gated plan, applies changes, and verifies them against a baseline run. Use when reviewing, refactoring, or upgrading a skill or a skill collection.
 license: MIT
 compatibility: Requires file read/write access to modify skills. Works with any agent supporting the Agent Skills standard.
 metadata:
   author: fang2hou
-  version: "1.2"
-  sources: "Agent Skills specification; industry best practices"
+  version: "1.3"
+  sources: "agentskills.io specification, best practices, evaluating-skills, and optimizing-descriptions guides; Anthropic skill authoring best practices"
 ---
 
 # Improve Skill
 
-Analyze, score, and optimize Agent Skills to production quality. Applies a unified 8-dimension quality framework with self-correcting execution gates.
+Analyze, score, and optimize existing Agent Skills to production quality, using an 8-dimension quality framework, approval gates, and baseline comparison.
 
 ## When to Use
 
-- Creating a new skill and want quality assurance from the start
 - Reviewing an existing skill for improvement opportunities
-- Upgrading a skill to meet the Agent Skills specification
-- Refactoring a bloated, unclear, or underperforming skill
-- Auditing quality across a skill collection
+- Upgrading a skill to meet the Agent Skills specification or current authoring guidance
+- Refactoring a bloated, unclear, over-constrained, or under-triggering skill
+- Auditing quality and trigger overlap across a skill collection
 
 ## When NOT to Use
 
-- Tasks that are not about writing, reviewing, or updating Agent Skills
+- Creating a new skill from scratch (use create-skill, which includes its own validation)
 - General code refactors unrelated to skills (use a code-focused refactoring skill instead)
 - Situations where you cannot read the target skill files (this workflow is evidence-based)
 
@@ -33,18 +32,21 @@ Analyze, score, and optimize Agent Skills to production quality. Applies a unifi
 | ------------------- | -------- | ---------------------------- | --------------------------------------- |
 | Invocation argument | No       | Skill path or directory      | `agents/skills/my-skill`, `./my-skill/` |
 | Invocation argument | No       | Skill name (resolver needed) | `my-skill`                              |
+| Invocation argument | No       | Collection directory         | `skills/`                               |
 
 **Cross-platform note**: Clients that expose an invocation argument (for example a `$ARGUMENTS` placeholder) pass the target through it. If no such argument is available or it does not resolve to a skill directory, ask the user for the target skill path.
 
 ## Hard Rules
 
-1. **Preserve intent**: Never alter a skill's core purpose. Optimization improves HOW, not WHAT.
-2. **User approval required**: Present the optimization plan and get explicit approval before modifying files.
-3. **Spec compliance**: All output must conform to the Agent Skills specification.
-4. **No data loss**: Never delete content without relocating it (to references/ or restructuring).
-5. **Measurable improvement**: Every optimization must improve at least one quality dimension score.
+1. **Preserve intent**: Never alter a skill's core purpose. Optimization improves how the skill works, not what it is for.
+2. **User approval required**: Present the optimization plan and get explicit approval before modifying files. A user request that names the targets and asks you to apply improvements approves intent-preserving changes; renaming a skill, changing its `name`, removing a capability, or deleting a file still needs separate approval.
+3. **Spec compliance**: All output conforms to the Agent Skills specification.
+4. **No data loss**: Do not delete content without relocating it (to `references/` or restructuring), unless the content is agent-known, duplicated, or demonstrably harmful; record each such removal and its reason in the report.
+5. **Measurable improvement**: Every optimization improves at least one quality dimension score.
 6. **Gate discipline**: Do not proceed past a gate until all its conditions are met.
 7. **Context-cost discipline**: Do not increase context cost without a corresponding capability gain; removing content the agent already knows is an improvement.
+
+Rule 4's exception and Rule 7 work together: cutting agent-known or harmful text is allowed and encouraged, but cutting a domain fact, gotcha, or safety rule is data loss.
 
 ## Workflow
 
@@ -54,30 +56,33 @@ Analyze, score, and optimize Agent Skills to production quality. Applies a unifi
 2. If currently inside a skill directory, use the current directory
 3. Otherwise, ask which skill to optimize
 4. Read `SKILL.md` completely
-5. Inventory all supporting files (references/, scripts/, assets/)
+5. Inventory all supporting files (references/, scripts/, assets/, evals/)
 6. Read key supporting files to understand full scope
 7. Before editing, copy the skill directory to a separate baseline snapshot for the later trial run
 
-**Gate 0** — Proceed only when ALL true:
+**Collection mode**: When the target is a directory of skills, snapshot the whole collection, then list every skill's `name` and `description` side by side and flag pairs whose triggers overlap. Run Phases 1–5 per skill; the overlap list feeds each skill's Dimension 2 score. Keep cross-skill references (one skill naming another as the alternative) consistent after each skill's changes.
+
+**Gate 0 (proceed only when all are true):**
 
 - [ ] Target skill directory identified
 - [ ] SKILL.md read completely
 - [ ] Supporting file inventory complete
 - [ ] Pre-improvement baseline snapshot created
 
-_If gate fails_: Ask user for the skill path or name. Do not guess.
+_If gate fails_: Ask user for the skill path or name rather than guessing.
 
 ### Phase 1: Intent & Rules Extraction
 
-Crystallize what must NOT change; use Pattern 8 (Intent Card) in [references/exemplar-patterns.md](references/exemplar-patterns.md) for rationale.
+Record what must not change; use Pattern 8 (Intent Card) in [references/exemplar-patterns.md](references/exemplar-patterns.md) for rationale.
 
-1. **Core intent** — What problem does this skill solve? Who is the audience?
-2. **Mandatory rules** — What constraints MUST be preserved? (Hard rules, safety, compliance)
-3. **Check gates** — What verification points exist? Where should they exist?
-4. **Domain type** — Is this a workflow, expertise/reference, or hybrid?
-5. **Platform dependencies** — What relies on specific agent capabilities?
-6. **Terminology set** — Which terms name recurring concepts, and what single term should be used for each?
-7. **Script inventory** — Does the skill ship `scripts/`? If yes, record each script's interface and safety/portability assumptions.
+1. **Core intent**: What problem does this skill solve? Who is the audience?
+2. **Mandatory rules**: Which constraints must survive? (Hard rules, safety, compliance)
+3. **Check gates**: What verification points exist? Where should they exist?
+4. **Domain type**: Is this a workflow, expertise/reference, or hybrid?
+5. **Platform dependencies**: What relies on specific agent capabilities or client-only frontmatter?
+6. **Terminology set**: Which terms name recurring concepts, and what single term should be used for each?
+7. **Script inventory**: Does the skill ship `scripts/`? If yes, record each script's interface and safety/portability assumptions.
+8. **Side effects and siblings**: Which actions leave the workspace (publish, delete, change remote settings), and which sibling skills share its triggers?
 
 Document this as an Intent Card:
 
@@ -88,15 +93,17 @@ Mandatory Rules: [list]
 Existing Gates: [list or "none"]
 Platform Dependencies: [list or "none"]
 Terminology Set: [canonical term → meaning; list or "none"]
-Ships Scripts: [yes — list scripts and interfaces | no]
+Ships Scripts: [yes (list scripts and interfaces) | no]
+Side Effects: [list with confirmation points, or "none"]
+Sibling Skills: [overlapping skills and the boundary, or "none"]
 ```
 
-**Gate 1** — Proceed only when ALL true:
+**Gate 1 (proceed only when all are true):**
 
 - [ ] Intent card completed
 - [ ] Mandatory rules identified and flagged as untouchable
 - [ ] Domain type classified
-- [ ] Terminology set and script inventory captured
+- [ ] Terminology set, script inventory, side effects, and siblings captured
 
 _If gate fails_: Re-read SKILL.md focusing on purpose statements and constraint sections.
 
@@ -106,16 +113,16 @@ Score the skill across 8 dimensions (1-5 each, max 40). Load [references/scoring
 
 When a trial run is feasible, use [references/trial-run.md](references/trial-run.md) and grade objective assertions against improved and baseline runs; otherwise mark the scorecard static-evidence-only.
 
-| #   | Dimension                         | What to Assess                                                          |
-| --- | --------------------------------- | ----------------------------------------------------------------------- |
-| 1   | Spec Compliance                   | Frontmatter fields, naming rules, directory structure                   |
-| 2   | Description Quality               | Specificity, keywords, length, WHAT + WHEN coverage                     |
-| 3   | Context Economy & Disclosure      | Agent-known content omitted, scoped references, one-level navigation    |
-| 4   | Structural Clarity                | Section organization, logical flow, navigability                        |
-| 5   | Instruction Quality & Calibration | Fragility-matched specificity, WHY, defaults, procedures, patterns      |
-| 6   | Guardrails & Validation           | Validation loops, plan gates, safety, robust scripts when shipped       |
-| 7   | Composability & Script I/O        | Structured output, stderr diagnostics, exit codes, retry-safe runs      |
-| 8   | Cross-Platform Compatibility      | Portable instructions, paths, optional metadata, no runtime assumptions |
+| #   | Dimension                         | What to Assess                                                                   |
+| --- | --------------------------------- | -------------------------------------------------------------------------------- |
+| 1   | Spec Compliance                   | Frontmatter fields, naming rules, directory structure, client constraints        |
+| 2   | Description Quality               | Front-loaded use case, keywords, WHAT + WHEN, boundary against sibling skills    |
+| 3   | Context Economy & Disclosure      | Agent-known content omitted, scoped references, one-level navigation             |
+| 4   | Structural Clarity                | Section organization, logical flow, navigability                                 |
+| 5   | Instruction Quality & Calibration | Fragility-matched specificity, reasons over emphasis, no conflicts, defaults     |
+| 6   | Guardrails & Validation           | Validation loops, plan gates, side-effect confirmation, robust scripts           |
+| 7   | Composability & Script I/O        | Structured output, stderr diagnostics, exit codes, retry-safe runs               |
+| 8   | Cross-Platform Compatibility      | Portable instructions, paths, client-only fields isolated, no runtime assumption |
 
 Present as a scorecard:
 
@@ -136,7 +143,7 @@ Present as a scorecard:
 └───┴───────────────────────────────────┴───────┴──────────────────────────────┘
 ```
 
-**Gate 2** — Proceed only when ALL true:
+**Gate 2 (proceed only when all are true):**
 
 - [ ] All 8 dimensions scored with evidence
 - [ ] Top 3 improvement areas identified and ranked by impact
@@ -147,13 +154,13 @@ _If gate fails_: Re-assess weak evidence; read more source files. For new checkp
 
 ### Phase 3: Optimization Plan
 
-Record: change (section/field/structure); rationale (best practice/spec); before/after; impact (expected score); risk (intent drift/reference breakage).
+Record for each change: what changes (section/field/structure); rationale (best practice/spec); before/after; impact (expected score); risk (intent drift/reference breakage).
 
-Cross-check the plan against known anti-patterns. See [references/anti-patterns.md](references/anti-patterns.md).
+Cross-check the plan against known anti-patterns. See [references/anti-patterns.md](references/anti-patterns.md). Prefer removing or rewording an instruction over adding one: a plan that only adds text is a warning sign for Dimension 3.
 
-Present the plan to the user. **Wait for explicit approval before proceeding.**
+Present the plan to the user. **Wait for explicit approval before proceeding** (see Hard Rule 2 for what counts as approval).
 
-**Gate 3** — Proceed only when ALL true:
+**Gate 3 (proceed only when all are true):**
 
 - [ ] Plan presented with before/after examples
 - [ ] User explicitly approved (full plan or approved subset)
@@ -167,23 +174,27 @@ Apply approved changes by increasing risk: frontmatter fixes (lowest risk) → d
 
 **Self-correction triggers during execution:**
 
-| Trigger                                      | Automatic Action                                            |
-| -------------------------------------------- | ----------------------------------------------------------- |
-| SKILL.md exceeds 500 lines after edit        | Split overflow content into references/                     |
-| Description exceeds 250 chars                | Tighten to front-load the key use case                      |
-| `name` doesn't match directory name          | Fix name field to match directory                           |
-| File reference points to nonexistent file    | Create the missing file or remove the reference             |
-| Score regresses on any dimension             | Stop, identify the cause, fix before continuing             |
-| Mandatory rule accidentally altered          | Immediately revert that specific change                     |
-| A time-sensitive statement is introduced     | Replace it with a timeless rule or Old patterns section     |
-| An option menu has no selected default       | Choose one default and keep alternatives as an escape hatch |
-| A reference chain goes deeper than one level | Link directly from SKILL.md or flatten the chain            |
-| A path contains a backslash                  | Rewrite it as a forward-slash relative path                 |
-| Gotchas are moved out of SKILL.md            | Restore trigger-critical Gotchas to SKILL.md                |
+| Trigger                                            | Automatic Action                                            |
+| -------------------------------------------------- | ----------------------------------------------------------- |
+| SKILL.md exceeds 500 lines after edit              | Split overflow content into references/                     |
+| Description exceeds 250 chars                      | Tighten to front-load the key use case                      |
+| Description or name contains `<` or `>`            | Remove the angle brackets                                   |
+| `name` doesn't match directory name                | Fix name field to match directory                           |
+| File reference points to nonexistent file          | Create the missing file or remove the reference             |
+| Score regresses on any dimension                   | Stop, identify the cause, fix before continuing             |
+| Mandatory rule accidentally altered                | Immediately revert that specific change                     |
+| An edit adds ALL-CAPS or an unexplained MUST/NEVER | Rewrite as a plain instruction plus its reason              |
+| Two instructions now conflict                      | State precedence or qualify one condition                   |
+| A client-only frontmatter field is introduced      | Remove it unless the skill already targets that client      |
+| A time-sensitive statement is introduced           | Replace it with a timeless rule or Old patterns section     |
+| An option menu has no selected default             | Choose one default and keep alternatives as an escape hatch |
+| A reference chain goes deeper than one level       | Link directly from SKILL.md or flatten the chain            |
+| A path contains a backslash                        | Rewrite it as a forward-slash relative path                 |
+| Gotchas are moved out of SKILL.md                  | Restore trigger-critical Gotchas to SKILL.md                |
 
 After each major edit, re-read the modified file to verify correctness.
 
-**Gate 4** — Proceed only when ALL true:
+**Gate 4 (proceed only when all are true):**
 
 - [ ] All approved changes applied
 - [ ] No self-correction trigger left unresolved
@@ -196,12 +207,12 @@ _If gate fails_: Apply the relevant self-correction rule. If stuck after 2 attem
 
 1. **Re-audit**: Run Phase 2 scoring on the optimized skill
 2. **Compare**: Build before/after scorecard
-3. **Validate spec**: Check all Agent Skills spec rules. See [references/spec-rules.md](references/spec-rules.md)
+3. **Validate spec**: Check all Agent Skills spec rules. See [references/spec-rules.md](references/spec-rules.md). Run the project's own skill validator too, when one exists.
 4. **Check references**: Verify all linked files exist and are non-empty
-5. **Trial run**: In a fresh context, run the improved skill and a baseline run from the pre-improvement snapshot on the same realistic task. Read both execution traces and record assertions that pass only with the improved version. Follow [references/trial-run.md](references/trial-run.md) when designing cases and grading evidence.
+5. **Trial run**: For each realistic task, launch the improved skill and the pre-improvement snapshot at the same time, each in its own fresh context (a subagent or new session with no memory of this edit). Read both execution traces and record assertions that pass only with the improved version. Follow [references/trial-run.md](references/trial-run.md) when designing cases and grading evidence; run a trigger eval whenever the description changed.
 6. **Token and line estimate**: Record the approximate token cost and line-count delta for SKILL.md
 
-The baseline must be a copy of the skill directory made before editing, not a reconstruction after the fact. If a trial run is infeasible, state the concrete reason and the evidence used instead.
+The baseline is the snapshot copied before editing, not a reconstruction after the fact. The context that performed the edit is not fresh; if no fresh-context mechanism exists, say so and label the evidence same-context. If a trial run is infeasible (for example every realistic task has external side effects that cannot be sandboxed), state the concrete reason and the static evidence used instead.
 
 Output the final report:
 
@@ -228,7 +239,7 @@ File integrity: All references resolve / [broken refs]
 Trial-run evidence: [task, baseline comparison, assertions flipped, cost/latency delta] / NOT FEASIBLE [reason]
 ```
 
-**Gate 5** — Optimization complete when ALL true:
+**Gate 5 (optimization complete when all are true):**
 
 - [ ] Total score improved (or maintained if already high quality)
 - [ ] No dimension score regressed from Phase 2 baseline
@@ -240,16 +251,12 @@ _If gate fails_: Return to Phase 4 to fix regressions. Maximum 2 correction cycl
 
 ## Self-Correction Protocol
 
-When execution drifts off track, these rules trigger automatically:
+The gates and triggers above handle known failures. For everything else:
 
-1. **Drift detection**: After each phase, compare current state against the phase's gate conditions.
-2. **Auto-retry**: If a gate fails, attempt the phase-specific correction documented in each gate's "If gate fails" section.
-3. **Escalation**: If the same gate fails twice after correction attempts, stop and report to user with:
-   - Which gate failed
-   - What correction was attempted
-   - What manual input is needed
-4. **Regression guard**: If any quality dimension drops during optimization, immediately revert the change that caused it and report the regression.
-5. **Scope lock**: If during execution you discover the skill needs changes beyond the approved plan, do NOT apply them. Note them as "Deferred Recommendations" in the final report.
+1. **Escalation**: If the same gate fails twice after correction attempts, stop and report to user with which gate failed, what correction was attempted, and what manual input is needed.
+2. **Regression guard**: If any quality dimension drops during optimization, revert the change that caused it and report the regression.
+3. **Scope lock**: If during execution you discover the skill needs changes beyond the approved plan, do not apply them. Note them as "Deferred Recommendations" in the final report.
+4. **Plateau check**: If repeated additions stop improving trial results, try removing instructions instead; an over-constrained skill improves when rules that do not apply are cut.
 
 ## Key Patterns to Apply
 
@@ -275,6 +282,8 @@ When optimizing, draw from these proven patterns. Full catalog with examples at 
 | 16  | Calibrated Instruction Block  | Some steps are fragile while others allow choice       |
 | 17  | Bundled Script Interface      | Repeated logic merits a tested, non-interactive script |
 | 18  | Old Patterns Section          | Superseded guidance must remain discoverable           |
+| 19  | Reasoned Constraint           | A rule relies on emphasis instead of its reason        |
+| 20  | Explicit Precedence           | Two instructions can apply with different outcomes     |
 
 Numbers match the pattern numbers in [references/exemplar-patterns.md](references/exemplar-patterns.md). A skill that lacks a verification step needs Pattern 11 (Validation Loop), not a prose "verification" section.
 
@@ -283,7 +292,7 @@ Numbers match the pattern numbers in [references/exemplar-patterns.md](reference
 On completion, always return:
 
 1. Before/after scorecard (table format as shown in Phase 5)
-2. Summary of changes made (bulleted list)
+2. Summary of changes made (bulleted list), including content removed and why
 3. List of files modified and created
 4. Trial-run evidence: realistic task, baseline comparison, assertions that flipped, and cost/latency delta
 5. `SKILL.md` token estimate and line-count delta
@@ -301,12 +310,12 @@ output_fields:
   - deferred_recommendations
 ```
 
-Do not include internal reasoning or optimization logic in the output.
+Report findings and evidence, not internal deliberation.
 
 ## References
 
-- [Scoring Rubric](references/scoring-rubric.md) — WHEN to load: for detailed 1-5 scoring criteria across all 8 dimensions
-- [Spec Validation Rules](references/spec-rules.md) — WHEN to load: during Phase 5 spec compliance checks
-- [Anti-Patterns](references/anti-patterns.md) — WHEN to load: during Phase 3 plan review to detect known failure modes
-- [Exemplar Patterns](references/exemplar-patterns.md) — WHEN to load: when selecting a reusable pattern for an approved improvement
-- [Trial-Run Procedure](references/trial-run.md) — WHEN to load: when an existing skill is being improved and you need baseline comparison, assertions, trace analysis, cross-configuration coverage, or trigger evals
+- [Scoring Rubric](references/scoring-rubric.md): load in Phase 2 for the 1–5 criteria of all 8 dimensions
+- [Spec Validation Rules](references/spec-rules.md): load in Phase 5 for spec and client-constraint checks
+- [Anti-Patterns](references/anti-patterns.md): load in Phase 3 to review the plan against known failure modes
+- [Exemplar Patterns](references/exemplar-patterns.md): load when an approved change needs a pattern template
+- [Trial-Run Procedure](references/trial-run.md): load in Phase 5 for baseline comparison, assertions, trace analysis, trigger evals, or cross-configuration coverage

@@ -3,8 +3,10 @@
 Contents:
 
 - [Evaluation terms](#evaluation-terms)
+- [Storage and workspace](#storage-and-workspace)
 - [Trigger evals](#trigger-evals)
 - [Output-quality evals](#output-quality-evals)
+- [Blind comparison and human review](#blind-comparison-and-human-review)
 - [Reading traces and iterating](#reading-traces-and-iterating)
 - [Cross-model and cross-agent coverage](#cross-model-and-cross-agent-coverage)
 
@@ -22,15 +24,45 @@ Record the prompt, context, configuration, elapsed time, token or output cost wh
 available, and the exact evidence used for every judgment. Keep the query and test splits
 fixed so iterations are comparable.
 
+## Storage and workspace
+
+Store authored test cases in `evals/evals.json` inside the skill directory, which is the
+agentskills.io convention. If the project excludes evals from distributed skills, follow
+that convention and keep the file beside the skill instead.
+
+Keep run outputs out of the skill directory so they never ship:
+
+```text
+<skill-name>-workspace/
+└── iteration-1/
+    ├── eval-<case-id>/
+    │   ├── with_skill/{outputs/, timing.json, grading.json}
+    │   └── without_skill/{outputs/, timing.json, grading.json}
+    └── benchmark.json
+```
+
+When improving an existing skill, name the baseline directory `old_skill/` instead of
+`without_skill/`. `timing.json` holds `total_tokens` and `duration_ms`; `grading.json` lists
+each assertion with `text`, `passed`, and `evidence`; `benchmark.json` aggregates pass rate,
+time, and tokens per configuration with the delta between them.
+
+Launch every with-skill and baseline run for an iteration at the same time, each in its own
+fresh context (a subagent or new session). Sequential runs let the environment drift between
+configurations. Write `timing.json` as soon as each run reports completion, because some
+harnesses expose token and duration figures only in that notification.
+
 ## Trigger evals
 
 ### Build the query set
 
 Create about 20 realistic queries: roughly half labelled `should_trigger: true` and half
 labelled `should_trigger: false`. Positives should vary in phrasing, explicitness, detail,
-and step count. Include valuable cases where the skill helps but the connection is indirect.
-Negatives should be near misses: they share words or subject matter with the skill but
-actually require another skill or no skill.
+and step count, and read like real requests: file paths, personal context, casual wording,
+and the occasional typo. Include valuable cases where the skill helps but the connection is
+indirect. Use substantive tasks: agents usually skip skills for one-step requests they can
+handle with basic tools, so a trivial positive measures nothing. Negatives should be near
+misses: they share words or subject matter with the skill but actually require another skill
+or no skill.
 
 Do not make negatives random unrelated prompts. A description that rejects an unrelated
 prompt but activates on every keyword match has not been tested meaningfully.
@@ -63,8 +95,8 @@ separate note so a failure can be generalized by category rather than by copying
 
 ### Measure nondeterministic activation
 
-Run every query several times in a fresh context. Record each activation as `1` or `0` and
-compute a trigger rate:
+Run every query about three times, each in a fresh context. Record each activation as `1` or
+`0` and compute a trigger rate:
 
 ```text
 trigger_rate(query) = activations / repeated_runs
@@ -83,7 +115,7 @@ Stop after roughly five iterations unless a concrete failure justifies another p
 
 After each iteration:
 
-1. Inspect failed query categories, not just their exact words.
+1. Inspect failed query categories, not only their exact words.
 2. Make the smallest description change that addresses a category.
 3. Re-run train and then validation using the fixed split.
 4. Record pass rates and the selected iteration.
@@ -139,15 +171,19 @@ human review rather than pretending they are mechanical assertions.
 
 ### Compare skill and baseline
 
-Run every test case twice with the skill and twice as a baseline run. For a new skill, the
-baseline has no skill loaded. For an improvement, the baseline uses the previous-version
-snapshot. Use equivalent fresh contexts and inputs.
+Run every test case with the skill and as a baseline run, twice per configuration when
+behavior may vary. For a new skill, the baseline has no skill loaded. For an improvement, the
+baseline uses the previous-version snapshot. Use equivalent fresh contexts and inputs.
+
+Grade mechanical checks (file exists, JSON parses, exit code) with a script rather than
+judgment. Grade the rest with quoted evidence and no benefit of the doubt: an assertion with
+no supporting excerpt fails.
 
 Grade each assertion `PASS` or `FAIL` and quote the evidence:
 
 ```text
-case-01 / a2: PASS — `references/spec-quickref.md` is linked and non-empty.
-case-01 / a3: FAIL — output says “invalid config” but names no field or expected type.
+case-01 / a2: PASS (`references/spec-quickref.md` is linked and non-empty).
+case-01 / a3: FAIL (output says "invalid config" but names no field or expected type).
 ```
 
 Record elapsed time and token or output cost for each run. Report the delta so the skill's
@@ -165,12 +201,29 @@ Apply all four rules after comparison:
 4. **Inconsistent across repeated runs:** Tighten the relevant instruction or assertion.
    Inconsistency usually signals ambiguity, not luck to average away.
 
+## Blind comparison and human review
+
+Assertions miss holistic quality. When two versions both pass, give an independent judge
+(a fresh context with no knowledge of which version is which) both outputs unlabelled and
+ask it to choose the better one against a short rubric written before reading them. Use this
+for organization and usefulness, not for facts an assertion can check.
+
+Then show the outputs to the user, one case at a time, and record their feedback per case.
+Empty feedback means the case is acceptable. Stop iterating when feedback is empty, pass
+rates stop improving, or the user is satisfied.
+
 ## Reading traces and iterating
 
 Read the execution trace, not only the final artifact. Wasted or unproductive steps usually
 mean the instructions are too vague, include rules that do not apply, or offer too many
 options without a default. Each human correction is evidence: turn it into a Gotchas entry
 in `SKILL.md` or an instruction fix, then repeat the trial run.
+
+Generalize every fix. The skill will run on far more prompts than the test set, so a change
+that only makes one test prompt pass is overfitting. If a problem resists, try a different
+explanation or working pattern rather than a stronger MUST. If pass rates plateau while rules
+accumulate, the skill may be over-constrained: remove instructions and check whether results
+hold or improve.
 
 If the baseline already succeeds, state that result explicitly and consider whether the skill
 adds enough value to justify its context cost. Do not add instructions merely to make the
@@ -179,14 +232,14 @@ necessarily the newest text.
 
 ## Cross-model and cross-agent coverage
 
-A skill only augments the model and harness executing it, so its effectiveness varies with
-both. Add this step only when the skill will actually run in more than one configuration;
+A skill augments the model and harness executing it, so its effectiveness varies with
+both. Add this step when the skill will run in more than one configuration;
 a single-configuration skill needs no extra runs.
 
 1. List the configurations the skill must support: each reasoning strength you expect to run
    it on, and each agent implementation whose tools, discovery, or permissions differ.
-2. Re-run the smallest revealing subset in every configuration — typically two output-quality
-   cases plus any trigger query whose rate sat near the threshold. Do not re-run the whole set.
+2. Re-run the smallest revealing subset in every configuration (typically two output-quality
+   cases plus any trigger query whose rate sat near the threshold). Do not re-run the whole set.
 3. Compare failures by configuration rather than averaging them:
    - Fails only on a lower-reasoning configuration: the instruction relies on inference the
      model does not perform. Add the missing step, default, or worked example.
