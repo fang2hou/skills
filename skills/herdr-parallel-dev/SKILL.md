@@ -128,12 +128,13 @@ Record the default branch, the integration branch, merge method (squash unless t
 
 Bind the mode's base once and carry it in the run table:
 
-````bash
+```bash
 INTEGRATION=develop                      # discovered above; trunk-based repos: "$DEFAULT"
 MODE=pr                                   # or: MODE=integration
 WORK_BRANCH=""                            # integration mode: the work branch name
 if [ "$MODE" = integration ]; then BASE="$WORK_BRANCH"; else BASE="origin/$INTEGRATION"; fi
 git -C "$PROJECT" rev-parse --verify "$BASE"   # fail here, not at create time
+```
 
 ### Step 2: Plan branches
 
@@ -154,9 +155,9 @@ if [ -z "$SPACE" ]; then
 fi
 herdr worktree create --workspace "$SPACE" --branch feat/rolldown-bundler --base "$BASE" --no-focus
 # record .result.workspace.workspace_id, .result.root_pane.pane_id, .result.worktree.path
-````
+```
 
-One create per task. Each yields its own workspace labelled with the branch and nested under `$SPACE`; do not expect the pane in the caller's workspace. `$BASE` is `origin/$DEFAULT` in `pr` mode and the work branch in `integration` mode. Then gate dispatch:
+One create per task. Each yields its own workspace labelled with the branch and nested under `$SPACE`; do not expect the pane in the caller's workspace. `$BASE` is `origin/$INTEGRATION` in `pr` mode and the work branch in `integration` mode. Then gate dispatch:
 
 ```bash
 SKILL_DIR=<directory containing this SKILL.md>
