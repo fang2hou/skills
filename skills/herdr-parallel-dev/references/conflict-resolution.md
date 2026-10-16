@@ -1,8 +1,9 @@
 # Conflict Resolution
 
-Load this reference when Step 7 rebases a branch and Git reports conflicts. Keep
-all conflict work in the worktree of the branch being rebased; never resolve it
-in the main checkout.
+Load this reference when Step 5 or Step 7 syncs (`rebase` or `pull --rebase`) a
+branch onto an updated `$BASE` (after an opportunistic early batch or a
+prerequisite merge) and Git reports conflicts. Keep all conflict work in the
+worktree of the branch being synced; never resolve it in the main checkout.
 
 ## Mechanical conflicts
 

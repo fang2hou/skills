@@ -1,65 +1,54 @@
 ---
 name: herdr-parallel-dev
 description: >
-  Use inside Herdr (HERDR_ENV=1) whenever one request yields two or more
-  independently shippable deliverables — "make these 3 PRs", several features
-  that each merge into main or develop (Git Flow feature sets), a batch of
-  independent fixes or refactors, or multi-file changes that would collide in
-  one working tree. One worktree and one agent per task, accept-or-send-back
-  review, integration-branch or CI-gated PR landing in a verified order,
-  post-merge consistency audit, and cleanup. Triggers on task shape, not on
-  the words "parallel" or "herdr"; never serialize such requests through a
-  single agent or branch. Skip for a single task, hard dependency chains, or
-  stacked changes.
+  Orchestrates 2+ deliverables or multi-goal Git Flow work inside Herdr
+  (HERDR_ENV=1): one worktree and agent per task, early merge of conflict-free
+  tasks, dynamic dependency reordering, and branch sync. Skip for 1 task or
+  linear stacks.
 license: MIT
 compatibility: Requires HERDR_ENV=1, herdr CLI, git, gh, jq, Bash, and standard POSIX utilities inside a Herdr-managed pane.
 metadata:
   author: fang2hou
-  version: "2.3"
-  sources: "Incident-proven workflow (2026-08-17 multi-project worktree misadventure + 3-PR sequential merge); herdr CLI behavior verified 2026-08-18; trigger-strength, parallel-vs-sequential decision, and Git Flow integration-target revision 2026-10-17"
+  version: "2.4"
+  sources: "Incident-proven workflow (2026-08-17 multi-project worktree misadventure + 3-PR sequential merge); herdr CLI behavior verified 2026-08-18; Git Flow multi-goal detection and dynamic orchestrator scheduling revision 2026-10-17"
 ---
 
 # Herdr Parallel Development
 
-Run N independent repo tasks as N herdr agents, each in its own git worktree that herdr creates and owns; review each deliverable, land them in a verified order, and give the machine back exactly the state it started in.
+Act as the orchestrator session inside Herdr: run N repo tasks across N herdr-managed git worktrees and agents, monitor and dynamically schedule reviews and landings as tasks settle, sync remaining branches when prerequisites or early merges advance the target branch, and restore the machine to its starting state.
 
 ## Trigger Rule
 
-Count deliverables, not keywords. A deliverable is anything that ships on its own: a PR, a feature branch that must merge into the integration branch before release, a self-contained fix, refactor, or docs pass. **Two or more deliverables that do not require each other mean this skill, always.**
+Count deliverables and check the repo's branching model, not keywords. A deliverable is anything that ships on its own: a PR, a feature branch that merges into the integration branch before release, a self-contained fix, refactor, or docs pass. **Two or more deliverables without a hard linear dependency mean this skill, always.**
 
-- The user need not say "parallel", "herdr", "worktree", or "at the same time". "Make these 3 PRs", "do these four fixes", and an unnumbered list of independent features all qualify as spoken.
-- Small tasks still qualify when each needs its own branch or PR; independent review and landing are the point, not raw speed.
-- Load this skill at planning time, before writing any code. If task 1 of N is already underway in a shared working tree, stop: turn that work into row 1's branch (or the integration base) and fan out the rest.
-- Never serialize the request through one agent or branch. Serial landing (Step 7) is correct; serial execution is the failure mode this skill exists to prevent — one agent grinding through 3 PRs with no independent review and forced merge decisions at the end.
+- **Multi-goal + Git Flow auto-detection**: Before writing code on any multi-goal request ("implement X and Y", "fix A, update B, add C"), check whether the repo follows Git Flow or a multi-branch integration model (`origin/develop`, `origin/integration`, `origin/release/*`, `.gitflow`, or branch rules in `AGENTS.md` / `CONTRIBUTING.md`). When it does, each goal is a separate feature/fix branch into `$INTEGRATION` — switch into orchestrator mode and fan out Herdr agents instead of working in a single process.
+- The user need not say "parallel", "herdr", or "worktree". Even small tasks qualify when each needs its own branch or PR.
+- Load at planning time, before writing code. If task 1 of N is already underway in a shared checkout, turn that work into row 1's branch and fan out the rest.
+- Never serialize execution through one agent or branch; serial per-merge landing (Step 7) is fine, serial execution is not.
 
-## When to Use
+## When to Use / When NOT to Use
 
-- Two or more independently shippable tasks on one repo: multiple PRs, a Git Flow feature set (each feature branches from and merges back into `develop`), a batch of independent fixes or chores.
-- Multi-file changes that would collide in one working tree.
-- Landing multiple finished agent branches as one integration branch or as PRs, plus post-merge verification of cross-branch consistency and cleanup.
+- **Use**: 2+ independently shippable tasks on one repo (multiple PRs, Git Flow feature sets into `develop`, independent fixes/refactors), colliding multi-file edits, or landing and auditing multiple finished agent branches.
+- **Skip**:
+  - A single deliverable: use a plain herdr agent in a sibling pane without a worktree.
+  - Hard dependency chains (B cannot code before A merges) or stacked PRs: sequence them (see table below).
+  - Outside Herdr (`HERDR_ENV != 1`): use native parallel subagents instead.
+  - Stale branches/worktrees from earlier sessions: use `git-branch-cleanup` (Step 9 cleans only this run).
+  - Inspecting/controlling user panes when the user explicitly names Herdr: use the base `herdr` skill (`npx skills add ogulcancelik/herdr -g`).
 
-## When NOT to Use
+## Parallel, Phased, or Sequential
 
-- One deliverable, however many files it touches: use a plain herdr agent in a sibling pane; no worktree is needed.
-- A hard dependency chain (B needs A's merged API, schema, or contract): sequence it, or land the foundation first and fan out the dependents.
-- Stacked changes where each branch is based on the previous one: sequential by design; see Parallel or Sequential below.
-- Outside Herdr (`HERDR_ENV` is not 1): the herdr CLI is unavailable. Use the harness's native parallel subagents instead — still never silently serialize the work.
-- Remote branch management or repo settings (out of scope).
-- Cleaning up branches or worktrees left by earlier sessions: use git-branch-cleanup. Step 9 here cleans only this run's objects.
-- The base `herdr` skill stays unloaded for parallel work: it covers inspecting and controlling panes when the user explicitly mentions Herdr, and this skill is the multi-deliverable execution layer that triggers without the word "herdr". Read that skill first for CLI grounding (install: `npx skills add ogulcancelik/herdr -g`; docs: https://herdr.dev/docs/cli-reference/).
+Decide before Step 1, record the initial verdict per task in the run table, and update it dynamically in Steps 5–7 as tasks progress:
 
-## Parallel or Sequential
-
-Decide once, before Step 1, and record the verdict per task in the run table:
-
-| Situation                                          | Verdict                                       | Why                                                                                                              |
-| -------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| 2+ deliverables, no ordering need between them     | Fan out now                                   | Independent review and landing; wall-clock drops from sum to max                                                 |
-| B builds on A's API, schema, or contract           | Land A first, then fan out B and its siblings | Agents cannot branch from content that does not exist yet                                                        |
-| Stacked PRs, each based on the previous one        | Sequential by design                          | A rebase chain cannot be produced in parallel                                                                    |
-| Same-file hotspot shared by every task             | Re-slice the tasks, or sequence them          | Conflict-resolution cost eats the parallel gain                                                                  |
-| One shared foundation plus N independent consumers | Foundation as task 1, consumers fan out after | Keeps every parallel branch rebasable                                                                            |
-| Two trivial chores an agent finishes in minutes    | Serial batch is acceptable                    | Worktree plus agent setup costs about a minute per task; anything that still needs its own branch or PR fans out |
+| Situation                                                       | Verdict                                                 | Why                                                                       |
+| --------------------------------------------------------------- | ------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 2+ deliverables, no ordering need between them                  | Fan out all now; land opportunistically as tasks settle | Fast conflict-free tasks land early without waiting for slow siblings     |
+| Multi-goal request on a Git Flow repo (`develop` / `release/*`) | Fan out one feature/fix branch per goal                 | Git Flow isolates each goal on its own branch into `$INTEGRATION`         |
+| Soft / late-discovered dependency (slow C must land before A/B) | Fan out all now; hold A and B at Step 7 until C lands   | Parallel coding saves time; A and B pull/rebase onto `$BASE` once C lands |
+| Hard prerequisite (B cannot start without A's new schema)       | Land A first, then fan out B and its siblings           | Agents cannot code against contracts that do not exist yet                |
+| Stacked PRs, each based on the previous one                     | Sequential by design                                    | A linear rebase chain cannot be produced in parallel                      |
+| Same-file hotspot shared by every task                          | Re-slice the tasks, or sequence them                    | Conflict-resolution cost exceeds the parallel gain                        |
+| Two trivial chores an agent finishes in minutes                 | Serial batch is acceptable                              | Worktree setup costs ~1 min/task; anything needing its own PR fans out    |
 
 ## Inputs
 
@@ -70,28 +59,25 @@ Decide once, before Step 1, and record the verdict per task in the run table:
 | Landing mode | Yes      | `integration` / `pr`                               | see Step 7                            |
 | Base branch  | No       | branch, default `origin/<integration>` from Step 1 | a work branch in `integration` mode   |
 
-Cap concurrency at 8 worktrees: queue anything beyond that and dispatch each queued task as an earlier agent settles; monitoring quality degrades faster than extra parallelism pays off.
+Cap concurrency at 8 worktrees; queue excess tasks and dispatch as earlier agents settle.
 
-## Forge boundaries
+## Forge Boundaries & Tool Contract
 
-The `gh` commands in this skill are **GitHub-forge-specific**: they are the verified baseline for GitHub-hosted repositories, not a requirement of the worktree, branch, validation, or cleanup rules. Load [Forge Adaptation](references/forge-adaptation.md) before Step 1 when the repository is not GitHub-hosted, `gh` is unavailable, or forge behavior differs. Use only a verified client or API that achieves the same review, merge, CI, and recovery outcomes; do not invent substitute commands.
-
-## Tool response contract
-
-Herdr JSON responses used here expose the fields needed to rebuild the run table: workspace creation returns `.result.workspace.workspace_id`, worktree creation returns `.result.root_pane.pane_id` and `.result.worktree.path`, and listing returns `.result.worktrees[]`. Verify fields before dispatching; never infer IDs from pane order or memory.
+- **Forge**: `gh` commands are the **GitHub-forge-specific** baseline. Load [Forge Adaptation](references/forge-adaptation.md) before Step 1 when the repo is not on GitHub, `gh` is unavailable, or forge behavior differs; use only a verified client/API.
+- **Herdr JSON**: workspace creation returns `.result.workspace.workspace_id`, worktree creation returns `.result.root_pane.pane_id` and `.result.worktree.path`, and listing returns `.result.worktrees[]`. Never infer IDs from pane order.
 
 ## Hard Rules
 
-1. **Never let herdr guess the repo.** Every `worktree create` binds the repo explicitly with `--workspace <project-space-id>` (preferred: the project's own herdr space) or `--cwd <absolute-project-path>`. With neither, herdr can resolve its focused/recent project and create worktrees in a different repo. A workspace ID is trustworthy only when returned by `herdr worktree list --cwd "$PROJECT"` or from a space opened for `$PROJECT`, never from sidebar order or memory.
-2. **Let herdr own the layout.** Use no `--path` (herdr places checkouts under `~/.herdr/worktrees/<repo>/<branch-slug>`), no `--label` (the branch is the sidebar handle), and `--no-focus` while dispatching. Switch with `herdr worktree open --cwd "$PROJECT" --branch <b> --focus` or `herdr workspace focus <id>`.
-3. **Verify every worktree before dispatching** with `<this-skill-dir>/scripts/verify-worktrees.sh "$PROJECT" <created-paths...>` (omit paths to auto-discover). A wrong origin URL means remove it, fix the binding, and recreate; never improvise on the wrong repo.
-4. **Every agent prompt starts with a GUARD block:** the agent runs `git remote get-url origin` and confirms one known path exists, then stops and reports if either check fails. Agents are the second defense; one once caught a mismatch the dispatcher missed.
+1. **Bind the repo explicitly on every worktree creation.** Pass `--workspace <project-space-id>` (preferred) or `--cwd <absolute-project-path>` so herdr never targets a recently focused foreign repo. Trust a workspace ID only from `herdr worktree list --cwd "$PROJECT"` or `workspace create --cwd "$PROJECT"`.
+2. **Let herdr own the layout.** Pass no `--path`, no `--label`, and `--no-focus` while dispatching.
+3. **Verify every worktree before dispatching** with `scripts/verify-worktrees.sh "$PROJECT" <created-paths...>`. Remove and recreate any wrong-origin worktree.
+4. **Start every agent prompt with a guard check.** The agent checks `git remote get-url origin` and a known path before working.
 5. **One worktree = one branch = one agent.** Never share a worktree.
-6. **Agents start blank.** Every prompt is self-contained: guard, ground truth (files/line pointers), task, verification steps, commit rules, repo conventions from AGENTS.md, and “decide and document; do not ask.”
-7. **Nothing lands on a red gate.** Never merge while target CI is red or advance to the next branch on a red run. A green Deploy does not substitute for CI; only the CI workflow proves the project's checks passed.
-8. **Retire before removing.** Stop the agent (`send-keys ctrl+c`, then `ctrl+d`; confirm it left `herdr agent list`) before `herdr worktree remove`, which kills its pane.
-9. **Cleanup deletes only this run's objects**, and only after merge proof (content on target or PR shows merged). Squash-merged local branches need `git branch -D`; anything not tied to a task of this run, including an already-open space, stays.
-10. **Fan out before you review.** Dispatch every worktree and agent first (Step 4), then monitor and review; task 2's agent must exist before task 1's review starts. Serial landing (Step 7) is correct; serial execution violates the Trigger Rule.
+6. **Write self-contained agent prompts.** Include the guard check, ground truth, task, verification gate, commit rules, and “decide and document; do not ask.”
+7. **Land only on a green gate.** Never merge or advance while target CI is red; Deploy does not substitute for CI.
+8. **Retire agents before removing worktrees.** Stop the agent (`ctrl+c`, then `ctrl+d`; confirm absent from `herdr agent list`) before `herdr worktree remove`.
+9. **Clean up only this run's objects** after merge proof. Use `git branch -D` only for squash-merged run branches; leave pre-existing spaces/branches untouched.
+10. **Fan out all parallelizable tasks before reviewing or landing.** Dispatch all independent or soft-dependent worktrees/agents first (Step 4), then run the orchestrator loop (Steps 5–7) to review and opportunistically land early tasks while slower siblings work.
 
 ## Run Table
 
@@ -106,27 +92,26 @@ After interruption, rebuild the table from `herdr worktree list --cwd "$PROJECT"
 
 ## Workflow
 
-### Step 1: Scan the repo, then fix the landing mode
+### Step 1: Detect Git Flow / branching model and fix the landing mode
 
 ```bash
 git -C "$PROJECT" remote get-url origin                            # expected repo
-DEFAULT=$(git -C "$PROJECT" symbolic-ref --short refs/remotes/origin/HEAD)   # never hardcode
+DEFAULT=$(git -C "$PROJECT" symbolic-ref --short refs/remotes/origin/HEAD)   # do not hardcode
 DEFAULT=${DEFAULT#origin/} && echo "default branch: $DEFAULT"
-git -C "$PROJECT" branch -r --format='%(refname:short)' | grep -xE 'origin/(develop|integration|mainline)' || true
-grep -rniE "git ?flow|integration branch|merge into (develop|main)" AGENTS.md CONTRIBUTING.md README.md 2>/dev/null | head
+git -C "$PROJECT" branch -r --format='%(refname:short)' | grep -E '^origin/(develop|devel|integration|mainline|release/.*)$' || true
+git -C "$PROJECT" config --get-regexp '^gitflow\.' || test -f "$PROJECT/.gitflow" || true
+grep -rniE "git ?flow|integration branch|merge into (develop|main)" "$PROJECT/AGENTS.md" "$PROJECT/CONTRIBUTING.md" "$PROJECT/README.md" 2>/dev/null | head
 gh repo view --json squashMergeAllowed,deleteBranchOnMerge --jq '{squash: .squashMergeAllowed, deleteOnMerge: .deleteBranchOnMerge}' # GitHub-forge-specific
-ls .github/workflows/                                              # GitHub Actions baseline; use verified CI discovery elsewhere
-grep -n "merge" AGENTS.md CONTRIBUTING.md 2>/dev/null | head       # repo merge conventions
+ls "$PROJECT/.github/workflows/"                                   # GitHub Actions baseline; use verified CI discovery elsewhere
+grep -n "merge" "$PROJECT/AGENTS.md" "$PROJECT/CONTRIBUTING.md" 2>/dev/null | head
 ```
 
-Record the default branch, the integration branch, merge method (squash unless the repo says otherwise), head auto-delete behavior, and workflow names that must be green.
+Record the default branch, the integration branch, whether the repo uses Git Flow, merge method (squash unless the repo says otherwise), head auto-delete behavior, and workflow names that must be green.
+`INTEGRATION` is where finished work merges: `develop` (or documented integration branch) on Git Flow/release-train repos; `$DEFAULT` on trunk-based repos. Decide it from remote branches, `.gitflow`, and `AGENTS.md` / `CONTRIBUTING.md`, never `origin/HEAD` alone. On Git Flow multi-goal requests, each goal branches off `origin/$INTEGRATION`. Landing modes:
 
-`INTEGRATION` is where finished work merges: the default branch on trunk-based repos; `develop` (or the repo's documented integration branch) on Git Flow and release-train repos. Decide it from the remote branch layout plus AGENTS/CONTRIBUTING statements, never from `origin/HEAD` alone — Git Flow points `origin/HEAD` at `main` while features must target `develop`. Choose the landing mode with the user's request as the deciding input:
-
-- **`pr`**: every task ships its own PR to `$INTEGRATION`. The default for "make these N PRs" and for Git Flow feature sets, where each feature is reviewed on its own before merging.
-- **`integration`**: one work branch is created from `$INTEGRATION`; every task branches off it, children merge back, and the work branch ships as a single PR.
-
-Bind the mode's base once and carry it in the run table:
+- **`pr`** (default for N PRs and Git Flow feature sets): each task ships its own PR to `$INTEGRATION`.
+- **`integration`**: one work branch off `$INTEGRATION`; task branches merge into it and ship as one PR.
+  Bind the mode's base once and carry it in the run table:
 
 ```bash
 INTEGRATION=develop                      # discovered above; trunk-based repos: "$DEFAULT"
@@ -138,9 +123,7 @@ git -C "$PROJECT" rev-parse --verify "$BASE"   # fail here, not at create time
 
 ### Step 2: Plan branches
 
-For each task choose a `type/slug` branch, an agent name `<slug>-pr` matching `[a-z][a-z0-9_-]{0,31}`, and a blast radius: docs/style is low-risk shared text; isolated infra deploys alone and lands first for attribution; feature has the widest runtime/contract/docs surface. Compute the conflict surface (files touched by ≥2 tasks, predicted then confirmed with `git diff --name-only`); these are rebase/propagation hotspots and set Step 7 order.
-
-Worked example: a bundler swap was isolated infra (slot 1), a docs guideline realign was docs/style (slot 2), and an interactive-controls runtime/worker/contracts/migration feature was widest (slot 3). Landing 1→2→3 made the feature rebase onto the final doc baseline; Step 8 checked conformity.
+For each task choose a `type/slug` branch, an agent name `<slug>-pr` matching `[a-z][a-z0-9_-]{0,31}`, and a blast radius: isolated infra lands first for attribution; docs/style second as baseline; widest-surface feature last. Compute the conflict surface (files touched by ≥2 tasks via `git diff --name-only`) to set Step 7 order.
 
 ### Step 3: Create worktrees inside the project's herdr space
 
@@ -161,7 +144,7 @@ One create per task. Each yields its own workspace labelled with the branch and 
 
 ```bash
 SKILL_DIR=<directory containing this SKILL.md>
-"$SKILL_DIR/scripts/verify-worktrees.sh" "$PROJECT" <created-paths...>
+"$SKILL_DIR/scripts/verify-worktrees.sh" "$PROJECT" <created-paths...>   # runs skills/herdr-parallel-dev/scripts/verify-worktrees.sh
 ```
 
 Exit 0 dispatches; any FAIL row means stop and fix first.
@@ -182,17 +165,19 @@ Prompt template (all parts mandatory):
 ```
 <ONE-LINE TASK>. You are in a dedicated worktree on branch <branch> (base <base>) of the <repo-name> repo.
 
-GUARD: run `git remote get-url origin` — it must be <expected-url> and <one known path> must exist. Otherwise STOP and report; never improvise on a different repo.
+Guard check: run `git remote get-url origin` — it must equal <expected-url> and <one known path> must exist. If either check fails, stop and report immediately; do not work in a different repo.
 
-GROUND TRUTH (verify yourself): <files, symbols, current behavior, pointers>
-TASK: <numbered steps including verification and the repo's gate command>
-DELIVER: Conventional Commits (English), push the branch, and report its tip. In `pr` mode, open a review request through the configured forge (GitHub: `gh pr create --base <integration>`); in `integration` mode, do not open one. Never merge.
-RULES: <package manager>, stay in your worktree, no unrelated refactors, decide and document; do not ask.
+Ground truth (verify yourself): <files, symbols, current behavior, pointers>
+Task: <numbered steps including verification and the repo's gate command>
+Deliver: Conventional Commits (English), push the branch, and report its tip. In `pr` mode, open a review request through the configured forge (GitHub: `gh pr create --base <integration>`); in `integration` mode, do not open one. Do not merge.
+Rules: <package manager>, stay in your worktree, no unrelated refactors, decide and document; do not ask.
 ```
 
 The 6-second check matters: a prompt that failed to land leaves the agent `idle`; resend or read the pane before assuming work started.
 
-### Step 5: Monitor
+### Step 5: Monitor and dynamically schedule (Orchestrator Loop)
+
+The current session is the active scheduler across all running herdr panes. Poll and react as individual agents settle instead of waiting passively for every agent to finish at once:
 
 ```bash
 herdr agent wait <name> --timeout 300000   # returns on first settled state
@@ -200,11 +185,17 @@ herdr agent get <name>                     # idle | working | blocked | done
 herdr agent read <name> --source visible --lines 12   # TUI agents: viewport only
 ```
 
-Loop `wait` in ~5-minute cycles. Full-screen agents use the alternate screen, so `recent-unwrapped` is not useful; read `visible`. On `blocked` (approval/question UI), read the pane and resolve via `agent prompt` or `send-keys`. An agent in the wrong repo gets `send-keys <name> ctrl+c` immediately; verify the foreign worktree is clean before touching it.
+Loop `wait` in ~5-minute cycles across active agents. Full-screen agents use the alternate screen, so read `visible` rather than `recent-unwrapped`. On `blocked` (approval/question UI), read the pane and resolve via `agent prompt` or `send-keys`. An agent in the wrong repo gets `send-keys <name> ctrl+c` immediately; verify the foreign worktree is clean before touching it.
 
-**Stall escalation:** `working` across two cycles (~10 min) with zero worktree changes (`git status --porcelain` before/after), or over ~60 min total, means read the pane and steer with a specific prompt. Still unresponsive → `ctrl+c` and take over in that worktree.
+**Dynamic orchestration rules while monitoring** (load [Dynamic Orchestration & Recovery](references/dynamic-orchestration.md) for detailed procedures):
 
-### Step 6: Accept or send back
+1. **Immediate review on settle**: As soon as an agent reaches `done` or `idle`, run Step 6 on that worktree while sibling agents continue working.
+2. **Opportunistic early merge (1+ tasks)**: When one or more tasks are `accepted (ready to land)`, have no file overlap (`git diff --name-only "$BASE...$b"`), and have no logical dependency on still-running tasks, advance them immediately to Step 7 and land them while slower tasks continue.
+3. **Late-discovered dependency reorder**: If a slower task (e.g., Task 3) turns out to be a prerequisite for earlier-finishing tasks (Tasks 1 and 2), mark Tasks 1 and 2 `accepted (held for <Task 3>)`, wait for Task 3 to pass Step 6 and land first, then sync Tasks 1 and 2 onto the updated `$BASE` before landing them.
+4. **Proactive base sync**: After any merge into `$INTEGRATION` (or `WORK_BRANCH`), sync held/next branches (`git fetch origin --prune && git rebase "$BASE"`, re-run repo gate, `push --force-with-lease`). If a still-`working` agent needs the new base mid-flight, prompt it to commit or stash its dirty tree first, then `git fetch origin && git rebase origin/$INTEGRATION` (or `git pull --rebase`), re-run the gate, and continue.
+   **Stall escalation:** `working` across two cycles (~10 min) with zero worktree changes (`git status --porcelain` before/after), or over ~60 min total, means read the pane and steer with a specific prompt. Still unresponsive → `ctrl+c` and take over in that worktree.
+
+### Step 6: Accept, hold, or send back
 
 For each settled agent, verify the deliverable yourself, never its summary:
 
@@ -215,61 +206,71 @@ git -C <worktree> diff "$BASE"...HEAD --stat      # scope matches task
 gh pr list --head <branch>                        # GitHub-forge-specific; pr mode only
 ```
 
-Run the repo gate in the worktree, then decide: **Accept** marks the row accepted and leaves the agent alive/idle for Steps 7–8; **Send back** with the specific defect, expected behavior, verification, failing command, and output (never a vague request), then return to Step 5; two failed round trips on one defect means take over and record why; **Drop** removes an unsalvageable task from the landing plan and records the reason. Do not land until every row is accepted or explicitly dropped.
+Run the repo gate in the worktree, then decide:
 
-### Step 7: Land
+- **Accept (ready to land)**: scope is clean, gate is green, and no unmerged prerequisite or file-hotspot conflict blocks it. Leave the agent alive/idle for Steps 7–8; eligible for immediate landing.
+- **Accept (held for `<task>`)**: deliverable passes verification, but dynamic scheduling found it must land after a still-running prerequisite `<task>`. Leave the agent alive/idle; once `<task>` lands, sync this branch with `$BASE`, re-run the repo gate, and land.
+- **Send back**: reply via `agent prompt` with the specific defect, expected behavior, verification, failing command, and output (never a vague request), then return to Step 5; two failed round trips on one defect means take over and record why.
+- **Drop**: remove an unsalvageable task from the landing plan and record the reason.
 
-#### Phase A: Plan (Gate 7A)
+### Step 7: Land (Opportunistic Batch or Full Wave)
 
-Order accepted branches by dependency edges first, then risk: isolated infra first for attribution; docs/style second as the baseline; widest-surface feature last so it rebases onto the final baseline. Write ordered branches, target base, landing mode, and rationale in the run and landing tables. The user decides ambiguous mode/order.
+Step 7 runs either for the full set of accepted tasks or for an opportunistic early batch (one or more `accepted (ready to land)` tasks with zero file overlap and no dependency on still-running tasks).
 
-**Gate 7A:** every row is accepted or explicitly dropped, every branch is tied to this run, and mode/base/order are recorded before any merge.
+#### Phase A: Plan or Re-plan (Gate 7A)
+
+Order the batch's accepted branches by dependency edges first, then blast radius: foundational/prerequisite task first, isolated infra second, docs/style third, widest-surface feature last so it rebases onto the updated baseline. If a slower prerequisite task is still running, hold dependent accepted tasks out of the current batch. Write ordered branches, held branches (with dependency reason), target base, landing mode, and rationale in the run and landing tables. The user decides ambiguous mode/order.
+
+**Gate 7A:** every branch in the current landing batch is accepted, has no unmerged prerequisite, is tied to this run, and has its mode/base/order recorded before any merge.
 
 #### Phase B: Validate (Gate 7B)
 
 ```bash
-for b in <ordered branches>; do
+for b in <ordered batch branches>; do
   git -C "$PROJECT" log --oneline "$BASE..$b" --stat
   git -C "$PROJECT" diff --name-only "$BASE...$b"
 done
 ```
 
-Confirm touched files match tasks, no dropped task is included, the repository gate is green, and required review checks are green. In GitHub mode, `gh pr list --head <branch>` and run-status queries are the forge-specific baseline; use a verified equivalent elsewhere (load [Forge Adaptation](references/forge-adaptation.md) before this phase when the forge is not GitHub).
+Confirm touched files match tasks, no dropped or held task is included, no silent conflict exists with still-running tasks, the repository gate is green, and required review checks are green. In GitHub mode, `gh pr list --head <branch>` and run-status queries are the forge-specific baseline; use a verified equivalent elsewhere (load [Forge Adaptation](references/forge-adaptation.md) before this phase when the forge is not GitHub).
 
 **Gate 7B:** stop on unexpected scope/review state, required checks, or mergeability; record evidence before proceeding.
 
-#### Phase C: Execute (Gate 7C)
+#### Phase C: Execute and Sync Downstream (Gate 7C)
 
-**Mode `integration`** (children collapse into the work branch, which ships as one review request):
+**Mode `integration`** (children merge into the work branch, which ships as one review request once all non-dropped tasks land):
 
 ```bash
 git -C "$PROJECT" checkout <work-branch> && git -C "$PROJECT" pull --ff-only
-for b in <ordered branches>; do
+for b in <ordered batch branches>; do
   git -C "$PROJECT" merge --squash "$b" && git -C "$PROJECT" commit   # or --no-ff, per repo convention
   <repo gate command>                                                 # green before next branch
   git -C <next-worktree> fetch origin --prune
-  git -C <next-worktree> rebase <work-branch>
+  git -C <next-worktree> rebase <work-branch>                         # or: git pull --rebase origin <work-branch>
+  <repo gate command in next-worktree>                                # re-verify after sync when prerequisite changed contracts
   git -C <next-worktree> push --force-with-lease
 done
 git -C "$PROJECT" push
+# When all non-dropped tasks have landed:
 gh pr create --base <integration> --head <work-branch>  # GitHub-forge-specific
 ```
 
-**Mode `pr`** (one review request per task, strictly sequential and CI-gated; GitHub-forge-specific baseline syntax):
+**Mode `pr`** (one review request per task, strictly sequential per merge and CI-gated; GitHub-forge-specific baseline syntax):
 
 ```bash
 gh pr merge <N> --squash                          # 1. merge, per repo convention
 gh run list --branch <integration> --limit 2 --json databaseId,name
 gh run watch <ci-run-id> --exit-status            # 2. green required (Hard Rule 7)
-git -C <next-worktree> fetch origin --prune       # 3. rebase the next branch
-git -C <next-worktree> rebase origin/<integration>
+git -C <next-worktree> fetch origin --prune       # 3. sync next or formerly held branch with updated $INTEGRATION
+git -C <next-worktree> rebase origin/<integration> # or: git -C <next-worktree> pull --rebase origin <integration>
+<repo gate command in next-worktree>              # 4. re-verify locally if the prior merge was a prerequisite
 git -C <next-worktree> push --force-with-lease
-# 4. required checks COMPLETED/SUCCESS and mergeability CLEAN, then repeat
+# 5. required checks completed and mergeable, then repeat
 ```
 
-Another forge's equivalent must merge exactly one accepted review request, identify and await its required CI checks, and rebase the next branch only after green checks. Never advance on a red or ambiguous result.
+Another forge's equivalent must merge exactly one accepted review request, identify and await its required CI checks, and sync/rebase the next branch only after green checks. When an opportunistic batch finishes while slower tasks are still running, return to Step 5 to monitor the remaining tasks and run Step 7 again when the next batch or prerequisite settles.
 
-**Gate 7C:** after each merge, observe proof that expected content is on the target and required CI is green; record merge/run identifiers before advancing. Load [Conflict Resolution](references/conflict-resolution.md) when a Step 7 rebase reports conflicts. Load [CI Failure Triage](references/ci-triage.md) when a landing gate is red or a run needs classification.
+**Gate 7C:** after each merge, observe proof that expected content is on the target and required CI is green; after syncing any downstream or formerly held branch onto the updated `$BASE`, confirm its worktree gate is green before merging it; record merge/run identifiers before advancing. Load [Conflict Resolution](references/conflict-resolution.md) when a Step 7 rebase/pull reports conflicts. Load [CI Failure Triage](references/ci-triage.md) when a landing gate is red or a run needs classification.
 
 ### Step 8: Post-merge consistency audit
 
@@ -293,11 +294,7 @@ git -C "$PROJECT" branch -D <branch...>                   # squash-merged only
 if [ "$SPACE_OPENED_BY_RUN" = yes ]; then herdr workspace close "$SPACE"; fi
 ```
 
-On success, removal deletes the checkout, prunes registration, and closes its workspace but never deletes the branch. On failure it changes nothing; a row still listed by `herdr worktree list` means removal failed. Fix it; never close that workspace by ID or orphan the checkout. A dirty worktree is not an obstacle to force past: `dirty_worktree_requires_force` means inspect/report `git status --porcelain` and `git diff`, keep it, and use `--force` only when worthless or committed elsewhere.
-
-**Force/recovery protocol:** before any `--force`, `branch -D`, or `push --force-with-lease`, record branch tip, remote tip, worktree path, and `git status --porcelain`. If a local branch was deleted by mistake, restore it at the saved (or verified reflog) tip and prove `git rev-parse <branch>` equals it. If a force-push was mistaken, restore the saved remote tip only after checking target and lease, then fetch and prove `git ls-remote origin refs/heads/<branch>` equals it. If a worktree was removed by mistake, its committed branch still exists: recreate with explicit `--cwd "$PROJECT"` or trusted `--workspace`, rerun `verify-worktrees.sh`, and prove the recovered path is listed, on the expected branch, and at the saved tip. Uncommitted files deleted by forced removal have no git undo; recover only from a separately saved patch/backup, otherwise report loss and stop. These path/tip/list/clean-status checks are the observable recovery proof.
-
-Before each `branch -D`, confirm PR merged or content provably on target; `[gone]` upstream alone is only a hint. Leave the empty `~/.herdr/worktrees/<repo>/` directory for herdr to reuse.
+Removal deletes the checkout, prunes registration, and closes its workspace without deleting the branch; if still listed in `herdr worktree list`, fix the failure rather than closing the workspace by ID. On `dirty_worktree_requires_force`, inspect `git status --porcelain` and `git diff` first and `--force` only when worthless or committed elsewhere. Before any `--force`, `branch -D`, or `push --force-with-lease`, record branch tip, remote tip, worktree path, and status; load [Dynamic Orchestration & Recovery](references/dynamic-orchestration.md) for recovery proofs. Confirm merge proof before `branch -D`, and leave `~/.herdr/worktrees/<repo>/` in place.
 
 ## Verification
 
@@ -311,46 +308,40 @@ The run is done only when observed:
 - [ ] `git -C "$PROJECT" branch -vv` has no leftover run branch without a recorded reason.
 - [ ] `herdr workspace list` shows the project's space exactly as found (closed again only if this run opened it).
 
-The bundled `scripts/verify-worktrees.sh` emits data only on stdout and diagnostics/results only on stderr. Default stdout is TSV with fields `status`, `worktree`, `branch`, `url`, `dirty`, `ahead`; `--format json` emits one object with `status`, `count`, `results`, and `expected_url`. Exit codes are documented and stable: 0 all pass, 1 at least one FAIL row, 2 usage/environment error.
+`scripts/verify-worktrees.sh` emits TSV (`status`, `worktree`, `branch`, `url`, `dirty`, `ahead`) or `--format json` (`status`, `count`, `results`, `expected_url`) on stdout and diagnostics on stderr (exit 0 pass, 1 fail, 2 usage/env error).
 
 ## Failure Handling
 
-| Failure                         | Signal                                      | Action                                                                                                                                |
-| ------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| Worktree on wrong repo          | verifier FAIL row or agent GUARD report     | Remove it, fix binding, recreate; never edit in place.                                                                                |
-| `agent_pane_busy`               | `agent start` error                         | Wait for shell prompt and retry; never dispatch into a busy pane.                                                                     |
-| Prompt did not land             | `agent get` still `idle` after ~6s          | Re-send; read pane before assuming work started.                                                                                      |
-| Agent `blocked`                 | approval/question UI                        | Read pane; answer via `agent prompt` or `send-keys`.                                                                                  |
-| Agent stalled                   | no worktree change across two ~5-min cycles | Steer specifically, then `ctrl+c` and take over.                                                                                      |
-| Deliverable rejected twice      | same defect after two send-backs            | Take over and record it.                                                                                                              |
-| Rebase conflict, semantic       | conflicting files span a feature            | Hand to that branch's agent with both intents; never drop one side.                                                                   |
-| CI red (infra)                  | setup/download/network (HTTP 429)           | GitHub: `gh run rerun <id> --failed`; otherwise use a verified equivalent; re-watch.                                                  |
-| CI red (regression)             | failure inside project checks               | Stop landing, fix branch, rerun gates.                                                                                                |
-| `dirty_worktree_requires_force` | `worktree remove` exits 1                   | Inspect/report uncommitted work; keep it; force only once worthless.                                                                  |
-| Interrupted run                 | table lost                                  | Rebuild from worktree/agent lists and GitHub `gh pr list` (or verified review-list equivalent); unmatched objects are someone else's. |
+| Failure                         | Signal                                      | Action                                                                                    |
+| ------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Worktree on wrong repo          | verifier FAIL or agent guard-check report   | Remove, fix binding, recreate; never edit in place.                                       |
+| `agent_pane_busy`               | `agent start` error                         | Wait for shell prompt and retry.                                                          |
+| Prompt did not land             | `agent get` still `idle` after ~6s          | Re-send; read pane before assuming work started.                                          |
+| Agent `blocked` / stalled       | approval UI or no diff across two 5m cycles | Read pane; answer/steer via `agent prompt` or `send-keys`, else `ctrl+c` and take over.   |
+| Deliverable rejected twice      | same defect after two send-backs            | Take over in that worktree and record why.                                                |
+| Late prerequisite discovered    | settled task A/B needs still-running task C | Mark A/B `accepted (held for C)`, land C first, sync A/B onto `$BASE`, re-gate, and land. |
+| Rebase conflict, semantic       | conflicting files span a feature            | Hand to that branch's agent with both intents; never drop one side.                       |
+| CI red (infra vs regression)    | HTTP 429/setup vs project check failure     | Infra: rerun failed jobs; regression: stop landing, fix branch, re-run gates.             |
+| `dirty_worktree_requires_force` | `worktree remove` exits 1                   | Inspect/report uncommitted work; `--force` only once confirmed worthless.                 |
+| Interrupted run                 | table lost                                  | Rebuild from `worktree list`, `agent list`, and `gh pr list` (or forge equivalent).       |
 
 Stop and ask the user when landing mode is ambiguous, a merge needs force-pushing a shared branch, uncommitted agent work has value you cannot judge, or cleanup would touch an object this run did not create.
 
 ## Gotchas
 
-- **`worktree create` without `--workspace` or `--cwd` targets the wrong project.** Plausible paths expose the mistake only through `remote get-url origin` (Hard Rule 1).
-- Git Flow repos point `origin/HEAD` at `main` while features must target `develop`; Step 1 discovers `$INTEGRATION` for exactly this reason. Never assume the default branch is the merge target.
-- Each create spawns a workspace and opens the project's space if closed; IDs come from JSON, never layout assumptions.
-- `--label` overwrites the branch handle in the sidebar (Hard Rule 2); `--no-focus` documents the API's false default.
-- A fresh pane rejects `agent start` with `agent_pane_busy` until its shell is interactive.
-- `agent prompt` without `--wait` can return a stale snapshot; confirm `working` with `agent get`.
-- An `idle`/`done` agent still holds its pane/name until it exits.
-- Squash-merged branches are not ancestors: `-d` refuses them, so `-D` is correct only after merge proof.
-- `deleteBranchOnMerge: true` makes remote heads vanish; local `[gone]` is expected.
-- Resolve rebase conflicts in the rebasing branch's worktree, never the main checkout, because the main checkout may hold the integration branch or the user's work.
+- `worktree create` without `--workspace` or `--cwd` can target the wrong repo; verify via `remote get-url origin` (Hard Rule 1).
+- Git Flow points `origin/HEAD` at `main` while features target `develop`; Step 1 resolves `$INTEGRATION` explicitly.
+- `--label` overwrites the branch handle in the sidebar; `--no-focus` prevents stealing focus.
+- A fresh pane rejects `agent start` with `agent_pane_busy` until the shell settles; `agent prompt` without `--wait` needs `agent get` to confirm `working`.
+- An `idle`/`done` agent still holds its pane and name until retired; squash-merged branches require `git branch -D` after merge proof; resolve rebase conflicts inside the branch's worktree, never the main checkout.
 
 ## Output Contract
 
 On completion, return:
 
-1. Run table in fixed order `task → branch → worktree workspace → pane → worktree path → agent → status → deliverable` (PR URL or branch tip), including dropped tasks and reasons.
-2. Review log: first-time accepts, send-backs with defects and round trips, and manual takeovers.
-3. Landing log: mode, order and rationale, each gate outcome, and flakes rerun.
+1. Run table in fixed order `task → branch → worktree workspace → pane → worktree path → agent → status → deliverable` (PR URL or branch tip), including held/reordered tasks, dropped tasks, and reasons.
+2. Review log: first-time accepts, held-for-prerequisite holds, send-backs with defects and round trips, and manual takeovers.
+3. Landing log: mode, batch waves (early opportunistic merges vs prerequisite-first reorders), downstream branch syncs (`fetch` + `rebase`/`pull`), each gate outcome, and flakes rerun.
 4. Audit results: sync, coherence, and style-propagation findings with fixes.
 5. Cleanup report: agents stopped, worktrees removed, branches deleted with proof basis, space closed/left open and why, preserved objects, and final `git branch -vv`, `herdr worktree list --cwd "$PROJECT"`, and `herdr workspace list`.
 
@@ -359,3 +350,10 @@ Stable run-table fields for downstream consumers:
 ```text
 task | branch | worktree_workspace | pane | worktree_path | agent | status | deliverable
 ```
+
+## References
+
+- [Dynamic Orchestration & Recovery](references/dynamic-orchestration.md): load during Steps 5–7 for early-merge batching, late prerequisite reordering, and mid-flight branch sync, or during Step 9 for force-operation recovery proofs
+- [Forge Adaptation](references/forge-adaptation.md): load before Step 1 or Step 7B when the repo is not hosted on GitHub or `gh` is unavailable
+- [Conflict Resolution](references/conflict-resolution.md): load during Steps 5 or 7C when rebasing or pulling onto the updated integration branch reports conflicts
+- [CI Failure Triage](references/ci-triage.md): load during Step 7C when a landing gate is red or a CI run needs infrastructure vs regression classification
