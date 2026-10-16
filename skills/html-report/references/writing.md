@@ -28,12 +28,12 @@ Two more rules from the user this skill serves:
 
 ## Structure
 
-- **Title states the finding, in one line.** "12个依赖里有3个可以直接删除", not "依赖分析报告". Keep it to about 20 CJK characters or 10 English words: a longer Chinese title wraps, and the balanced wrap can split a word ("上线｜后"). Put the cause and scope in the meta line; the kicker line above the title carries the category and date.
+- **Title states the finding, in one line.** "3 of 12 dependencies can be removed now", not "Dependency analysis report". Keep it to about 10 English words or 20 CJK characters: a longer title wraps, and in Chinese the balanced wrap can split a word ("上线｜后"). Put the cause and scope in the meta line; the kicker line above the title carries the category and date.
 - **Summary first.** 2–5 points, each a full sentence with the number or decision in it. A reader who stops after the summary must know what happened and what to do.
-- **Headings state the point of their section**, not its topic: "zod 4的升级要单独做", not "关于zod".
+- **Headings state the point of their section**, not its topic: "Upgrade zod 4 separately", not "About zod".
 - **Short paragraphs.** Three to four sentences at most. Put detail, logs, and raw output in `<details>`.
 - **Recommendation before alternatives.** When options are compared, say which one you recommend and why, then show the others.
-- **Say what you do not know.** Mark guesses as guesses once, at the claim, in plain words: "推测", "未验证", "not measured".
+- **Say what you do not know.** Mark guesses as guesses once, at the claim, in plain words: "likely", "not verified", "not measured".
 
 ## Numbers and evidence
 
@@ -60,7 +60,7 @@ When a source is in a language other than the page language (English docs, a Jap
 
 ## Option and question text
 
-- A question is one sentence that ends with a question mark and names the decision: "zod 用哪种方式升级？"
+- A question is one sentence that ends with a question mark and names the decision: "How should we upgrade zod?"
 - An option label is 2–8 words naming the choice. The description below it states the cost or consequence in one short line.
 - The hint under a question says what the answer affects, not how to click.
 - Labels never show internal IDs, enum values, or file-safe slugs. Those go in `name` and `value`.

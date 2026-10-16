@@ -37,7 +37,7 @@ Instructions the user gives in the current conversation (language, layout, color
 1. **One self-contained file from the template.** Start from [assets/template.html](assets/template.html). No CDN scripts, web fonts, or remote images, because the page must open offline and stay small.
 2. **Conclusion first.** The first screen holds a title that states the main finding and a summary box with 2–5 points. The reader decides from these whether to read on.
 3. **Plain writing.** Follow [references/writing.md](references/writing.md) for every sentence, heading, label, and option.
-4. **The reader's language.** Use the language the user names for the report. If they name none, use the language the user writes in during this conversation. The page text, option labels, and the chat hand-over all use that one language; set `<html lang>` to match (`zh-CN`, `zh-TW`, `ja`, `ko`, `en`). Never default to the language of the sources, the repository, or these instructions. Text quoted in another language gets a translation first and keeps the original, because the user decides from the translation and the agent acts on the original.
+4. **The reader's language.** Use the language the user names for the report. If they name none, use the language of the user's latest message. The page text, option labels, and the chat hand-over all use that one language; set `<html lang>` to match (`zh-CN`, `zh-TW`, `ja`, `ko`, `en`). Never default to the language of the sources, the repository, or these instructions. Text quoted in another language gets a translation first and keeps the original, because the user decides from the translation and the agent acts on the original.
 5. **Answers come back through a file.** Review pages run [scripts/serve.py](scripts/serve.py); the agent reads `state.json`. Ask the user to copy or paste answers only when the server cannot run.
 6. **Size budget.** The finished HTML stays under 150 KB without raster images. Use inline SVG or CSS for charts. Each raster image is WebP or JPEG, at most 1600 px wide and 200 KB; the whole file stays under 1 MB. Base64 adds a third to an image's size.
 7. **Keep the template's look.** Cream background, blue-black ink, one accent color, status colors only for status. Text stays in the narrow reading column; only a comparison, a many-column table, or a large figure breaks out with `.wide`, so the one thing to compare side by side stands out. Use the big-number figures row when two to four numbers carry the main finding. Do not add gradients, emoji headings, decorative icons, or animations. Do not shrink the type: body text is 17.5–18 px and nothing is smaller than 14 px, because the page is for reading.
@@ -68,7 +68,7 @@ Write to a project path instead when the user names one or when the report belon
 
 1. Read [references/writing.md](references/writing.md) and [references/components.md](references/components.md).
 2. Outline before writing: the title states the main finding, the summary lists the 2–5 points that matter, and each section heading states that section's point.
-3. Edit `<html lang>` and `<title>`, then replace the placeholder masthead and summary inside `<main class="page">`.
+3. Replace the `LANG` placeholder in `<html lang="LANG">` with the page language tag from Hard Rule 4, and set `<title>`. Fonts, line breaking, and the review controls' text all follow this tag. Then replace the placeholder masthead and summary inside `<main class="page">`.
 4. Pick one component per idea, using the "Choose by content shape" table in components.md. Leave the template's `<style>` and `<script>` unchanged; put any page-specific CSS in a second short `<style>` block.
 5. For a long report with five or more sections, add the table of contents after the summary.
 
@@ -79,7 +79,7 @@ Wrap the questions in `<form data-review>`; the template script adds the progres
 - Give every input a stable ASCII `name` and `value` (`zod-plan`, `all-at-once`). Show the user a label written in the page language. Never show an ID as the label.
 - Mark questions the user must answer with `data-required="<name>"` on the `fieldset`.
 - Use radio buttons for one answer, checkboxes for several, the `.seg` row for a verdict per item, and an `<input type="text" name="<name>:note">` for an optional comment. Color verdict pills by consequence (`risk` deletes or cannot be undone, `ok` keeps things as they are, `warn` defers), the same way on every item.
-- Put the recommended option first and mark it with a `推荐`/`Recommended` chip; write each option's cost in its description.
+- Put the recommended option first and mark it with a chip in the page language (`推荐`, `おすすめ`, `추천`, `Recommended`); write each option's cost in its description.
 - For lists over 10 items, pre-select the recommended verdict and say so in the hint, so the user changes only the exceptions. Otherwise leave options unselected.
 - Ask only what changes the next action. Keep a page to ten questions or fewer; a verdict list counts as one question however many items it holds. Split larger reviews into rounds.
 
@@ -98,7 +98,7 @@ uv run <skill-dir>/scripts/serve.py start "$dir"
 
 Verify before the user opens the page, so test answers never reach them.
 
-1. Run `wc -c "$dir/index.html"` and compare against the size budget.
+1. Run `wc -c "$dir/index.html"` and compare against the size budget. Confirm `<html lang>` is the page language, not `LANG`.
 2. With a browser tool, load the page at 1280 px and 400 px wide. Check the screenshots, the console for errors, and that `document.documentElement.scrollWidth` does not exceed `clientWidth`.
 3. On a review page, click one option and confirm `state.json` changed. Then reset: close that tab and delete `state.json`. The page keeps a browser copy of its answers only while the server is unreachable and drops it after the next successful save.
 4. Without a browser tool, take headless screenshots: `"<chrome-binary>" --headless --screenshot=/tmp/check.png --window-size=1280,2400 "<url-or-file-url>"`, and repeat at `400,2400`.
@@ -121,9 +121,9 @@ Reply in chat with one line on what the page holds plus its path or URL. For a r
 ```json
 {
   "answers": {
-    "zod-plan": { "value": "all-at-once", "label": "一次性升级" },
-    "zod-plan:note": { "value": "下周再合并" },
-    "extra": { "value": ["licenses"], "label": ["许可证"] }
+    "zod-plan": { "value": "all-at-once", "label": "All at once" },
+    "zod-plan:note": { "value": "Merge it next week" },
+    "extra": { "value": ["licenses"], "label": ["Licenses"] }
   },
   "unanswered": ["moment"],
   "submitted": true,

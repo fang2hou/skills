@@ -39,11 +39,13 @@ Most sections need only headings, paragraphs, and at most one component. A page 
 
 Everything goes inside `<main class="page">`. Children use the narrow reading column. Add `class="wide"` to a compare grid, a table with many columns, or a large figure to let it break out to 1080 px. The contrast is deliberate: text stays narrow and easy to read, and the one thing the reader should look at side by side gets the full width. Use it for at most a few blocks per page; if everything is wide, nothing stands out.
 
+The snippets below use English text. Write all visible text in the page language from Hard Rule 4; keep class names, `name`, and `value` as shown.
+
 ```html
 <header class="masthead">
-  <p class="kicker">依赖审计 · 2026-10-16</p>
-  <h1>12个依赖里有3个可以直接删除</h1>
-  <p class="meta">范围：apps/web 的 package.json。依据：pnpm why、代码搜索、发布记录。</p>
+  <p class="kicker">Dependency audit · 2026-10-16</p>
+  <h1>3 of 12 dependencies can be removed now</h1>
+  <p class="meta">Scope: apps/web package.json. Sources: pnpm why, code search, release notes.</p>
 </header>
 ```
 
@@ -51,8 +53,8 @@ Table of contents for reports with five or more sections; give each `h2` a match
 
 ```html
 <ol class="toc">
-  <li><a href="#remove">可以删除的包</a></li>
-  <li><a href="#zod">zod 升级</a></li>
+  <li><a href="#remove">Packages to remove</a></li>
+  <li><a href="#zod">zod upgrade</a></li>
 </ol>
 ```
 
@@ -62,10 +64,12 @@ Summary box, directly after the masthead:
 
 ```html
 <section class="summary">
-  <h2>结论</h2>
+  <h2>Conclusion</h2>
   <ul>
-    <li><strong>可删除3个</strong>：lodash、moment、classnames。删除后体积减少约180 KB。</li>
-    <li>zod 4需要单独升级，影响14个文件。</li>
+    <li>
+      <strong>Remove 3 packages</strong>: lodash, moment, classnames. This saves about 180 KB.
+    </li>
+    <li>zod 4 needs its own upgrade; it touches 14 files.</li>
   </ul>
 </section>
 ```
@@ -74,32 +78,32 @@ Callout. Plain for notes; `ok`, `warn`, `risk` only when the status is real:
 
 ```html
 <div class="callout warn">
-  <p><strong>zod 4的升级要单独做。</strong>它改了错误信息的结构。</p>
+  <p><strong>Upgrade zod 4 separately.</strong> It changes the shape of error messages.</p>
 </div>
 ```
 
 Chip, inside text or a table cell. Variants: `ok`, `warn`, `risk`, `accent`, or none for neutral:
 
 ```html
-<span class="chip ok">删除</span>
+<span class="chip ok">Remove</span>
 ```
 
 Steps:
 
 ```html
 <ol class="steps">
-  <li>删除三个包并运行 <code>pnpm install</code>。</li>
-  <li>跑完整测试和构建。</li>
+  <li>Remove the three packages and run <code>pnpm install</code>.</li>
+  <li>Run the full test suite and build.</li>
 </ol>
 ```
 
-Pair, for a quote in another language. The translation comes first; the original keeps its `lang`:
+Pair, for a quote in another language. The translation comes first, in the page language; the original keeps its `lang`:
 
 ```html
 <div class="pair">
-  <p class="tr">Zod 4 把错误自定义统一到 <code>error</code> 参数。</p>
-  <p class="orig" lang="en">
-    Zod 4 standardizes error customization under a single <code>error</code> param.
+  <p class="tr">The error format changes in v4, so update form validation in the same PR.</p>
+  <p class="orig" lang="ja">
+    v4 ではエラー形式が変わるため、フォームの検証も同じ PR で更新してください。
   </p>
 </div>
 ```
@@ -108,7 +112,7 @@ Details, for evidence. Printing opens every `details` automatically:
 
 ```html
 <details>
-  <summary>搜索命令与完整输出</summary>
+  <summary>Search commands and full output</summary>
   <pre><code>$ rg -l "from 'lodash'" apps/web</code></pre>
 </details>
 ```
@@ -123,9 +127,9 @@ Key-value list, for a few facts about one thing. Use a table instead when severa
 
 ```html
 <dl class="kv">
-  <dt>负责人</dt>
-  <dd>前端组</dd>
-  <dt>当前版本</dt>
+  <dt>Owner</dt>
+  <dd>Frontend team</dd>
+  <dt>Current version</dt>
   <dd>zod 3.23.8</dd>
 </dl>
 ```
@@ -136,8 +140,8 @@ Figures row, right after the summary when two to four numbers carry the main fin
 
 ```html
 <div class="figures">
-  <div><b>12</b><span>依赖总数</span></div>
-  <div><b>180 KB</b><span>预计减少的体积</span></div>
+  <div><b>12</b><span>dependencies</span></div>
+  <div><b>180 KB</b><span>expected savings</span></div>
 </div>
 ```
 
@@ -148,16 +152,16 @@ Table. Always wrap it so wide tables scroll instead of breaking the page; right-
   <table>
     <thead>
       <tr>
-        <th>包</th>
-        <th class="num">体积</th>
-        <th>结论</th>
+        <th>Package</th>
+        <th class="num">Size</th>
+        <th>Verdict</th>
       </tr>
     </thead>
     <tbody>
       <tr>
         <td>moment</td>
         <td class="num">96 KB</td>
-        <td><span class="chip ok">删除</span></td>
+        <td><span class="chip ok">Remove</span></td>
       </tr>
     </tbody>
   </table>
@@ -179,13 +183,13 @@ Compare cards. Mark the recommended option with `pick` and a chip; keep pros and
 ```html
 <div class="compare wide">
   <article class="pick">
-    <h3>一次性升级 <span class="chip accent">推荐</span></h3>
-    <p>一个 PR 改完14个文件。</p>
+    <h3>Upgrade at once <span class="chip accent">Recommended</span></h3>
+    <p>One PR changes all 14 files.</p>
     <ul class="pros">
-      <li>改动集中，好审查</li>
+      <li>Changes in one place, easy to review</li>
     </ul>
     <ul class="cons">
-      <li>PR 较大，约400行</li>
+      <li>Large PR, about 400 lines</li>
     </ul>
   </article>
   <article>…</article>
@@ -207,7 +211,7 @@ Draw charts and diagrams as inline SVG. Rules:
   <svg
     viewBox="0 0 520 90"
     role="img"
-    aria-label="请求流程：浏览器到缓存再到源站"
+    aria-label="Request path: browser to cache to origin"
     font-family="inherit"
     font-size="15"
   >
@@ -218,12 +222,12 @@ Draw charts and diagrams as inline SVG. Rules:
       <path d="M121 44h79M320 44h79" stroke="var(--accent)" />
     </g>
     <g fill="currentColor" text-anchor="middle">
-      <text x="61" y="49">浏览器</text>
-      <text x="260" y="49">缓存</text>
-      <text x="459" y="49">源站</text>
+      <text x="61" y="49">Browser</text>
+      <text x="260" y="49">Cache</text>
+      <text x="459" y="49">Origin</text>
     </g>
   </svg>
-  <figcaption>命中缓存时，请求不到源站。</figcaption>
+  <figcaption>On a cache hit, the request never reaches the origin.</figcaption>
 </figure>
 ```
 
@@ -237,19 +241,20 @@ Single choice, as option cards. Add `cols` to the `options` div for two or three
 
 ```html
 <fieldset class="q" data-required="zod-plan">
-  <legend>zod 用哪种方式升级？</legend>
-  <p class="hint">影响 PR 的大小和审查方式。</p>
+  <legend>How should we upgrade zod?</legend>
+  <p class="hint">This sets the PR size and how it is reviewed.</p>
   <div class="options cols">
     <label class="option"
-      ><input type="radio" name="zod-plan" value="all-at-once" /><span class="t">一次性升级</span
-      ><span class="d">一个 PR，约400行</span></label
+      ><input type="radio" name="zod-plan" value="all-at-once" /><span class="t">All at once</span
+      ><span class="d">One PR, about 400 lines</span></label
     >
     <label class="option"
-      ><input type="radio" name="zod-plan" value="per-form" /><span class="t">逐个表单迁移</span
-      ><span class="d">5个 PR，两套 API 并存</span></label
+      ><input type="radio" name="zod-plan" value="per-form" /><span class="t"
+        >One form at a time</span
+      ><span class="d">5 PRs, both APIs live for a while</span></label
     >
   </div>
-  <input type="text" name="zod-plan:note" placeholder="补充说明（可选）" />
+  <input type="text" name="zod-plan:note" placeholder="Note (optional)" />
 </fieldset>
 ```
 
@@ -261,20 +266,20 @@ Tone classes color each pill by what the choice does: `risk` for a destructive o
 
 ```html
 <fieldset class="q">
-  <legend>逐项确认</legend>
+  <legend>Decide each package</legend>
   <fieldset class="item" data-required="lodash">
     <legend>lodash <span class="chip">72 KB</span></legend>
-    <p class="hint">2026年9月重构后已无引用。</p>
+    <p class="hint">No imports left since the September 2026 refactor.</p>
     <div class="seg">
       <label class="risk"
-        ><input type="radio" name="lodash" value="remove" /><span>删除</span></label
+        ><input type="radio" name="lodash" value="remove" /><span>Remove</span></label
       >
-      <label class="ok"><input type="radio" name="lodash" value="keep" /><span>保留</span></label>
+      <label class="ok"><input type="radio" name="lodash" value="keep" /><span>Keep</span></label>
       <label class="warn"
-        ><input type="radio" name="lodash" value="later" /><span>以后再说</span></label
+        ><input type="radio" name="lodash" value="later" /><span>Later</span></label
       >
     </div>
-    <input type="text" name="lodash:note" placeholder="备注（可选）" />
+    <input type="text" name="lodash:note" placeholder="Note (optional)" />
   </fieldset>
 </fieldset>
 ```
@@ -283,8 +288,8 @@ Free text, for an open question. Use `textarea` only when the answer may run lon
 
 ```html
 <fieldset class="q">
-  <legend>还有什么要我注意的？</legend>
-  <textarea name="extra-notes" placeholder="可以留空"></textarea>
+  <legend>Anything else I should know?</legend>
+  <textarea name="extra-notes" placeholder="Optional"></textarea>
 </fieldset>
 ```
 
