@@ -23,7 +23,7 @@ Contents:
 
 Two more rules from the user this skill serves:
 
-- **Do not over-explain.** The reader is technical. Skip definitions of common terms and do not restate a table in prose.
+- **Do not over-explain to the user.** The user is technical. Skip definitions of common terms and do not restate a table in prose. Study material and files shared with others are the exception: define, once, each term their reader may not know.
 - **One idea per sentence.** If a sentence needs a semicolon or a second "but", split it.
 
 ## Structure
@@ -32,6 +32,7 @@ Two more rules from the user this skill serves:
 - **Summary first.** 2–5 points, each a full sentence with the number or decision in it. A reader who stops after the summary must know what happened and what to do.
 - **Headings state the point of their section**, not its topic: "Upgrade zod 4 separately", not "About zod".
 - **Short paragraphs.** Three to four sentences at most. Put detail, logs, and raw output in `<details>`.
+- **Show structure instead of describing it.** A process that branches, parts that depend on each other, or a whole-system overview gets a flowchart or diagram; items that share fields get a table. A simple point stays a sentence. Never show the same content twice, once as a figure and again as prose.
 - **Recommendation before alternatives.** When options are compared, say which one you recommend and why, then show the others.
 - **Say what you do not know.** Mark guesses as guesses once, at the claim, in plain words: "likely", "not verified", "not measured".
 
@@ -67,7 +68,7 @@ When a source is in a language other than the page language (English docs, a Jap
 
 ## Final pass
 
-Before Step 6 of the workflow, reread the page once and check:
+Before Step 6 of the workflow, reread the page once and check the list below. One pass is enough: fix what is unclear or wrong, not what is merely plain. A page read once does not need polished prose.
 
 - [ ] The title and summary alone tell the reader the result.
 - [ ] No sentence has more than one idea.
