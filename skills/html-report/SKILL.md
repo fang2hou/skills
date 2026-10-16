@@ -100,7 +100,7 @@ Verify before the user opens the page, so test answers never reach them.
 
 1. Run `wc -c "$dir/index.html"` and compare against the size budget.
 2. With a browser tool, load the page at 1280 px and 400 px wide. Check the screenshots, the console for errors, and that `document.documentElement.scrollWidth` does not exceed `clientWidth`.
-3. On a review page, click one option and confirm `state.json` changed. Then reset: run `localStorage.clear()` in that tab, close it, and delete `state.json`. The page keeps a browser copy of its answers and sends it back on the next load, so deleting the file alone does not reset it.
+3. On a review page, click one option and confirm `state.json` changed. Then reset: close that tab and delete `state.json`. The page keeps a browser copy of its answers only while the server is unreachable and drops it after the next successful save.
 4. Without a browser tool, take headless screenshots: `"<chrome-binary>" --headless --screenshot=/tmp/check.png --window-size=1280,2400 "<url-or-file-url>"`, and repeat at `400,2400`.
 5. If no browser runs at all, run the read-through checklist at the end of components.md, and say in the hand-over that the page was checked by reading only.
 

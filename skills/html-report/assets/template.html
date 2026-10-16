@@ -1001,9 +1001,10 @@
         sb.addEventListener("pointercancel", endDrag);
 
         const live = location.protocol.startsWith("http");
+        const scrollKey = `html-report:${location.pathname}:y`;
         const storeKey = `html-report:${location.pathname}:${document.title}`;
         if (live) {
-          const y = sessionStorage.getItem(storeKey + ":y");
+          const y = sessionStorage.getItem(scrollKey);
           if (y) addEventListener("load", () => scrollTo(0, +y));
           let version = null;
           setInterval(async () => {
@@ -1011,7 +1012,7 @@
               const res = await fetch("/api/version", { cache: "no-store" });
               const v = (await res.json()).version;
               if (version !== null && v !== version) {
-                sessionStorage.setItem(storeKey + ":y", String(scrollY));
+                sessionStorage.setItem(scrollKey, String(scrollY));
                 location.reload();
               }
               version = v;
@@ -1152,6 +1153,7 @@
               });
               if (!res.ok) throw new Error(res.status);
               online = true;
+              localStorage.removeItem(storeKey);
               setStatus(state.submitted ? S.submitted : S.saved);
               return;
             } catch {
