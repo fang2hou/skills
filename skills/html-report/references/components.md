@@ -16,22 +16,22 @@ Contents:
 
 Use one component per idea. If two components could show the same content, pick the first match in this table.
 
-| The content is…                                     | Use                                    |
-| --------------------------------------------------- | -------------------------------------- |
-| The result the reader must take away                | Summary box                            |
-| A warning, risk, or decision the reader must notice | Callout (`warn`, `risk`, `ok`, plain)  |
-| 2–4 numbers that carry the main finding             | Figures row                            |
-| A few facts about one thing (owner, version, date)  | Key-value list                         |
-| Records with the same fields                        | Table                                  |
-| One measure across a few items                      | Bars                                   |
-| A trend over time or a flow between parts           | Inline SVG                             |
-| Options the reader weighs against each other        | Compare cards                          |
-| An ordered procedure                                | Steps                                  |
-| Text quoted from another language                   | Pair                                   |
-| Evidence most readers skip: logs, raw output        | Details                                |
-| A status word inside a sentence or table cell       | Chip                                   |
-| A question for the user                             | Review components                      |
-| Anything else                                       | Paragraphs and lists; they need no box |
+| The content is…                                              | Use                                    |
+| ------------------------------------------------------------ | -------------------------------------- |
+| The result the reader must take away                         | Summary box                            |
+| A warning, risk, or decision the reader must notice          | Callout (`warn`, `risk`, `ok`, plain)  |
+| 2–4 numbers that carry the main finding                      | Figures row                            |
+| A few facts about one thing (owner, version, date)           | Key-value list                         |
+| Records with the same fields                                 | Table                                  |
+| One measure across a few items                               | Bars                                   |
+| A trend over time, a branching process, or how parts connect | Inline SVG (chart, flowchart, diagram) |
+| Options the reader weighs against each other                 | Compare cards                          |
+| An ordered procedure                                         | Steps                                  |
+| Text quoted from another language                            | Pair                                   |
+| Evidence most readers skip: logs, raw output                 | Details                                |
+| A status word inside a sentence or table cell                | Chip                                   |
+| A question for the user                                      | Review components                      |
+| Anything else                                                | Paragraphs and lists; they need no box |
 
 Most sections need only headings, paragraphs, and at most one component. A page where every block sits in a box reads as noise.
 

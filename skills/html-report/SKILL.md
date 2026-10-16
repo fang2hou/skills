@@ -1,33 +1,32 @@
 ---
 name: html-report
 description: >
-  Builds readable single-file HTML reports and interactive review pages whose answers
-  the agent reads back from a local JSON file. Use when the user asks for a report,
-  audit, comparison, or write-up, or must choose, approve, or comment on items.
+  Builds single-file HTML reports and review pages. Use when the user asks for or implies
+  a report (investigation, study material, project summary, audit, comparison), or when a
+  complex direction call needs the human to choose, approve, or comment.
 license: MIT
 compatibility: Requires file write access and a browser. Review pages need uv (or Python 3.11+) to run the bundled local server on 127.0.0.1.
 metadata:
   author: fang2hou
-  version: "1.0"
+  version: "1.1"
   sources: "User report and review-page preferences; Claude Code artifacts docs; dogum/html-artifacts; MDN CSS Text 4; Orwell, Politics and the English Language"
 ---
 
 # HTML Report
 
-Turns findings into one calm, readable HTML page, and turns questions for the user into a page whose answers land in `state.json` for the agent to read.
+Turns findings into one calm, readable HTML page, and turns direction calls the user must make into a page whose answers land in `state.json` for the agent to read.
 
 ## When to Use
 
-- The user asks for a report, technical write-up, audit, investigation summary, comparison, or plan meant to be read, not applied.
-- The answer would exceed about one screen of chat, or needs tables, side-by-side options, charts, or translated source quotes.
-- The agent needs decisions with context: pick among options, approve or reject a list, triage items, or comment per item. A page beats a chat question when there are three or more questions, or when each choice needs its trade-offs shown.
+- **The user asks for a report, or implies one.** Investigation or audit results, study material, a project or work summary, a comparison, or a plan meant to be read rather than applied. A request implies a report when the answer has several findings, sections, or sources and would run past about one screen of chat: "find out why the build got slow" ending in three causes, "sum up what we shipped this month", "teach me how this module works".
+- **A complex direction call needs the human.** The agent cannot proceed until the user picks among options whose trade-offs must be shown side by side, approves or rejects a list, triages items, or comments per item. A page beats a chat question when there are three or more questions, or when each choice needs its trade-offs shown.
 - A long task should show its progress in a page that refreshes as the agent works.
 
 ## When NOT to Use
 
-- Short answers, or one yes/no question: reply in chat or use the harness's question tool.
+- Short answers, or one question with obvious options: reply in chat or use the harness's question tool.
 - Code, config, commands, or diffs the user will apply: put them in chat or in the files.
-- Documents that live in git and get diffed (README, ADR, CHANGELOG): write Markdown.
+- Documents that live in git and get diffed (README, ADR, CHANGELOG): write Markdown, unless the user explicitly asks for an HTML page under `docs/`.
 - Product UI, websites, or slide decks: those are frontend work with their own design system.
 
 ## Hard Rules
@@ -35,8 +34,8 @@ Turns findings into one calm, readable HTML page, and turns questions for the us
 Instructions the user gives in the current conversation (language, layout, colors, file location) override these rules and the template defaults.
 
 1. **One self-contained file from the template.** Start from [assets/template.html](assets/template.html). No CDN scripts, web fonts, or remote images, because the page must open offline and stay small.
-2. **Conclusion first.** The first screen holds a title that states the main finding and a summary box with 2–5 points. The reader decides from these whether to read on.
-3. **Plain writing.** Follow [references/writing.md](references/writing.md) for every sentence, heading, label, and option.
+2. **Conclusion first.** The first screen holds a title that states the main finding (for study material, the core idea) and a summary box with 2–5 points. The reader decides from these whether to read on.
+3. **Plain writing, not polished writing.** Follow [references/writing.md](references/writing.md), built on Orwell's six rules, for every sentence, heading, label, and option. Most pages are read once and thrown away: write one clear draft, do the final pass, and stop. Rewording rounds cost time and add nothing the reader needs.
 4. **The reader's language.** Use the language the user names for the report. If they name none, use the language of the user's latest message. The page text, option labels, and the chat hand-over all use that one language; set `<html lang>` to match (`zh-CN`, `zh-TW`, `ja`, `ko`, `en`). Never default to the language of the sources, the repository, or these instructions. Text quoted in another language gets a translation first and keeps the original, because the user decides from the translation and the agent acts on the original.
 5. **Answers come back through a file.** Review pages run [scripts/serve.py](scripts/serve.py); the agent reads `state.json`. Ask the user to copy or paste answers only when the server cannot run.
 6. **Size budget.** The finished HTML stays under 150 KB without raster images. Use inline SVG or CSS for charts. Each raster image is WebP or JPEG, at most 1600 px wide and 200 KB; the whole file stays under 1 MB. Base64 adds a third to an image's size.
@@ -45,31 +44,40 @@ Instructions the user gives in the current conversation (language, layout, color
 
 ## Workflow
 
-### Step 1: Choose the page type
+### Step 1: Pick the purpose
 
-| Type        | Use when                                     | Server                                         |
-| ----------- | -------------------------------------------- | ---------------------------------------------- |
-| Report      | The user only reads                          | None; open the file directly                   |
-| Live report | The agent keeps updating it during long work | `serve.py start`; the page reloads on change   |
-| Review page | The user must choose, approve, or comment    | `serve.py start`; answers land in `state.json` |
+The purpose sets the page type, what the page leads with, and where the file goes.
 
-A report may end with a review section. Treat it as a review page.
+| Purpose                | Page type   | Lead with, then                                                                                                    | Location      |
+| ---------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------ | ------------- |
+| Investigation or audit | Report      | The answer; then the evidence, its sources, and what is not verified                                               | tmp           |
+| Project summary        | Report      | The outcome in numbers; then what changed, what is left, and the risks                                             | tmp           |
+| Study material         | Report      | The core idea and what the reader can do after; then concepts from simple to complex, each example before its rule | `~/Downloads` |
+| Direction decision     | Review page | The decision and the recommended option; then only the context each choice needs                                   | tmp           |
+| Long-task progress     | Live report | Current status and the next step                                                                                   | tmp           |
+
+- A file the user will share with others goes to `~/Downloads`, whatever its purpose. It is a plain report: no review form, and no local absolute paths or references to this conversation that its reader cannot follow.
+- Write into a project's `docs/` only when the user explicitly asks for project documentation there.
+- When the purpose is unclear, use tmp and offer the `~/Downloads` copy in the hand-over.
+- Live reports and review pages run `serve.py` (Step 5); a report opens as a file. A report that ends with a review section is a review page.
 
 ### Step 2: Create the working directory
+
+Build and verify every page in a tmp working directory, whatever its final location:
 
 ```bash
 base="${TMPDIR:-/tmp}"; dir="${base%/}/html-report/$(date +%Y%m%d-%H%M)-<short-slug>"
 mkdir -p "$dir" && cp <skill-dir>/assets/template.html "$dir/index.html"
 ```
 
-Write to a project path instead when the user names one or when the report belongs to that project. One directory holds one page and one round of questions.
+One directory holds one page and one round of questions. After Step 6, copy a page bound for `~/Downloads` to `~/Downloads/<YYYYMMDD>-<short-slug>.html`, or a docs page to the path the user named; never overwrite an existing file there.
 
 ### Step 3: Write the content
 
 1. Read [references/writing.md](references/writing.md) and [references/components.md](references/components.md).
-2. Outline before writing: the title states the main finding, the summary lists the 2–5 points that matter, and each section heading states that section's point.
+2. Outline before writing, in the order Step 1 gives for the purpose: the title states the main finding, the summary lists the 2–5 points that matter, and each section heading states that section's point.
 3. Replace the `LANG` placeholder in `<html lang="LANG">` with the page language tag from Hard Rule 4, and set `<title>`. Fonts, line breaking, and the review controls' text all follow this tag. Then replace the placeholder masthead and summary inside `<main class="page">`.
-4. Pick one component per idea, using the "Choose by content shape" table in components.md. Leave the template's `<style>` and `<script>` unchanged; put any page-specific CSS in a second short `<style>` block.
+4. Pick one component per idea, using the "Choose by content shape" table in components.md. Draw a flowchart or diagram where the logic branches, parts depend on each other, or the reader needs the whole picture; use a table where items share fields; leave everything else as short paragraphs. Leave the template's `<style>` and `<script>` unchanged; put any page-specific CSS in a second short `<style>` block.
 5. For a long report with five or more sections, add the table of contents after the summary.
 
 ### Step 4: Build the review form (review pages only)
@@ -106,7 +114,7 @@ Verify before the user opens the page, so test answers never reach them.
 
 ### Step 7: Open, hand over, and collect answers
 
-Open the URL, or the file path for a plain report. If the agent instructions name a browser for opening pages, use it (macOS: `open -a "Google Chrome" "<url>"`); otherwise use `open` on macOS, `xdg-open` on Linux, or `start "" "<url>"` on Windows.
+Open the URL, or the file path for a plain report (the `~/Downloads` or docs copy when one was made). If the agent instructions name a browser for opening pages, use it (macOS: `open -a "Google Chrome" "<url>"`); otherwise use `open` on macOS, `xdg-open` on Linux, or `start "" "<url>"` on Windows.
 
 Reply in chat with one line on what the page holds plus its path or URL. For a review page, also say what the user needs to decide and that Submit sends the answers back.
 
@@ -153,11 +161,11 @@ To change a served page, edit `index.html` in place: open pages reload within tw
 - In Chinese and Japanese text, do not type spaces between CJK characters and Latin letters or digits. The template's `text-autospace` adds a small gap, and a typed space creates a line-break point: a Japanese heading broke as "3 / 個". Korean is the opposite: it uses real spaces, so the template turns autospace off for `lang="ko"`.
 - Fonts follow the `lang` attribute. Japanese quoted inside a Chinese report needs an element with `lang="ja"`, or its kanji render in Chinese glyph shapes.
 - Submit with unanswered required items first highlights them; a second click submits and records them in `unanswered`.
-- macOS `$TMPDIR` lives under `/var/folders` and the system purges files there after days without access. Tell the user to copy a report they want to keep, or write it to a project path.
+- macOS `$TMPDIR` lives under `/var/folders` and the system purges files there after days without access. When a tmp report looks worth keeping, offer to copy it to `~/Downloads`.
 
 ## Output Contract
 
-1. The page path, and the URL when served.
+1. The final page path (the `~/Downloads` or docs copy when one was made), and the URL when served.
 2. One chat line on what the page holds and, for a review page, what the user must decide.
 3. After a review: the decisions read from `state.json`, the unanswered items, and the server stopped.
 
