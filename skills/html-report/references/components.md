@@ -1,0 +1,309 @@
+# Components
+
+Markup for every component the template styles. Copy the snippet, replace the text, and keep the class names; the template's CSS and script depend on them.
+
+Contents:
+
+- [Choose by content shape](#choose-by-content-shape)
+- [Page frame](#page-frame)
+- [Reading components](#reading-components)
+- [Data components](#data-components)
+- [Diagrams and images](#diagrams-and-images)
+- [Review components](#review-components)
+- [Read-through checklist](#read-through-checklist)
+
+## Choose by content shape
+
+Use one component per idea. If two components could show the same content, pick the first match in this table.
+
+| The content is…                                     | Use                                    |
+| --------------------------------------------------- | -------------------------------------- |
+| The result the reader must take away                | Summary box                            |
+| A warning, risk, or decision the reader must notice | Callout (`warn`, `risk`, `ok`, plain)  |
+| 2–4 numbers that carry the main finding             | Figures row                            |
+| A few facts about one thing (owner, version, date)  | Key-value list                         |
+| Records with the same fields                        | Table                                  |
+| One measure across a few items                      | Bars                                   |
+| A trend over time or a flow between parts           | Inline SVG                             |
+| Options the reader weighs against each other        | Compare cards                          |
+| An ordered procedure                                | Steps                                  |
+| Text quoted from another language                   | Pair                                   |
+| Evidence most readers skip: logs, raw output        | Details                                |
+| A status word inside a sentence or table cell       | Chip                                   |
+| A question for the user                             | Review components                      |
+| Anything else                                       | Paragraphs and lists; they need no box |
+
+Most sections need only headings, paragraphs, and at most one component. A page where every block sits in a box reads as noise.
+
+## Page frame
+
+Everything goes inside `<main class="page">`. Children use the narrow reading column. Add `class="wide"` to a compare grid, a table with many columns, or a large figure to let it break out to 1080 px. The contrast is deliberate: text stays narrow and easy to read, and the one thing the reader should look at side by side gets the full width. Use it for at most a few blocks per page; if everything is wide, nothing stands out.
+
+The snippets below use English text. Write all visible text in the page language from Hard Rule 4; keep class names, `name`, and `value` as shown.
+
+```html
+<header class="masthead">
+  <p class="kicker">Dependency audit · 2026-10-16</p>
+  <h1>3 of 12 dependencies can be removed now</h1>
+  <p class="meta">Scope: apps/web package.json. Sources: pnpm why, code search, release notes.</p>
+</header>
+```
+
+Table of contents for reports with five or more sections; give each `h2` a matching `id`:
+
+```html
+<ol class="toc">
+  <li><a href="#remove">Packages to remove</a></li>
+  <li><a href="#zod">zod upgrade</a></li>
+</ol>
+```
+
+## Reading components
+
+Summary box, directly after the masthead:
+
+```html
+<section class="summary">
+  <h2>Conclusion</h2>
+  <ul>
+    <li>
+      <strong>Remove 3 packages</strong>: lodash, moment, classnames. This saves about 180 KB.
+    </li>
+    <li>zod 4 needs its own upgrade; it touches 14 files.</li>
+  </ul>
+</section>
+```
+
+Callout. Plain for notes; `ok`, `warn`, `risk` only when the status is real:
+
+```html
+<div class="callout warn">
+  <p><strong>Upgrade zod 4 separately.</strong> It changes the shape of error messages.</p>
+</div>
+```
+
+Chip, inside text or a table cell. Variants: `ok`, `warn`, `risk`, `accent`, or none for neutral:
+
+```html
+<span class="chip ok">Remove</span>
+```
+
+Steps:
+
+```html
+<ol class="steps">
+  <li>Remove the three packages and run <code>pnpm install</code>.</li>
+  <li>Run the full test suite and build.</li>
+</ol>
+```
+
+Pair, for a quote in another language. The translation comes first, in the page language; the original keeps its `lang`:
+
+```html
+<div class="pair">
+  <p class="tr">The error format changes in v4, so update form validation in the same PR.</p>
+  <p class="orig" lang="ja">
+    v4 ではエラー形式が変わるため、フォームの検証も同じ PR で更新してください。
+  </p>
+</div>
+```
+
+Details, for evidence. Printing opens every `details` automatically:
+
+```html
+<details>
+  <summary>Search commands and full output</summary>
+  <pre><code>$ rg -l "from 'lodash'" apps/web</code></pre>
+</details>
+```
+
+Card, for a self-contained aside that needs a frame. Use sparingly:
+
+```html
+<div class="card"><p>…</p></div>
+```
+
+Key-value list, for a few facts about one thing. Use a table instead when several things share the same fields:
+
+```html
+<dl class="kv">
+  <dt>Owner</dt>
+  <dd>Frontend team</dd>
+  <dt>Current version</dt>
+  <dd>zod 3.23.8</dd>
+</dl>
+```
+
+## Data components
+
+Figures row, right after the summary when two to four numbers carry the main finding. Put the unit in the number and keep each label to a few words:
+
+```html
+<div class="figures">
+  <div><b>12</b><span>dependencies</span></div>
+  <div><b>180 KB</b><span>expected savings</span></div>
+</div>
+```
+
+Table. Always wrap it so wide tables scroll instead of breaking the page; right-align numbers with `num`:
+
+```html
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Package</th>
+        <th class="num">Size</th>
+        <th>Verdict</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>moment</td>
+        <td class="num">96 KB</td>
+        <td><span class="chip ok">Remove</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+```
+
+Bars, for one measure across up to about 12 items. Set each `--v` to value ÷ axis maximum as a percentage, using one maximum for all bars; sort by value and print the value:
+
+```html
+<div class="bars">
+  <span>moment</span><span class="track"><i style="--v: 53%"></i></span
+  ><span class="v">96 KB</span> <span>lodash</span
+  ><span class="track"><i style="--v: 40%"></i></span><span class="v">72 KB</span>
+</div>
+```
+
+Compare cards. Mark the recommended option with `pick` and a chip; keep pros and cons to three lines each:
+
+```html
+<div class="compare wide">
+  <article class="pick">
+    <h3>Upgrade at once <span class="chip accent">Recommended</span></h3>
+    <p>One PR changes all 14 files.</p>
+    <ul class="pros">
+      <li>Changes in one place, easy to review</li>
+    </ul>
+    <ul class="cons">
+      <li>Large PR, about 400 lines</li>
+    </ul>
+  </article>
+  <article>…</article>
+</div>
+```
+
+## Diagrams and images
+
+Draw charts and diagrams as inline SVG. Rules:
+
+- Set `viewBox` and no fixed `width`/`height`, so the figure scales.
+- Use `currentColor` and the template's CSS variables (`var(--accent)`, `var(--line-2)`, `var(--muted)`) for strokes and fills. Use at most one accent color plus gray.
+- Label lines and boxes directly; add a legend only when direct labels do not fit.
+- Bars and areas start at zero. Say the unit in the caption.
+- Text inside SVG uses `font-family="inherit"` and a `font-size` of at least 14.
+
+```html
+<figure>
+  <svg
+    viewBox="0 0 520 90"
+    role="img"
+    aria-label="Request path: browser to cache to origin"
+    font-family="inherit"
+    font-size="15"
+  >
+    <g fill="none" stroke="var(--line-2)" stroke-width="1.5">
+      <rect x="1" y="20" width="120" height="48" rx="8" />
+      <rect x="200" y="20" width="120" height="48" rx="8" />
+      <rect x="399" y="20" width="120" height="48" rx="8" />
+      <path d="M121 44h79M320 44h79" stroke="var(--accent)" />
+    </g>
+    <g fill="currentColor" text-anchor="middle">
+      <text x="61" y="49">Browser</text>
+      <text x="260" y="49">Cache</text>
+      <text x="459" y="49">Origin</text>
+    </g>
+  </svg>
+  <figcaption>On a cache hit, the request never reaches the origin.</figcaption>
+</figure>
+```
+
+Use a raster image only for something that cannot be drawn: a screenshot, a photo. Resize and compress it first (for example `cwebp -q 75 -resize 1600 0 in.png -o out.webp`), then embed it as a data URI or keep it as a file next to `index.html` and reference it with a relative path. A served directory serves sibling files; a plain report must embed.
+
+## Review components
+
+All review components go inside one `<form data-review>`. The template script adds the submit bar; do not write one.
+
+Single choice, as option cards. Add `cols` to the `options` div for two or three short options side by side:
+
+```html
+<fieldset class="q" data-required="zod-plan">
+  <legend>How should we upgrade zod?</legend>
+  <p class="hint">This sets the PR size and how it is reviewed.</p>
+  <div class="options cols">
+    <label class="option"
+      ><input type="radio" name="zod-plan" value="all-at-once" /><span class="t">All at once</span
+      ><span class="d">One PR, about 400 lines</span></label
+    >
+    <label class="option"
+      ><input type="radio" name="zod-plan" value="per-form" /><span class="t"
+        >One form at a time</span
+      ><span class="d">5 PRs, both APIs live for a while</span></label
+    >
+  </div>
+  <input type="text" name="zod-plan:note" placeholder="Note (optional)" />
+</fieldset>
+```
+
+Multiple choice: the same markup with `type="checkbox"` and one shared `name`. The answer `value` becomes an array.
+
+Verdict per item, for reviewing a list. One `fieldset.item` per item inside a `fieldset.q`. The pill row sits to the right of the item name and hint when the card is wide enough, and below them on a narrow screen. Keep each pill label to about four CJK characters or two English words so the row fits beside the text.
+
+Tone classes color each pill by what the choice does: `risk` for a destructive or irreversible action (delete, reject), `ok` for the safe or unchanged outcome (keep, approve), `warn` for a deferral or partial answer (later, unsure). A pill without a class gets a neutral dot and the accent color when selected. Give the same verdict the same tone on every item, so a color means one thing across the page:
+
+```html
+<fieldset class="q">
+  <legend>Decide each package</legend>
+  <fieldset class="item" data-required="lodash">
+    <legend>lodash <span class="chip">72 KB</span></legend>
+    <p class="hint">No imports left since the September 2026 refactor.</p>
+    <div class="seg">
+      <label class="risk"
+        ><input type="radio" name="lodash" value="remove" /><span>Remove</span></label
+      >
+      <label class="ok"><input type="radio" name="lodash" value="keep" /><span>Keep</span></label>
+      <label class="warn"
+        ><input type="radio" name="lodash" value="later" /><span>Later</span></label
+      >
+    </div>
+    <input type="text" name="lodash:note" placeholder="Note (optional)" />
+  </fieldset>
+</fieldset>
+```
+
+Free text, for an open question. Use `textarea` only when the answer may run longer than one line:
+
+```html
+<fieldset class="q">
+  <legend>Anything else I should know?</legend>
+  <textarea name="extra-notes" placeholder="Optional"></textarea>
+</fieldset>
+```
+
+When an item quotes foreign-language text the user must judge (a memory entry, an issue title), put a `.pair` inside the item so the translation sits above the original.
+
+## Read-through checklist
+
+Use this when no browser can render the page:
+
+- [ ] `<html lang>` matches the page language; `<title>` is set; there is one `h1`.
+- [ ] The masthead and summary placeholders from the template are gone.
+- [ ] Every table sits in `.table-wrap`; every SVG has a `viewBox` and no fixed width.
+- [ ] Every form control has a `name`; radio groups share one `name`; every `value` is an ASCII ID; every visible label is in the page language.
+- [ ] Every `data-required` value names a control inside its `fieldset`.
+- [ ] No `<script src>`, `<link rel="stylesheet">`, web font, or remote image remains.
+- [ ] Foreign-language quotes sit in `.pair` blocks with a `lang` attribute.
+- [ ] `wc -c index.html` is within the size budget.

@@ -24,7 +24,7 @@ Project-specific overrides:
 
 - `.github/` — GitHub Actions workflows and the pull request template.
 - `scripts/` — repository validation scripts, including `check-skills.sh`.
-- `skills/` — the eight installable Agent Skills; each has a `SKILL.md` and may have one-level `references/` content.
+- `skills/` — the nine installable Agent Skills; each has a `SKILL.md` and may have one-level `references/`, `scripts/`, or `assets/` content.
 
 ## Boundaries
 
@@ -62,6 +62,7 @@ Do not infer UI language from conversation language.
 
 - A skill directory's name must exactly match the `name` field in its `SKILL.md` frontmatter.
 - Keep each skill's `references/` directory one level deep; keep `SKILL.md` below 500 lines when the workflow can remain complete and clear.
+- Write every skill in English. The frontmatter, `When to Use`, and `When NOT to Use` contain no Chinese, Japanese, or Korean text; non-English text appears only as an example inside a rule about that language or as UI strings a skill ships.
 - `scripts/check-skills.sh` validates frontmatter delimiters, the lowercase skill-name format, the exact directory/name match, and a non-empty description no longer than 1024 characters; it warns above 250 description characters or 500 body lines.
 - After changing a skill, use `npx skills add fang2hou/skills -g` to verify the installed distribution on this machine; on another machine, refresh it with `npx skills update -g -y`.
 

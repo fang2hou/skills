@@ -1,0 +1,1249 @@
+<!doctype html>
+<html lang="LANG">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Report title</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #faf6ef;
+        --surface: #fffdf8;
+        --sunk: #f3eee4;
+        --ink: #28303b;
+        --ink-2: #4a5462;
+        --muted: #646c78;
+        --line: #e4dccf;
+        --line-2: #d3c9b8;
+        --accent: #3a5470;
+        --accent-soft: #e7ecf2;
+        --ok: #3d6a4c;
+        --ok-soft: #e9f0e8;
+        --warn: #85571a;
+        --warn-soft: #f6ecda;
+        --risk: #99392f;
+        --risk-soft: #f6e5e1;
+        --r-lg: 14px;
+        --r-sm: 8px;
+      }
+      :root,
+      :lang(en) {
+        --mono:
+          "JetBrainsMono Nerd Font", "JetBrains Mono", "IBM Plex Mono", ui-monospace, Menlo,
+          monospace;
+        --ui:
+          "IBM Plex Sans", "IBM Plex Sans JP", -apple-system, "Helvetica Neue", system-ui,
+          sans-serif;
+        --body: Charter, "Iowan Old Style", Georgia, serif;
+        --fs: 18px;
+        --lh: 1.65;
+        --ls: 0;
+        --measure: 68ch;
+      }
+      :lang(zh) {
+        --ui:
+          "IBM Plex Sans SC", "Source Han Sans SC VF", "Source Han Sans SC", "PingFang SC",
+          sans-serif;
+        --body:
+          "FZPingXianYaSong-R-GBK", "LXGW Neo ZhiSong Screen Full", "LXGW Neo ZhiSong Screen",
+          "Source Han Serif SC", "Songti SC", serif;
+        --fs: 17.5px;
+        --lh: 1.85;
+        --ls: 0.02em;
+        --measure: 38em;
+      }
+      :is(:lang(zh-Hant), :lang(zh-TW), :lang(zh-HK)) {
+        --ui:
+          "IBM Plex Sans TC", "Source Han Sans TC VF", "Source Han Sans TC", "PingFang TC",
+          sans-serif;
+        --body: "Source Han Serif TC", "Songti TC", serif;
+      }
+      :lang(ja) {
+        --ui:
+          "IBM Plex Sans JP", "Source Han Sans VF", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
+          sans-serif;
+        --body: "Hiragino Mincho ProN", "Yu Mincho", "Source Han Serif JP", serif;
+        --fs: 17.5px;
+        --lh: 1.9;
+        --ls: 0.04em;
+        --measure: 38em;
+      }
+      :lang(ko) {
+        --ui: "IBM Plex Sans KR", "Source Han Sans K VF", "Apple SD Gothic Neo", sans-serif;
+        --body: var(--ui);
+        --fs: 17.5px;
+        --lh: 1.8;
+        --ls: 0;
+        --measure: 36em;
+      }
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html {
+        background: var(--bg);
+        color: var(--ink);
+        font-size: var(--fs);
+        -webkit-text-size-adjust: 100%;
+        scrollbar-width: none;
+      }
+      html:has(.submit-dock) {
+        scroll-padding-bottom: 130px;
+      }
+      * {
+        scrollbar-width: thin;
+        scrollbar-color: color-mix(in srgb, var(--ink) 28%, transparent) transparent;
+      }
+      .sb {
+        position: fixed;
+        top: 0;
+        right: 3px;
+        z-index: 3;
+        width: 6px;
+        border-radius: 3px;
+        background: color-mix(in srgb, var(--ink) 30%, transparent);
+        opacity: 0;
+        touch-action: none;
+        transition:
+          opacity 0.35s,
+          width 0.12s,
+          background-color 0.12s;
+      }
+      .sb:not(.on) {
+        pointer-events: none;
+      }
+      .sb.on {
+        opacity: 1;
+        transition-duration: 0.12s;
+      }
+      .sb:hover,
+      .sb.drag {
+        width: 9px;
+        background: color-mix(in srgb, var(--ink) 48%, transparent);
+      }
+      body {
+        margin: 0;
+        font-family: var(--body);
+        line-height: var(--lh);
+        letter-spacing: var(--ls);
+        text-autospace: normal;
+        text-wrap: pretty;
+        font-kerning: normal;
+      }
+      [lang]:not(:root) {
+        font-family: var(--body);
+        letter-spacing: var(--ls);
+      }
+      :is(h1, h2, h3, h4, legend, summary, table, label, .ui, .chip, .kicker, .meta, .hint) [lang],
+      .ui[lang] {
+        font-family: var(--ui);
+      }
+      :lang(ja) {
+        line-break: strict;
+      }
+      :lang(ko) {
+        word-break: keep-all;
+        text-autospace: no-autospace;
+      }
+      .page {
+        display: grid;
+        grid-template-columns: 1fr min(var(--measure), 100%) 1fr;
+        padding: 56px 28px 120px;
+      }
+      .page > * {
+        grid-column: 2;
+        min-width: 0;
+      }
+      .page > .wide {
+        grid-column: 1 / -1;
+        width: min(1080px, 100%);
+        justify-self: center;
+      }
+      h1,
+      h2,
+      h3,
+      h4,
+      legend,
+      summary,
+      table,
+      button,
+      input,
+      textarea,
+      select,
+      .ui {
+        font-family: var(--ui);
+      }
+      h1,
+      h2,
+      h3,
+      h4 {
+        color: var(--ink);
+        line-height: 1.35;
+        text-wrap: balance;
+      }
+      :lang(ja) :is(h1, h2, h3, h4) {
+        word-break: auto-phrase;
+      }
+      h1 {
+        font-size: 2em;
+        font-weight: 600;
+        margin: 0 0 0.35em;
+      }
+      h2 {
+        font-size: 1.42em;
+        font-weight: 600;
+        margin: 2.4em 0 0.7em;
+        padding-top: 1.1em;
+        border-top: 1px solid var(--line);
+      }
+      h3 {
+        font-size: 1.14em;
+        font-weight: 600;
+        margin: 1.8em 0 0.5em;
+      }
+      h4 {
+        font-size: 1em;
+        font-weight: 600;
+        margin: 1.4em 0 0.4em;
+      }
+      p,
+      ul,
+      ol {
+        margin: 0.75em 0;
+      }
+      li + li {
+        margin-top: 0.35em;
+      }
+      ul,
+      ol {
+        padding-left: 1.4em;
+      }
+      strong {
+        font-weight: 600;
+      }
+      :is(:lang(zh), :lang(ja)) :is(p, li, td, dd) > strong {
+        font-family: var(--ui);
+      }
+      a {
+        color: var(--accent);
+        text-underline-offset: 0.2em;
+        text-decoration-thickness: 1px;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      hr {
+        border: 0;
+        border-top: 1px solid var(--line);
+        margin: 2em 0;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .masthead {
+        margin-bottom: 2em;
+      }
+      .kicker,
+      .meta {
+        font-family: var(--ui);
+        font-size: 0.86em;
+        color: var(--muted);
+        margin: 0;
+      }
+      .kicker {
+        margin-bottom: 0.6em;
+      }
+      .card,
+      .summary,
+      .compare > article,
+      fieldset.q,
+      .submit-bar {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--r-lg);
+      }
+      @supports (corner-shape: squircle) {
+        .card,
+        .summary,
+        .compare > article,
+        fieldset.q,
+        .submit-bar {
+          corner-shape: squircle;
+          border-radius: 20px;
+        }
+      }
+      .card {
+        padding: 20px 24px;
+        margin: 1.2em 0;
+      }
+      .summary {
+        padding: 22px 26px;
+        margin: 0 0 1.6em;
+      }
+      .summary > h2 {
+        font-size: 0.86em;
+        color: var(--muted);
+        border: 0;
+        padding: 0;
+        margin: 0 0 0.4em;
+      }
+      .summary > :last-child {
+        margin-bottom: 0;
+      }
+      .callout {
+        border-left: 3px solid var(--accent);
+        background: var(--accent-soft);
+        border-radius: 0 10px 10px 0;
+        padding: 12px 18px;
+        margin: 1.2em 0;
+      }
+      .callout > :first-child {
+        margin-top: 0;
+      }
+      .callout > :last-child {
+        margin-bottom: 0;
+      }
+      .callout.ok {
+        border-color: var(--ok);
+        background: var(--ok-soft);
+      }
+      .callout.warn {
+        border-color: var(--warn);
+        background: var(--warn-soft);
+      }
+      .callout.risk {
+        border-color: var(--risk);
+        background: var(--risk-soft);
+      }
+      .chip {
+        display: inline-block;
+        font-family: var(--ui);
+        font-size: max(0.82em, 14px);
+        line-height: 1.6;
+        letter-spacing: 0;
+        padding: 0 0.6em;
+        border-radius: 999px;
+        background: var(--sunk);
+        color: var(--ink-2);
+        white-space: nowrap;
+        vertical-align: 0.08em;
+      }
+      .chip.ok {
+        background: var(--ok-soft);
+        color: var(--ok);
+      }
+      .chip.warn {
+        background: var(--warn-soft);
+        color: var(--warn);
+      }
+      .chip.risk {
+        background: var(--risk-soft);
+        color: var(--risk);
+      }
+      .chip.accent {
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+      .figures {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        gap: 14px 20px;
+        margin: 1.4em 0;
+        font-family: var(--ui);
+      }
+      .figures > div {
+        border-top: 2px solid var(--line-2);
+        padding-top: 8px;
+      }
+      .figures b {
+        display: block;
+        font-size: 1.75em;
+        font-weight: 600;
+        line-height: 1.2;
+        font-variant-numeric: tabular-nums;
+      }
+      .figures span {
+        font-size: 0.86em;
+        color: var(--muted);
+      }
+      dl.kv {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 6px 20px;
+        margin: 1em 0;
+      }
+      dl.kv > dt {
+        font-family: var(--ui);
+        font-size: 0.92em;
+        color: var(--muted);
+        padding-top: 0.08em;
+      }
+      dl.kv > dd {
+        margin: 0;
+      }
+      .table-wrap {
+        overflow-x: auto;
+        margin: 1.2em 0;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.9em;
+        line-height: 1.55;
+        letter-spacing: 0;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 9px 12px;
+        border-bottom: 1px solid var(--line);
+      }
+      th {
+        font-weight: 600;
+        color: var(--ink-2);
+        border-bottom-color: var(--line-2);
+        white-space: nowrap;
+      }
+      td.num,
+      th.num {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      .bars {
+        display: grid;
+        grid-template-columns: minmax(6em, max-content) 1fr auto;
+        gap: 8px 14px;
+        align-items: center;
+        margin: 1.2em 0;
+        font-family: var(--ui);
+        font-size: 0.9em;
+      }
+      .bars > .track {
+        height: 10px;
+        background: var(--sunk);
+        border-radius: 5px;
+        overflow: hidden;
+      }
+      .bars > .track > i {
+        display: block;
+        height: 100%;
+        width: var(--v);
+        background: var(--accent);
+      }
+      .bars > .v {
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+      }
+      .compare {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 16px;
+        margin: 1.4em 0;
+      }
+      .compare > article {
+        padding: 18px 22px;
+      }
+      .compare > article.pick {
+        border-color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .compare h3 {
+        margin-top: 0;
+      }
+      .pros,
+      .cons {
+        list-style: none;
+        padding-left: 0;
+        margin: 0.4em 0;
+      }
+      .pros > li::before,
+      .cons > li::before {
+        font-family: var(--ui);
+        font-weight: 600;
+        display: inline-block;
+        width: 1.2em;
+      }
+      .pros > li::before {
+        content: "+";
+        color: var(--ok);
+      }
+      .cons > li::before {
+        content: "−";
+        color: var(--risk);
+      }
+      .steps {
+        list-style: none;
+        counter-reset: step;
+        padding-left: 0;
+      }
+      .steps > li {
+        counter-increment: step;
+        position: relative;
+        padding-left: 2.4em;
+      }
+      .steps > li::before {
+        content: counter(step);
+        position: absolute;
+        left: 0;
+        top: 0.15em;
+        width: 1.6em;
+        height: 1.6em;
+        border-radius: 50%;
+        background: var(--accent-soft);
+        color: var(--accent);
+        font: 600 0.85em/1.6em var(--ui);
+        text-align: center;
+      }
+      .pair {
+        margin: 1em 0;
+      }
+      .pair > .tr {
+        margin: 0;
+      }
+      .pair > .orig {
+        margin: 0.4em 0 0;
+        padding-left: 12px;
+        border-left: 2px solid var(--line-2);
+        color: var(--muted);
+        font-family: var(--ui);
+        font-size: 0.88em;
+      }
+      details {
+        margin: 1em 0;
+        border-top: 1px solid var(--line);
+        border-bottom: 1px solid var(--line);
+        padding: 8px 0;
+      }
+      details + details {
+        border-top: 0;
+        margin-top: -1em;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+        color: var(--ink-2);
+      }
+      details[open] > summary {
+        margin-bottom: 0.5em;
+      }
+      code {
+        font-family: var(--mono);
+        font-size: 0.86em;
+        letter-spacing: 0;
+        background: var(--sunk);
+        padding: 0.1em 0.35em;
+        border-radius: 4px;
+      }
+      pre {
+        font-family: var(--mono);
+        font-size: 0.86em;
+        line-height: 1.6;
+        letter-spacing: 0;
+        background: var(--sunk);
+        padding: 14px 18px;
+        border-radius: 10px;
+        overflow-x: auto;
+      }
+      pre code {
+        background: none;
+        padding: 0;
+        font-size: 1em;
+      }
+      figure {
+        margin: 1.6em 0;
+      }
+      figure img,
+      figure svg {
+        display: block;
+        max-width: 100%;
+        height: auto;
+      }
+      figure svg {
+        font-family: var(--ui);
+        letter-spacing: 0;
+      }
+      figcaption {
+        font-family: var(--ui);
+        font-size: 0.86em;
+        color: var(--muted);
+        margin-top: 0.5em;
+      }
+      .toc {
+        font-family: var(--ui);
+        font-size: 0.92em;
+        columns: 2 16em;
+        column-gap: 2em;
+        padding-left: 1.2em;
+      }
+      fieldset.q {
+        padding: 18px 22px 20px;
+        margin: 1.2em 0;
+        min-width: 0;
+      }
+      fieldset.q > legend {
+        float: left;
+        width: 100%;
+        padding: 0;
+        margin-bottom: 0.3em;
+        font-weight: 600;
+        font-size: 1.04em;
+      }
+      fieldset.q > legend + * {
+        clear: both;
+      }
+      fieldset.q.missing {
+        border-color: var(--risk);
+      }
+      .hint {
+        font-family: var(--ui);
+        font-size: 0.88em;
+        color: var(--muted);
+        margin: 0 0 0.8em;
+      }
+      .options {
+        display: grid;
+        gap: 10px;
+        margin-top: 0.6em;
+      }
+      .options.cols {
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      }
+      .option {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        column-gap: 12px;
+        align-items: start;
+        padding: 11px 14px;
+        border: 1px solid var(--line-2);
+        border-radius: var(--r-sm);
+        background: var(--bg);
+        cursor: pointer;
+        font-family: var(--ui);
+        line-height: 1.55;
+        letter-spacing: 0;
+        transition:
+          background-color 0.12s,
+          border-color 0.12s;
+      }
+      .option:hover {
+        border-color: var(--accent);
+      }
+      .option:has(input:checked) {
+        border-color: var(--accent);
+        background: var(--accent-soft);
+      }
+      .option > input {
+        appearance: none;
+        display: grid;
+        place-content: center;
+        font: inherit;
+        line-height: inherit;
+        width: 1.15em;
+        height: 1.15em;
+        margin: calc((1lh - 1.15em) / 2) 0 0;
+        border: 1.5px solid color-mix(in srgb, var(--muted) 70%, var(--bg));
+        background: var(--surface);
+        cursor: pointer;
+        transition:
+          background-color 0.12s,
+          border-color 0.12s,
+          box-shadow 0.12s;
+      }
+      .option > input[type="radio"] {
+        border-radius: 50%;
+      }
+      .option > input[type="checkbox"] {
+        border-radius: 5px;
+      }
+      .option:hover > input:not(:checked) {
+        border-color: var(--accent);
+      }
+      .option > input:checked {
+        border-color: var(--accent);
+        background-color: var(--accent);
+      }
+      .option > input[type="radio"]:checked {
+        box-shadow: inset 0 0 0 3px var(--surface);
+      }
+      .option > input[type="checkbox"]:checked {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.2l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+        background-size: 100%;
+      }
+      .option > input:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      @media (forced-colors: active) {
+        .option > input {
+          appearance: auto;
+        }
+      }
+      .option > .t {
+        font-weight: 600;
+      }
+      .option > .d {
+        grid-column: 2;
+        font-size: 0.9em;
+        color: var(--ink-2);
+      }
+      .item {
+        border: 0;
+        border-bottom: 1px solid var(--line);
+        margin: 0;
+        padding: 14px 0;
+        min-width: 0;
+      }
+      .item > legend {
+        float: left;
+        width: 100%;
+        padding: 0;
+        font-family: var(--ui);
+        font-weight: 600;
+      }
+      .item > legend + * {
+        clear: both;
+      }
+      .item.missing > legend {
+        color: var(--risk);
+      }
+      .item:last-child {
+        border-bottom: 0;
+        padding-bottom: 0;
+      }
+      fieldset.q:has(> .item) {
+        container-type: inline-size;
+      }
+      @container (min-width: 30em) {
+        .item {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr) auto;
+          column-gap: 24px;
+          align-items: center;
+        }
+        .item > * {
+          grid-column: 1 / -1;
+        }
+        .item > legend,
+        .item > .hint {
+          grid-column: 1;
+        }
+        .item > .hint {
+          margin: 0.15em 0 0;
+        }
+        .item > .seg {
+          grid-column: 2;
+          grid-row: 1;
+          flex-wrap: nowrap;
+          margin: 0;
+        }
+        .item:has(> .hint) > .seg {
+          grid-row: 1 / span 2;
+        }
+      }
+      .seg {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 0.5em 0;
+        font-family: var(--ui);
+        font-size: 0.9em;
+        letter-spacing: 0;
+      }
+      .seg > label {
+        position: relative;
+        cursor: pointer;
+        --tone: var(--accent);
+        --dot: color-mix(in srgb, var(--muted) 60%, var(--bg));
+      }
+      .seg > .ok {
+        --tone: var(--ok);
+        --dot: var(--ok);
+      }
+      .seg > .warn {
+        --tone: var(--warn);
+        --dot: var(--warn);
+      }
+      .seg > .risk {
+        --tone: var(--risk);
+        --dot: var(--risk);
+      }
+      .seg input {
+        position: absolute;
+        opacity: 0;
+        inset: 0;
+        margin: 0;
+        cursor: pointer;
+      }
+      .seg span {
+        display: inline-flex;
+        align-items: center;
+        gap: 7px;
+        padding: 5px 14px 5px 12px;
+        border: 1px solid var(--line-2);
+        border-radius: 999px;
+        background: var(--surface);
+        white-space: nowrap;
+        transition:
+          background-color 0.12s,
+          border-color 0.12s,
+          color 0.12s;
+      }
+      .seg span::before {
+        content: "";
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--dot);
+      }
+      .seg > label:hover span {
+        border-color: var(--tone);
+      }
+      .seg input:focus-visible + span {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .seg input:checked + span {
+        border-color: var(--tone);
+        background: var(--tone);
+        color: #fff;
+      }
+      .seg input:checked + span::before {
+        background: #fff;
+      }
+      textarea,
+      input[type="text"] {
+        width: 100%;
+        font-size: 0.92em;
+        line-height: 1.5;
+        letter-spacing: 0;
+        color: var(--ink);
+        background: var(--surface);
+        border: 1px solid var(--line-2);
+        border-radius: var(--r-sm);
+        padding: 8px 11px;
+        margin-top: 0.5em;
+      }
+      textarea {
+        min-height: 2.8em;
+        resize: vertical;
+        field-sizing: content;
+      }
+      ::placeholder {
+        color: var(--muted);
+      }
+      .submit-dock {
+        position: sticky;
+        bottom: 0;
+        z-index: 2;
+        margin: 1.4em -16px 0;
+        padding: 28px 16px 22px;
+        background: linear-gradient(transparent, var(--bg) 26px);
+        pointer-events: none;
+      }
+      .submit-bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px 14px;
+        padding: 12px 12px 12px 22px;
+        font-family: var(--ui);
+        font-size: 0.92em;
+        letter-spacing: 0;
+        box-shadow: 0 4px 18px rgb(40 48 59 / 0.08);
+        pointer-events: auto;
+      }
+      .submit-bar .status {
+        color: var(--muted);
+        flex: 1 1 12em;
+      }
+      .btn {
+        font-size: 1em;
+        padding: 7px 16px;
+        border-radius: var(--r-sm);
+        border: 1px solid var(--line-2);
+        background: var(--surface);
+        color: var(--ink);
+        cursor: pointer;
+      }
+      .btn.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+      .export {
+        display: none;
+        width: 100%;
+        min-height: 8em;
+        font-family: var(--mono);
+        font-size: 0.8em;
+      }
+      .export.show {
+        display: block;
+      }
+      @media (max-width: 640px) {
+        .page {
+          padding: 32px 18px 96px;
+        }
+        h1 {
+          font-size: 1.7em;
+        }
+        .submit-dock {
+          padding-bottom: 10px;
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * {
+          transition: none !important;
+        }
+      }
+      @media print {
+        html {
+          background: #fff;
+          font-size: 11pt;
+        }
+        .page {
+          padding: 0;
+        }
+        .submit-dock,
+        .sb,
+        .btn {
+          display: none;
+        }
+        h2,
+        h3 {
+          break-after: avoid;
+        }
+        .card,
+        .summary,
+        fieldset.q,
+        figure,
+        tr {
+          break-inside: avoid;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="masthead">
+        <p class="kicker">Category · 2026-01-01</p>
+        <h1>Report title that states the main finding</h1>
+        <p class="meta">Scope, sources, and who this is for, in one line.</p>
+      </header>
+      <section class="summary">
+        <h2>Conclusion</h2>
+        <ul>
+          <li>Most important finding first.</li>
+        </ul>
+      </section>
+    </main>
+    <script>
+      (() => {
+        addEventListener("beforeprint", () => {
+          for (const d of document.querySelectorAll("details")) d.open = true;
+        });
+        const doc = document.documentElement;
+        const sb = document.createElement("div");
+        sb.className = "sb";
+        sb.setAttribute("aria-hidden", "true");
+        document.body.append(sb);
+        let drag = null;
+        let hideTimer;
+        const metrics = () => {
+          const view = innerHeight;
+          const total = doc.scrollHeight;
+          const thumb = Math.max(40, (view * view) / total);
+          return { view, total, thumb, travel: view - thumb - 8 };
+        };
+        const place = () => {
+          const m = metrics();
+          sb.hidden = m.total <= m.view + 1;
+          if (sb.hidden) return;
+          const top = 4 + (m.travel * scrollY) / (m.total - m.view);
+          sb.style.height = m.thumb + "px";
+          sb.style.transform = `translateY(${top}px)`;
+        };
+        const reveal = () => {
+          place();
+          sb.classList.add("on");
+          clearTimeout(hideTimer);
+          hideTimer = setTimeout(() => {
+            if (!drag && !sb.matches(":hover")) sb.classList.remove("on");
+          }, 900);
+        };
+        addEventListener("scroll", reveal, { passive: true });
+        addEventListener("resize", place);
+        new ResizeObserver(place).observe(document.body);
+        addEventListener("pointermove", (e) => innerWidth - e.clientX < 16 && reveal(), {
+          passive: true,
+        });
+        sb.addEventListener("pointerleave", reveal);
+        sb.addEventListener("pointerdown", (e) => {
+          drag = { y: e.clientY, start: scrollY };
+          sb.setPointerCapture(e.pointerId);
+          sb.classList.add("drag");
+          e.preventDefault();
+        });
+        sb.addEventListener("pointermove", (e) => {
+          if (!drag) return;
+          const m = metrics();
+          scrollTo(0, drag.start + ((e.clientY - drag.y) * (m.total - m.view)) / m.travel);
+        });
+        const endDrag = () => {
+          drag = null;
+          sb.classList.remove("drag");
+          reveal();
+        };
+        sb.addEventListener("pointerup", endDrag);
+        sb.addEventListener("pointercancel", endDrag);
+
+        const live = location.protocol.startsWith("http");
+        const scrollKey = `html-report:${location.pathname}:y`;
+        const storeKey = `html-report:${location.pathname}:${document.title}`;
+        if (live) {
+          const y = sessionStorage.getItem(scrollKey);
+          if (y) addEventListener("load", () => scrollTo(0, +y));
+          let version = null;
+          setInterval(async () => {
+            try {
+              const res = await fetch("/api/version", { cache: "no-store" });
+              const v = (await res.json()).version;
+              if (version !== null && v !== version) {
+                sessionStorage.setItem(scrollKey, String(scrollY));
+                location.reload();
+              }
+              version = v;
+            } catch {}
+          }, 2000);
+        }
+        const form = document.querySelector("form[data-review]");
+        if (!form) return;
+        const STRINGS = {
+          zh: {
+            progress: "已完成{n}/{t}",
+            saving: "正在保存…",
+            saved: "已保存",
+            offline: "未连接本地服务，答案暂存在浏览器",
+            submit: "提交",
+            submitted: "已提交，可以回到对话了",
+            missing: "还有{k}项未回答。再点一次“提交”可跳过这些项",
+            copy: "复制答案",
+            copied: "已复制",
+          },
+          "zh-hant": {
+            progress: "已完成{n}/{t}",
+            saving: "正在儲存…",
+            saved: "已儲存",
+            offline: "未連線到本機服務，答案暫存在瀏覽器",
+            submit: "送出",
+            submitted: "已送出，可以回到對話了",
+            missing: "還有{k}項未回答。再按一次「送出」可略過這些項目",
+            copy: "複製答案",
+            copied: "已複製",
+          },
+          ja: {
+            progress: "回答済み{n}/{t}",
+            saving: "保存中…",
+            saved: "保存しました",
+            offline: "ローカルサーバーに接続できません。回答はブラウザに一時保存しています",
+            submit: "送信",
+            submitted: "送信しました。チャットに戻ってください",
+            missing:
+              "未回答が{k}件あります。このまま送信する場合は、もう一度「送信」を押してください",
+            copy: "回答をコピー",
+            copied: "コピーしました",
+          },
+          ko: {
+            progress: "응답 {n}/{t}",
+            saving: "저장 중…",
+            saved: "저장됨",
+            offline: "로컬 서버에 연결되지 않아 답변을 브라우저에 임시 저장했습니다",
+            submit: "제출",
+            submitted: "제출했습니다. 대화로 돌아가세요",
+            missing:
+              "답하지 않은 항목이 {k}개 있습니다. 그대로 제출하려면 '제출'을 한 번 더 누르세요",
+            copy: "답변 복사",
+            copied: "복사됨",
+          },
+          en: {
+            progress: "{n} of {t} answered",
+            saving: "Saving…",
+            saved: "Saved",
+            offline: "Not connected. Answers are kept in this browser.",
+            submit: "Submit",
+            submitted: "Submitted. You can go back to the chat.",
+            missing: "{k} required items unanswered. Click Submit again to skip them.",
+            copy: "Copy answers",
+            copied: "Copied",
+          },
+        };
+        const tag = (document.documentElement.lang || "en").toLowerCase();
+        const lang = /^zh-(hant|tw|hk)/.test(tag) ? "zh-hant" : tag.slice(0, 2);
+        const S = STRINGS[lang] || STRINGS.en;
+        const fmt = (s, v) => s.replace(/\{(\w)\}/g, (_, k) => v[k]);
+        let state = { title: document.title, answers: {}, submitted: false };
+        let online = live;
+
+        const dock = document.createElement("div");
+        dock.className = "submit-dock";
+        const bar = document.createElement("div");
+        dock.append(bar);
+        bar.className = "submit-bar";
+        bar.innerHTML =
+          '<span class="progress"></span><span class="status" aria-live="polite"></span>' +
+          '<button type="button" class="btn copy"></button><button type="submit" class="btn primary"></button>' +
+          '<textarea class="export" readonly aria-label="JSON"></textarea>';
+        form.append(dock);
+        const $ = (s) => bar.querySelector(s);
+        $(".copy").textContent = S.copy;
+        $(".primary").textContent = S.submit;
+        const setStatus = (text) => ($(".status").textContent = text);
+
+        const labelOf = (input) => {
+          const label = input.closest("label");
+          const t = label && (label.querySelector(".t, span") || label);
+          return (input.dataset.label || (t ? t.textContent : input.value)).trim();
+        };
+        const collect = () => {
+          const answers = {};
+          for (const el of form.elements) {
+            if (!el.name || el.type === "submit" || el.type === "button") continue;
+            if (!/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName)) continue;
+            if (el.type === "radio") {
+              if (el.checked) answers[el.name] = { value: el.value, label: labelOf(el) };
+            } else if (el.type === "checkbox") {
+              const a = (answers[el.name] ||= { value: [], label: [] });
+              if (el.checked) {
+                a.value.push(el.value);
+                a.label.push(labelOf(el));
+              }
+            } else if (el.value.trim()) {
+              answers[el.name] = { value: el.value.trim() };
+            }
+          }
+          return answers;
+        };
+        const apply = (answers) => {
+          for (const el of form.elements) {
+            const a = /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) && el.name && answers[el.name];
+            if (!a) continue;
+            if (el.type === "radio") el.checked = a.value === el.value;
+            else if (el.type === "checkbox") el.checked = [].concat(a.value).includes(el.value);
+            else if (el.tagName !== "BUTTON") el.value = a.value;
+          }
+        };
+        const groups = () => [...form.querySelectorAll("[data-required]")];
+        const answered = (g) =>
+          [...g.querySelectorAll("input, textarea, select")].some((el) =>
+            el.type === "radio" || el.type === "checkbox" ? el.checked : el.value.trim() !== "",
+          );
+        const refresh = () => {
+          const all = groups();
+          const done = all.filter(answered);
+          $(".progress").textContent = all.length
+            ? fmt(S.progress, { n: done.length, t: all.length })
+            : "";
+          for (const g of done) g.classList.remove("missing");
+          return all.filter((g) => !answered(g));
+        };
+
+        const persist = async () => {
+          state.answers = collect();
+          state.unanswered = refresh().map(
+            (g) => g.dataset.required || g.querySelector("[name]")?.name,
+          );
+          if (live) {
+            setStatus(S.saving);
+            try {
+              const res = await fetch("/api/state", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(state),
+              });
+              if (!res.ok) throw new Error(res.status);
+              online = true;
+              localStorage.removeItem(storeKey);
+              setStatus(state.submitted ? S.submitted : S.saved);
+              return;
+            } catch {
+              online = false;
+            }
+          }
+          try {
+            localStorage.setItem(storeKey, JSON.stringify(state));
+          } catch {}
+          setStatus(state.submitted && online ? S.submitted : S.offline);
+        };
+        let timer;
+        const schedule = () => {
+          clearTimeout(timer);
+          timer = setTimeout(persist, 300);
+        };
+        let skipConfirmed = false;
+        form.addEventListener("input", () => {
+          skipConfirmed = false;
+          schedule();
+        });
+        form.addEventListener("change", schedule);
+        form.addEventListener("submit", async (e) => {
+          e.preventDefault();
+          const missing = refresh();
+          for (const g of missing) g.classList.add("missing");
+          if (missing.length && !skipConfirmed) {
+            skipConfirmed = true;
+            setStatus(fmt(S.missing, { k: missing.length }));
+            missing[0].scrollIntoView({ behavior: "smooth", block: "center" });
+            return;
+          }
+          state.submitted = true;
+          state.submittedAt = new Date().toISOString();
+          clearTimeout(timer);
+          await persist();
+        });
+        $(".copy").addEventListener("click", async () => {
+          state.answers = collect();
+          const text = JSON.stringify(state, null, 2);
+          const box = $(".export");
+          box.value = text;
+          box.classList.add("show");
+          box.select();
+          try {
+            await navigator.clipboard.writeText(text);
+            setStatus(S.copied);
+          } catch {}
+        });
+
+        (async () => {
+          let saved = null;
+          if (live) {
+            try {
+              const res = await fetch("/api/state", { cache: "no-store" });
+              if (res.ok) saved = await res.json();
+            } catch {
+              online = false;
+            }
+          }
+          const fromServer = !!(saved && saved.answers);
+          if (!fromServer) {
+            try {
+              saved = JSON.parse(localStorage.getItem(storeKey));
+            } catch {}
+          }
+          if (saved && saved.answers) {
+            state = { ...state, ...saved, title: document.title };
+            apply(state.answers);
+          }
+          if (fromServer) {
+            refresh();
+            setStatus(state.submitted ? S.submitted : "");
+          } else {
+            await persist();
+          }
+        })();
+      })();
+    </script>
+  </body>
+</html>
