@@ -1,44 +1,74 @@
 ---
 name: herdr-parallel-dev
 description: >
-  Runs parallel multi-agent development with Herdr: one worktree and agent per
-  task in the project's herdr space, accept-or-send-back review,
-  integration-branch or CI-gated PR landing, then cleanup. Use for multi-task
-  fan-out when HERDR_ENV=1.
+  Use inside Herdr (HERDR_ENV=1) whenever one request yields two or more
+  independently shippable deliverables — "make these 3 PRs", several features
+  that each merge into main or develop (Git Flow feature sets), a batch of
+  independent fixes or refactors, or multi-file changes that would collide in
+  one working tree. One worktree and one agent per task, accept-or-send-back
+  review, integration-branch or CI-gated PR landing in a verified order,
+  post-merge consistency audit, and cleanup. Triggers on task shape, not on
+  the words "parallel" or "herdr"; never serialize such requests through a
+  single agent or branch. Skip for a single task, hard dependency chains, or
+  stacked changes.
 license: MIT
 compatibility: Requires HERDR_ENV=1, herdr CLI, git, gh, jq, Bash, and standard POSIX utilities inside a Herdr-managed pane.
 metadata:
   author: fang2hou
-  version: "2.2"
-  sources: "Incident-proven workflow (2026-08-17 multi-project worktree misadventure + 3-PR sequential merge); herdr CLI behavior verified 2026-08-18"
+  version: "2.3"
+  sources: "Incident-proven workflow (2026-08-17 multi-project worktree misadventure + 3-PR sequential merge); herdr CLI behavior verified 2026-08-18; trigger-strength, parallel-vs-sequential decision, and Git Flow integration-target revision 2026-10-17"
 ---
 
 # Herdr Parallel Development
 
 Run N independent repo tasks as N herdr agents, each in its own git worktree that herdr creates and owns; review each deliverable, land them in a verified order, and give the machine back exactly the state it started in.
 
+## Trigger Rule
+
+Count deliverables, not keywords. A deliverable is anything that ships on its own: a PR, a feature branch that must merge into the integration branch before release, a self-contained fix, refactor, or docs pass. **Two or more deliverables that do not require each other mean this skill, always.**
+
+- The user need not say "parallel", "herdr", "worktree", or "at the same time". "Make these 3 PRs", "do these four fixes", and an unnumbered list of independent features all qualify as spoken.
+- Small tasks still qualify when each needs its own branch or PR; independent review and landing are the point, not raw speed.
+- Load this skill at planning time, before writing any code. If task 1 of N is already underway in a shared working tree, stop: turn that work into row 1's branch (or the integration base) and fan out the rest.
+- Never serialize the request through one agent or branch. Serial landing (Step 7) is correct; serial execution is the failure mode this skill exists to prevent — one agent grinding through 3 PRs with no independent review and forced merge decisions at the end.
+
 ## When to Use
 
-- Several independent tasks on one repo ("make these 3 PRs", "do these in parallel").
-- Fanning out multi-file changes that would collide in one working tree.
-- Landing multiple finished agent branches as one integration branch or as PRs.
-- Post-merge verification of cross-branch consistency and cleanup.
+- Two or more independently shippable tasks on one repo: multiple PRs, a Git Flow feature set (each feature branches from and merges back into `develop`), a batch of independent fixes or chores.
+- Multi-file changes that would collide in one working tree.
+- Landing multiple finished agent branches as one integration branch or as PRs, plus post-merge verification of cross-branch consistency and cleanup.
 
 ## When NOT to Use
 
-- Single sequential task: use a plain herdr agent in a sibling pane; no worktree is needed.
+- One deliverable, however many files it touches: use a plain herdr agent in a sibling pane; no worktree is needed.
+- A hard dependency chain (B needs A's merged API, schema, or contract): sequence it, or land the foundation first and fan out the dependents.
+- Stacked changes where each branch is based on the previous one: sequential by design; see Parallel or Sequential below.
+- Outside Herdr (`HERDR_ENV` is not 1): the herdr CLI is unavailable. Use the harness's native parallel subagents instead — still never silently serialize the work.
 - Remote branch management or repo settings (out of scope).
 - Cleaning up branches or worktrees left by earlier sessions: use git-branch-cleanup. Step 9 here cleans only this run's objects.
-- Base herdr CLI reference: read the `herdr` skill first (install: `npx skills add ogulcancelik/herdr -g`; docs: https://herdr.dev/docs/cli-reference/). This skill adds only the multi-worktree orchestration layer.
+- The base `herdr` skill stays unloaded for parallel work: it covers inspecting and controlling panes when the user explicitly mentions Herdr, and this skill is the multi-deliverable execution layer that triggers without the word "herdr". Read that skill first for CLI grounding (install: `npx skills add ogulcancelik/herdr -g`; docs: https://herdr.dev/docs/cli-reference/).
+
+## Parallel or Sequential
+
+Decide once, before Step 1, and record the verdict per task in the run table:
+
+| Situation                                          | Verdict                                       | Why                                                                                                              |
+| -------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| 2+ deliverables, no ordering need between them     | Fan out now                                   | Independent review and landing; wall-clock drops from sum to max                                                 |
+| B builds on A's API, schema, or contract           | Land A first, then fan out B and its siblings | Agents cannot branch from content that does not exist yet                                                        |
+| Stacked PRs, each based on the previous one        | Sequential by design                          | A rebase chain cannot be produced in parallel                                                                    |
+| Same-file hotspot shared by every task             | Re-slice the tasks, or sequence them          | Conflict-resolution cost eats the parallel gain                                                                  |
+| One shared foundation plus N independent consumers | Foundation as task 1, consumers fan out after | Keeps every parallel branch rebasable                                                                            |
+| Two trivial chores an agent finishes in minutes    | Serial batch is acceptable                    | Worktree plus agent setup costs about a minute per task; anything that still needs its own branch or PR fans out |
 
 ## Inputs
 
-| Input        | Required | Format                             | Example                               |
-| ------------ | -------- | ---------------------------------- | ------------------------------------- |
-| Project path | Yes      | absolute path                      | `/Users/me/Developer/projects/my-app` |
-| Task list    | Yes      | 1–8 self-contained tasks           | each becomes one worktree + one agent |
-| Landing mode | Yes      | `integration` / `pr`               | see Step 7                            |
-| Base branch  | No       | branch, default `origin/<default>` | a work branch in `integration` mode   |
+| Input        | Required | Format                                             | Example                               |
+| ------------ | -------- | -------------------------------------------------- | ------------------------------------- |
+| Project path | Yes      | absolute path                                      | `/Users/me/Developer/projects/my-app` |
+| Task list    | Yes      | 1–8 self-contained tasks                           | each becomes one worktree + one agent |
+| Landing mode | Yes      | `integration` / `pr`                               | see Step 7                            |
+| Base branch  | No       | branch, default `origin/<integration>` from Step 1 | a work branch in `integration` mode   |
 
 Cap concurrency at 8 worktrees: queue anything beyond that and dispatch each queued task as an earlier agent settles; monitoring quality degrades faster than extra parallelism pays off.
 
@@ -61,6 +91,7 @@ Herdr JSON responses used here expose the fields needed to rebuild the run table
 7. **Nothing lands on a red gate.** Never merge while target CI is red or advance to the next branch on a red run. A green Deploy does not substitute for CI; only the CI workflow proves the project's checks passed.
 8. **Retire before removing.** Stop the agent (`send-keys ctrl+c`, then `ctrl+d`; confirm it left `herdr agent list`) before `herdr worktree remove`, which kills its pane.
 9. **Cleanup deletes only this run's objects**, and only after merge proof (content on target or PR shows merged). Squash-merged local branches need `git branch -D`; anything not tied to a task of this run, including an already-open space, stays.
+10. **Fan out before you review.** Dispatch every worktree and agent first (Step 4), then monitor and review; task 2's agent must exist before task 1's review starts. Serial landing (Step 7) is correct; serial execution violates the Trigger Rule.
 
 ## Run Table
 
@@ -81,24 +112,28 @@ After interruption, rebuild the table from `herdr worktree list --cwd "$PROJECT"
 git -C "$PROJECT" remote get-url origin                            # expected repo
 DEFAULT=$(git -C "$PROJECT" symbolic-ref --short refs/remotes/origin/HEAD)   # never hardcode
 DEFAULT=${DEFAULT#origin/} && echo "default branch: $DEFAULT"
+git -C "$PROJECT" branch -r --format='%(refname:short)' | grep -xE 'origin/(develop|integration|mainline)' || true
+grep -rniE "git ?flow|integration branch|merge into (develop|main)" AGENTS.md CONTRIBUTING.md README.md 2>/dev/null | head
 gh repo view --json squashMergeAllowed,deleteBranchOnMerge --jq '{squash: .squashMergeAllowed, deleteOnMerge: .deleteBranchOnMerge}' # GitHub-forge-specific
 ls .github/workflows/                                              # GitHub Actions baseline; use verified CI discovery elsewhere
 grep -n "merge" AGENTS.md CONTRIBUTING.md 2>/dev/null | head       # repo merge conventions
 ```
 
-Record default branch, merge method (squash unless the repo says otherwise), head auto-delete behavior, and workflow names that must be green. Choose with the user's request as the deciding input:
+Record the default branch, the integration branch, merge method (squash unless the repo says otherwise), head auto-delete behavior, and workflow names that must be green.
 
-- **`integration`**: every task branches off one work branch not yet on default; children merge back and ship as one PR.
-- **`pr`**: every task ships its own PR to default.
+`INTEGRATION` is where finished work merges: the default branch on trunk-based repos; `develop` (or the repo's documented integration branch) on Git Flow and release-train repos. Decide it from the remote branch layout plus AGENTS/CONTRIBUTING statements, never from `origin/HEAD` alone — Git Flow points `origin/HEAD` at `main` while features must target `develop`. Choose the landing mode with the user's request as the deciding input:
+
+- **`pr`**: every task ships its own PR to `$INTEGRATION`. The default for "make these N PRs" and for Git Flow feature sets, where each feature is reviewed on its own before merging.
+- **`integration`**: one work branch is created from `$INTEGRATION`; every task branches off it, children merge back, and the work branch ships as a single PR.
 
 Bind the mode's base once and carry it in the run table:
 
-```bash
+````bash
+INTEGRATION=develop                      # discovered above; trunk-based repos: "$DEFAULT"
 MODE=pr                                   # or: MODE=integration
 WORK_BRANCH=""                            # integration mode: the work branch name
-if [ "$MODE" = integration ]; then BASE="$WORK_BRANCH"; else BASE="origin/$DEFAULT"; fi
+if [ "$MODE" = integration ]; then BASE="$WORK_BRANCH"; else BASE="origin/$INTEGRATION"; fi
 git -C "$PROJECT" rev-parse --verify "$BASE"   # fail here, not at create time
-```
 
 ### Step 2: Plan branches
 
@@ -119,7 +154,7 @@ if [ -z "$SPACE" ]; then
 fi
 herdr worktree create --workspace "$SPACE" --branch feat/rolldown-bundler --base "$BASE" --no-focus
 # record .result.workspace.workspace_id, .result.root_pane.pane_id, .result.worktree.path
-```
+````
 
 One create per task. Each yields its own workspace labelled with the branch and nested under `$SPACE`; do not expect the pane in the caller's workspace. `$BASE` is `origin/$DEFAULT` in `pr` mode and the work branch in `integration` mode. Then gate dispatch:
 
@@ -150,7 +185,7 @@ GUARD: run `git remote get-url origin` — it must be <expected-url> and <one kn
 
 GROUND TRUTH (verify yourself): <files, symbols, current behavior, pointers>
 TASK: <numbered steps including verification and the repo's gate command>
-DELIVER: Conventional Commits (English), push the branch, and report its tip. In `pr` mode, open a review request through the configured forge (GitHub: `gh pr create --base <default>`); in `integration` mode, do not open one. Never merge.
+DELIVER: Conventional Commits (English), push the branch, and report its tip. In `pr` mode, open a review request through the configured forge (GitHub: `gh pr create --base <integration>`); in `integration` mode, do not open one. Never merge.
 RULES: <package manager>, stay in your worktree, no unrelated refactors, decide and document; do not ask.
 ```
 
@@ -216,17 +251,17 @@ for b in <ordered branches>; do
   git -C <next-worktree> push --force-with-lease
 done
 git -C "$PROJECT" push
-gh pr create --base <default> --head <work-branch>  # GitHub-forge-specific
+gh pr create --base <integration> --head <work-branch>  # GitHub-forge-specific
 ```
 
 **Mode `pr`** (one review request per task, strictly sequential and CI-gated; GitHub-forge-specific baseline syntax):
 
 ```bash
 gh pr merge <N> --squash                          # 1. merge, per repo convention
-gh run list --branch <default> --limit 2 --json databaseId,name
+gh run list --branch <integration> --limit 2 --json databaseId,name
 gh run watch <ci-run-id> --exit-status            # 2. green required (Hard Rule 7)
 git -C <next-worktree> fetch origin --prune       # 3. rebase the next branch
-git -C <next-worktree> rebase origin/<default>
+git -C <next-worktree> rebase origin/<integration>
 git -C <next-worktree> push --force-with-lease
 # 4. required checks COMPLETED/SUCCESS and mergeability CLEAN, then repeat
 ```
@@ -298,6 +333,7 @@ Stop and ask the user when landing mode is ambiguous, a merge needs force-pushin
 ## Gotchas
 
 - **`worktree create` without `--workspace` or `--cwd` targets the wrong project.** Plausible paths expose the mistake only through `remote get-url origin` (Hard Rule 1).
+- Git Flow repos point `origin/HEAD` at `main` while features must target `develop`; Step 1 discovers `$INTEGRATION` for exactly this reason. Never assume the default branch is the merge target.
 - Each create spawns a workspace and opens the project's space if closed; IDs come from JSON, never layout assumptions.
 - `--label` overwrites the branch handle in the sidebar (Hard Rule 2); `--no-focus` documents the API's false default.
 - A fresh pane rejects `agent start` with `agent_pane_busy` until its shell is interactive.
