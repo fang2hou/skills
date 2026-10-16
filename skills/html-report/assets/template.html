@@ -1033,6 +1033,17 @@
             copy: "复制答案",
             copied: "已复制",
           },
+          "zh-hant": {
+            progress: "已完成{n}/{t}",
+            saving: "正在儲存…",
+            saved: "已儲存",
+            offline: "未連線到本機服務，答案暫存在瀏覽器",
+            submit: "送出",
+            submitted: "已送出，可以回到對話了",
+            missing: "還有{k}項未回答。再按一次「送出」可略過這些項目",
+            copy: "複製答案",
+            copied: "已複製",
+          },
           ja: {
             progress: "回答済み{n}/{t}",
             saving: "保存中…",
@@ -1069,7 +1080,8 @@
             copied: "Copied",
           },
         };
-        const lang = (document.documentElement.lang || "en").slice(0, 2).toLowerCase();
+        const tag = (document.documentElement.lang || "en").toLowerCase();
+        const lang = /^zh-(hant|tw|hk)/.test(tag) ? "zh-hant" : tag.slice(0, 2);
         const S = STRINGS[lang] || STRINGS.en;
         const fmt = (s, v) => s.replace(/\{(\w)\}/g, (_, k) => v[k]);
         let state = { title: document.title, answers: {}, submitted: false };

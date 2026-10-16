@@ -18,7 +18,7 @@ Turns findings into one calm, readable HTML page, and turns questions for the us
 
 ## When to Use
 
-- The user asks for a report, 技术报告, audit, investigation summary, comparison, or plan meant to be read, not applied.
+- The user asks for a report, technical write-up, audit, investigation summary, comparison, or plan meant to be read, not applied.
 - The answer would exceed about one screen of chat, or needs tables, side-by-side options, charts, or translated source quotes.
 - The agent needs decisions with context: pick among options, approve or reject a list, triage items, or comment per item. A page beats a chat question when there are three or more questions, or when each choice needs its trade-offs shown.
 - A long task should show its progress in a page that refreshes as the agent works.
