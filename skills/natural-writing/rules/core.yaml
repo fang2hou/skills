@@ -1,0 +1,379 @@
+schema_version: "1.0.0"
+layer: core
+language: all
+description: "Layer 1 durable human expression principles independent of specific AI models or single languages."
+rules:
+  - id: core.clarity.meaning_chooses_word
+    layer: core
+    language: all
+    category: clarity
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Formulate the concrete meaning first and let that meaning select the exact word, rather than assembling prefabricated phrase strips."
+    problem: "Writers and language models surrender conceptual thought to ready-made buzzwords and stock collocations that blur what is actually claimed."
+    triggers:
+      - "High density of abstract buzzwords or stock phrases that could apply to any topic"
+      - "Sentences whose core proposition remains unclear after reading twice"
+    detection:
+      - "Ask Orwell's first question: What concrete state of the world is this sentence trying to describe?"
+      - "Test whether replacing the stock phrase with a plain factual statement exposes an empty or tautological claim."
+    revision_strategy:
+      - "State the specific actor, action, and observable outcome in plain vocabulary before adding any stylistic framing."
+      - "Delete sentences that collapse into tautology once the prefabricated buzzwords are removed."
+    exceptions:
+      - "Fixed legal formulas, statutory citations, or standardized protocol phrases where exact wording carries legal force"
+      - "Deliberate quotation or parody of bureaucratic language"
+    sources:
+      - "orwell-1946"
+      - "ye-shengtao-1934"
+      - "zhu-guangqian-1946"
+    examples:
+      - before: "By leveraging synergistic multi-dimensional paradigms, the platform empowers holistic ecosystem transformation."
+        after: "The platform provides a shared CLI and SDK so teams can build, test, and deploy services from one configuration file."
+        context: "Developer platform overview documentation"
+        verdict: "rewrite"
+        reason: "The original strings together prefabricated buzzwords without naming a single concrete tool or user action."
+      - before: "All API write endpoints must be idempotent across client retries within a 24-hour window."
+        after: "All API write endpoints must be idempotent across client retries within a 24-hour window."
+        context: "Distributed systems architecture specification"
+        verdict: "keep"
+        reason: "Every term ('idempotent', 'client retries', '24-hour window') names an exact, verifiable engineering requirement."
+
+  - id: core.clarity.concrete_over_vague
+    layer: core
+    language: all
+    category: clarity
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Prefer definite, specific, concrete nouns and quantities over cloudy category abstractions."
+    problem: "Abstract umbrella nouns ('phenomena', 'elements', 'aspects', 'dimensions', 'landscape') force the reader to guess the real-world referent."
+    triggers:
+      - "Umbrella nouns such as phenomenon, element, aspect, dimension, 维度, 层面, 側面, 要素 used without concrete referents"
+      - "Vague evaluative adjectives ('significant', 'optimal', 'various') where exact numbers or mechanisms exist in context"
+    detection:
+      - "Check whether the noun points to a discoverable object, metric, or event."
+      - "Verify whether the source context provides specific numbers or examples that were blurred into abstractions."
+    revision_strategy:
+      - "Name the concrete entity, failure mode, or measurement present in the source material."
+      - "When exact figures are unknown, state the concrete boundary of what is known rather than padding with abstract nouns."
+    exceptions:
+      - "High-level mathematical, philosophical, or architectural definitions where abstraction is the explicit subject"
+      - "Situations where the source provides no finer-grained data (never fabricate numbers to fake concreteness)"
+    sources:
+      - "orwell-1946"
+      - "strunk-white-1959"
+      - "kinoshita-1981"
+    examples:
+      - before: "Objective consideration of contemporary operational phenomena indicates that resource utilization exhibits problematic tendencies under peak conditions."
+        after: "During peak traffic above 12,000 requests per second, worker memory usage exceeds 8 GB and triggers out-of-memory restarts."
+        context: "Production incident postmortem"
+        verdict: "rewrite"
+        reason: "Replaces mushy abstractions ('operational phenomena', 'problematic tendencies') with observable metrics and failure events."
+      - before: "A functor preserves identity morphisms and composition of morphisms between categories."
+        after: "A functor preserves identity morphisms and composition of morphisms between categories."
+        context: "Category theory reference note"
+        verdict: "keep"
+        reason: "The subject itself is an exact mathematical abstraction; replacing it with everyday metaphors would lose rigor."
+
+  - id: core.syntax.actors_and_actions
+    layer: core
+    language: all
+    category: syntax
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Cast central actors as grammatical subjects and their primary actions as finite verbs."
+    problem: "Nominalizations ('zombie nouns') and verbal false limbs lock actions inside abstract nouns and attach them to empty light verbs, obscuring who did what."
+    triggers:
+      - "Light-verb operators ('render inoperative', 'effectuate', '进行…', '加以…', '〜の実行を行う') paired with nominalized verbs"
+      - "Agentless passive clauses where the actor is known and central to the decision"
+    detection:
+      - "Underline the grammatical subject and main verb of the clause."
+      - "Ask whether the true action is hidden inside a noun phrase ('the implementation of', '对…的优化', '〜の削減の実現')."
+    revision_strategy:
+      - "Promote the real semantic agent to subject position and convert the nominalized noun back into an active finite verb."
+      - "Keep the passive or patient-topic structure only when the receiver of the action is the persistent paragraph topic or the actor is immaterial."
+    exceptions:
+      - "Established technical nouns ('authentication', 'serialization', '幂等性', '排他制御')"
+      - "Anaphoric topic nouns ('This migration...') that link old information from the previous sentence to new commentary"
+      - "Scientific methods or Japanese intransitive/passive clauses where actor omission is idiomatic and unambiguous"
+    sources:
+      - "orwell-1946"
+      - "williams-1981"
+      - "pinker-2014"
+      - "lv-zhu-1952"
+      - "zhu-dexi-1982"
+    examples:
+      - before: "An optimization of the query planner by the database team resulted in the elimination of full-table scans."
+        after: "The database team optimized the query planner and eliminated full-table scans."
+        context: "Engineering release notes"
+        verdict: "rewrite"
+        reason: "Unpacks two nominalizations ('optimization', 'elimination') into active verbs anchored to the human actor."
+      - before: "Each token is signed with Ed25519, compressed with zstd, and cached at the edge for 15 minutes."
+        after: "Each token is signed with Ed25519, compressed with zstd, and cached at the edge for 15 minutes."
+        context: "Security architecture documentation"
+        verdict: "keep"
+        reason: "'Each token' is the persistent topic of the paragraph; passive participles maintain clean topic continuity."
+
+  - id: core.concision.information_density
+    layer: core
+    language: all
+    category: concision
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Every sentence, clause, and modifier must contribute new semantic proposition or necessary pragmatic framing."
+    problem: "Throat-clearing preambles, self-referential announcements, tautological adjectives, and repetitive closing summaries dilute signal and tax reader attention."
+    triggers:
+      - "Staged openers ('Let's dive in', 'Here is what you need to know', '在当今时代', '以下では〜について述べる')"
+      - "One-line paragraph closers or concluding sections that merely restate the preceding claim in grander words"
+    detection:
+      - "Delete the candidate phrase or sentence and check whether any fact, logical link, or needed courtesy disappears."
+      - "Check whether a concluding paragraph introduces a concrete decision or consequence, or merely echoes earlier sentences."
+    revision_strategy:
+      - "Cut staged run-ups and start directly with the first substantive proposition."
+      - "End sections on the final concrete fact, trade-off, or action item rather than a ceremonial send-off."
+    exceptions:
+      - "Explicit roadmap paragraphs in long multi-chapter manuals where readers navigate selectively"
+      - "Deliberate rhetorical refrain in speeches or literary essays"
+    sources:
+      - "strunk-white-1959"
+      - "zinsser-1976"
+      - "grice-1975"
+      - "pinker-2014"
+    examples:
+      - before: "Let's dive right in! It is worth noting that caching cuts repeat database queries. That is the real win."
+        after: "Caching cuts repeat database queries."
+        context: "Technical blog post"
+        verdict: "rewrite"
+        reason: "Both the staged opener ('Let's dive right in! It is worth noting that') and the one-line closer ('That is the real win.') add zero information."
+      - before: "This guide covers three migration phases: schema dual-write (Section 1), backfill verification (Section 2), and read cutover (Section 3)."
+        after: "This guide covers three migration phases: schema dual-write (Section 1), backfill verification (Section 2), and read cutover (Section 3)."
+        context: "20-page operational runbook introduction"
+        verdict: "keep"
+        reason: "Provides functional navigation for operators jumping to a specific phase during a live migration."
+
+  - id: core.logic.earned_contrast_and_connectives
+    layer: core
+    language: all
+    category: logic
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Use contrastive, causal, and additive connectives only when the underlying propositions stand in that exact logical relation."
+    problem: "Rhetorical formulas such as 'Not X, but Y' ('不是……而是……') or mechanical transition chains ('Furthermore, Moreover, Therefore') manufacture fake opposition or false causality."
+    triggers:
+      - "Correlative negations ('not X, but Y', '不是…而是…', '単なる〜ではなく〜だ') where X is a trivial strawman"
+      - "Sentence-initial connectives ('However', 'Therefore', '此外', 'したがって') attached to clauses that merely list parallel facts"
+    detection:
+      - "Test whether anyone in the communicative context actually believed or risked confusing the target with the negated branch X."
+      - "Verify that 'therefore / したがって / 因此' follows a genuine premise-to-conclusion entailment rather than a loose topic shift."
+    revision_strategy:
+      - "When X is a rhetorical strawman, remove the negative branch and state Y directly at its true factual scale."
+      - "When X corrects a real misconception or disambiguates a boundary condition, preserve the contrast intact."
+    exceptions:
+      - "Explicit scope boundaries ('validates syntax, not type safety')"
+      - "Correcting a documented diagnostic hypothesis or user misconception"
+    sources:
+      - "grice-1975"
+      - "pinker-2014"
+      - "strunk-white-1959"
+    examples:
+      - before: "This release is not merely a minor point update; it is a bold redefinition of how teams collaborate."
+        after: "Version 2.4 adds shared workspaces and role-based permissions for team projects."
+        context: "Product release notes"
+        verdict: "rewrite"
+        reason: "Nobody claimed a feature release was pointless, and 'bold redefinition' inflates two concrete features into a slogan."
+      - before: "The rate limiter tracks concurrent open connections per tenant, not requests per second (RPS)."
+        after: "The rate limiter tracks concurrent open connections per tenant, not requests per second (RPS)."
+        context: "API gateway documentation"
+        verdict: "keep"
+        reason: "Engineers frequently assume rate limiters measure RPS; the negative branch prevents a concrete configuration error."
+
+  - id: core.rhetoric.figurative_coherence
+    layer: core
+    language: all
+    category: rhetoric
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Figurative language must evoke a coherent conceptual mapping that clarifies meaning and fits the register."
+    problem: "Worn-out print clichés, mixed metaphors from colliding source domains, and melodramatic imagery obscure simple thoughts."
+    triggers:
+      - "Two or more metaphors from incompatible physical domains in the same sentence"
+      - "Stock metaphors ('tapestry', 'Achilles heel', '组合拳', '稳稳接住') used as automatic fillers"
+    detection:
+      - "Visualize the literal source domain of the metaphor: do the parts form a coherent image, or do they clash?"
+      - "Ask Orwell's fourth question: Is this image fresh and accurate enough to make the meaning clearer than plain words?"
+    revision_strategy:
+      - "Replace mixed or dying metaphors with direct verbs and concrete nouns."
+      - "Preserve fresh analogies that illuminate complex mechanics or carry intentional literary tone."
+    exceptions:
+      - "Lexicalized technical terms ('deadlock', 'bottleneck', 'tree-shaking', '缓存击穿', 'ガベージコレクション')"
+      - "Coherent extended metaphors in essays, pedagogy, or literary narrative"
+    sources:
+      - "orwell-1946"
+      - "lakoff-johnson-1980"
+      - "zhu-guangqian-1946"
+    examples:
+      - before: "This milestone serves as the bedrock that ignites our flywheel and weaves a new chapter in the cloud landscape."
+        after: "Completing the regional failover test lets us onboard enterprise customers in three new availability zones."
+        context: "Quarterly engineering update"
+        verdict: "rewrite"
+        reason: "A bedrock cannot ignite a flywheel or weave a chapter; four colliding clichés hide the actual engineering result."
+      - before: "A distributed lock without a fencing token is like a checkpoint guard who checks IDs but never checks whether the pass expired."
+        after: "A distributed lock without a fencing token is like a checkpoint guard who checks IDs but never checks whether the pass expired."
+        context: "Distributed systems tutorial"
+        verdict: "keep"
+        reason: "The analogy maps a single, coherent source scenario onto the exact failure mode of stale lock holders."
+
+  - id: core.pragmatics.social_distance_and_register
+    layer: core
+    language: all
+    category: pragmatics
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Calibrate formality, politeness, and emotional intimacy to the social distance, relative power, and genre of the exchange."
+    problem: "Prose fails pragmatically both when it adopts cold bureaucratic pomposity and when it crosses boundaries into unsolicited therapy-speak, sycophancy, or internet slang."
+    triggers:
+      - "Unsolicited emotional containment or flattery in technical/professional replies ('我会稳稳地接住你的情绪', 'What a brilliant question!')"
+      - "Internet slang or spoken shorthand ('绝绝子', '狠狠拿捏', 'no-brainer', 'ぶっちゃけ') injected into formal or analytical prose"
+    detection:
+      - "Assess Social Distance (D), Relative Power (P), and Genre: is this an expert-to-expert spec, a public essay, a customer notice, or an intimate chat?"
+      - "Check whether the tone spotlights the writer's emotional performance instead of serving the reader's task."
+    revision_strategy:
+      - "In professional and informational genres, replace emotional performance and slang with clear, courteous, direct statements."
+      - "Preserve warmth or colloquialisms only when the genre (such as personal correspondence, fiction dialogue, or counseling) genuinely calls for them."
+    exceptions:
+      - "Counseling, mental-health support, or intimate personal letters where emotional containment is the explicit purpose"
+      - "Direct quotations of spoken dialogue or social-media posts"
+    sources:
+      - "brown-levinson-1987"
+      - "gowers-1954"
+      - "bunkacho-2007"
+      - "bunkacho-2022"
+    examples:
+      - before: "你的焦虑我稳稳地接住了！这个线上报错其实绝绝子好修，我直接给你一把梭全搞完。"
+        after: "我明白这个线上报错很紧急。原因是连接池配置过小，我现在把上限从 20 调到 100 并发布修复。"
+        context: "On-call engineering incident coordination"
+        verdict: "rewrite"
+        reason: "Both the therapeutic metaphor ('稳稳地接住') and the internet slang ('绝绝子', '一把梭全搞完') violate professional incident-response register."
+      - before: "When a bereaved parent first speaks in group therapy, the facilitator's job is to hold that grief steadily without rushing to reframe it."
+        after: "When a bereaved parent first speaks in group therapy, the facilitator's job is to hold that grief steadily without rushing to reframe it."
+        context: "Clinical psychotherapy supervision manual"
+        verdict: "keep"
+        reason: "In clinical supervision, 'holding grief steadily' names the exact therapeutic stance appropriate to the domain."
+
+  - id: core.pragmatics.epistemic_calibration
+    layer: core
+    language: all
+    category: pragmatics
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Separate verified facts from inferences and calibrate epistemic qualifiers to actual evidence."
+    problem: "Writers either stack defensive hedges ('could potentially arguably') to evade accountability or inflate ordinary facts with promotional hyperbole ('pivotal testament', 'groundbreaking')."
+    triggers:
+      - "Stacked modal qualifiers ('might possibly', '〜かと思われる部分も否定できない')"
+      - "Promotional superlatives and borrowed authority ('experts agree', 'stands as an enduring testament')"
+    detection:
+      - "Ask Kinoshita's question: Is this clause reporting an observed fact (事実) or an inference/opinion (意見)?"
+      - "If it is a fact, remove speculative buffers; if it is an inference, state the single qualifier and its evidentiary basis."
+    revision_strategy:
+      - "State verified facts with direct indicative predicates."
+      - "Replace unnamed authority ('observers note') and promotional inflation with the specific source or measurement."
+    exceptions:
+      - "Explicit uncertainty markers when evidence is incomplete ('not measured', 'likely caused by X based on trace Y')"
+      - "Statutory or medical risk disclosures"
+    sources:
+      - "kinoshita-1981"
+      - "grice-1975"
+      - "orwell-1946"
+    examples:
+      - before: "It could potentially be argued by various industry observers that the new allocator might somewhat play a pivotal role in memory efficiency."
+        after: "In our benchmark of 10,000 concurrent connections, the new allocator reduced peak heap usage by 22%."
+        context: "Performance evaluation report"
+        verdict: "rewrite"
+        reason: "Replaces contradiction between stacked hedges ('could potentially might somewhat') and promotional inflation ('pivotal role') with the measured result."
+      - before: "Because core dumps were disabled on node-04, the root cause of the segfault remains unverified; the stack trace points most likely to a double free in the TLS wrapper."
+        after: "Because core dumps were disabled on node-04, the root cause of the segfault remains unverified; the stack trace points most likely to a double free in the TLS wrapper."
+        context: "Postmortem root-cause section"
+        verdict: "keep"
+        reason: "Clearly separates what is unverified (and why) from the best-supported technical hypothesis."
+
+  - id: core.cohesion.old_before_new
+    layer: core
+    language: all
+    category: cohesion
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Build flow by moving from familiar context ('old') to new, high-weight information ('new'), and let sentence rhythm follow thought structure."
+    problem: "Sentences that front-load unfamiliar subordinate clauses or stamp every paragraph into identical three-item patterns tire the reader and obscure emphasis."
+    triggers:
+      - "Every paragraph or list containing exactly three symmetrical items regardless of content"
+      - "Long, complex new definitions placed in the subject position before a tiny predicate at the end"
+    detection:
+      - "Check whether the opening of each sentence connects cleanly to concepts introduced in the previous sentence."
+      - "Inspect three-part lists and parallelisms: do all three items carry distinct weight, or is the third item rhythmic filler?"
+    revision_strategy:
+      - "Place known context at the start of the clause and shift heavy, new, or emphatic information to the end (end-focus)."
+      - "Vary sentence length and list cardinality (2 items, 4 items, or prose) to match the actual material."
+    exceptions:
+      - "Head-final modifier ordering in Japanese where long clausal modifiers must precede short head nouns to prevent ambiguity (Honda 1976)"
+      - "Domain taxonomies that genuinely consist of three orthogonal categories"
+    sources:
+      - "williams-1981"
+      - "honda-1976"
+      - "pinker-2014"
+    examples:
+      - before: "A new token bucket algorithm that dynamically adjusts refill rates based on downstream p99 latency and error budgets was deployed by the gateway team."
+        after: "The gateway team deployed a new token bucket algorithm that dynamically adjusts refill rates based on downstream p99 latency and error budgets."
+        context: "Architecture changelog"
+        verdict: "rewrite"
+        reason: "Places the familiar actor ('The gateway team') first and moves the complex new technical mechanism to end-focus position."
+      - before: "The compiler pipeline runs in three stages: lexical analysis, syntactic parsing, and SSA code generation."
+        after: "The compiler pipeline runs in three stages: lexical analysis, syntactic parsing, and SSA code generation."
+        context: "Compiler internals documentation"
+        verdict: "keep"
+        reason: "The architecture genuinely comprises three distinct sequential stages; the triad is factual, not decorative."
+
+  - id: core.fidelity.preserve_voice_and_facts
+    layer: core
+    language: all
+    category: fidelity
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Preserve 100% of verified facts, causal claims, technical terms, and the author's authentic voice; break any stylistic heuristic before corrupting meaning."
+    problem: "Over-zealous editing strips away necessary caveats, replaces exact technical terms with amateur synonyms, invents unsupported causal links, or flattens personal essays into sterile boilerplate."
+    triggers:
+      - "Any rewrite that drops numbers, units, versions, conditions, or negations present in the source"
+      - "Any rewrite that turns correlation ('after X, Y happened') into unverified causation ('X caused Y')"
+      - "Any edit to an already clear, natural sentence made solely to enforce a stylistic preference"
+    detection:
+      - "Diff all numbers, dates, entities, technical identifiers, and modal qualifiers between the original and revised text."
+      - "Ask whether the author's distinctive rhythm, dry humor, or nuanced hesitation was erased without improving comprehension."
+    revision_strategy:
+      - "Restore any dropped quantity, condition, or technical term immediately."
+      - "When a sentence in the draft is already clear, accurate, and suited to its audience, leave it untouched."
+    exceptions:
+      - "Cutting explicitly redundant filler words that carry zero factual or stylistic information"
+    sources:
+      - "orwell-1946"
+      - "pinker-2014"
+      - "kinoshita-1981"
+    examples:
+      - before: "We updated the retry policy (which means repeating a failed request so temporary glitches don't matter) and that fixed the outage."
+        after: "Enabling idempotent retries on `POST /v1/orders` (max 3 attempts, 200 ms exponential backoff) stopped transient 502 errors from dropping orders; downstream database timeouts remain under investigation."
+        context: "Incident summary where a draft paraphrased 'idempotent retries', dropped the retry bounds, and overstated causal resolution"
+        verdict: "rewrite"
+        reason: "Restores the exact technical term ('idempotent retries'), the numeric parameters ('3 attempts, 200 ms'), and the accurate causal scope instead of claiming the entire outage was fixed."
+      - before: "I still keep a dog-eared copy of K&R on my desk—not because C89 is the future, obviously, but because its 270 pages remind me that a manual doesn't have to weigh four pounds to tell the truth."
+        after: "I still keep a dog-eared copy of K&R on my desk—not because C89 is the future, obviously, but because its 270 pages remind me that a manual doesn't have to weigh four pounds to tell the truth."
+        context: "Personal essay by a systems programmer"
+        verdict: "keep"
+        reason: "The em dash, first-person aside, and 'not because X, but because Y' structure are vivid, specific, and unmistakably human; stripping them would destroy the author's voice."

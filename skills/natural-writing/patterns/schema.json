@@ -1,0 +1,378 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/fang2hou/skills/skills/natural-writing/patterns/schema.json",
+  "title": "Natural Writing Skill Structured Data Schema",
+  "description": "Schema definitions for Layer 1 core principles, Layer 2 language realization rules, Layer 3 versioned AI symptoms, annotated examples, and evaluation test cases.",
+  "$defs": {
+    "rule_example": {
+      "type": "object",
+      "required": ["before", "after", "context", "verdict", "reason"],
+      "properties": {
+        "before": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Original passage inspected by the rule."
+        },
+        "after": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Revised passage (or identical text when verdict is 'keep')."
+        },
+        "context": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Communicative setting, genre, and audience relationship."
+        },
+        "verdict": {
+          "type": "string",
+          "enum": ["rewrite", "keep"],
+          "description": "Whether the passage warrants revision or should be kept intact in this context."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Principle-grounded explanation of why the passage is revised or preserved."
+        }
+      },
+      "additionalProperties": false
+    },
+    "rule_entry": {
+      "type": "object",
+      "required": [
+        "id",
+        "layer",
+        "language",
+        "category",
+        "severity",
+        "version",
+        "updated_at",
+        "principle",
+        "problem",
+        "triggers",
+        "detection",
+        "revision_strategy",
+        "exceptions",
+        "sources",
+        "examples"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^(core|zh|en|ja)\\.[a-z_]+\\.[a-z0-9_]+$"
+        },
+        "layer": {
+          "type": "string",
+          "enum": ["core", "language"]
+        },
+        "language": {
+          "type": "string",
+          "enum": ["all", "zh-CN", "en", "ja"]
+        },
+        "parent_principle": {
+          "type": "string",
+          "pattern": "^core\\.[a-z_]+\\.[a-z0-9_]+$",
+          "description": "Required for Layer 2 language rules: ID of the Layer 1 core rule it realizes."
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "clarity",
+            "syntax",
+            "concision",
+            "logic",
+            "rhetoric",
+            "pragmatics",
+            "cohesion",
+            "fidelity",
+            "diction",
+            "collocation",
+            "register",
+            "terminology"
+          ]
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "updated_at": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "principle": {
+          "type": "string",
+          "minLength": 5
+        },
+        "problem": {
+          "type": "string",
+          "minLength": 5
+        },
+        "triggers": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 2 }
+        },
+        "detection": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string", "minLength": 5 }
+        },
+        "revision_strategy": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 5 }
+        },
+        "exceptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "sources": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "examples": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/rule_example" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "symptom_entry": {
+      "type": "object",
+      "required": [
+        "id",
+        "layer",
+        "version",
+        "status",
+        "action_on_match",
+        "observed_since",
+        "last_reviewed",
+        "affected_models",
+        "languages",
+        "category",
+        "severity",
+        "linked_rules",
+        "surface_patterns",
+        "why_it_occurs",
+        "contextual_test",
+        "valid_contexts",
+        "revision_guidance",
+        "examples"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^symptom\\.[a-z_]+\\.[a-z0-9_]+$"
+        },
+        "layer": {
+          "type": "string",
+          "const": "symptom"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "monitoring", "deprecated"]
+        },
+        "deprecation_note": {
+          "type": "string"
+        },
+        "action_on_match": {
+          "type": "string",
+          "const": "review_only",
+          "description": "Symptom matches only trigger contextual inspection; they never auto-fail prose."
+        },
+        "observed_since": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}$"
+        },
+        "last_reviewed": {
+          "type": "string",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+        },
+        "affected_models": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 2 }
+        },
+        "languages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "enum": ["zh-CN", "en", "ja"]
+          }
+        },
+        "category": {
+          "type": "string"
+        },
+        "severity": {
+          "type": "string",
+          "enum": ["high", "medium", "low"]
+        },
+        "linked_rules": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "surface_patterns": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "why_it_occurs": {
+          "type": "string",
+          "minLength": 10
+        },
+        "contextual_test": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string", "minLength": 5 }
+        },
+        "valid_contexts": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 3 }
+        },
+        "revision_guidance": {
+          "type": "string",
+          "minLength": 5
+        },
+        "examples": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "$ref": "#/$defs/rule_example" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "example_record": {
+      "type": "object",
+      "required": [
+        "id",
+        "language",
+        "genre",
+        "register",
+        "verdict",
+        "before",
+        "after",
+        "triggered_rules",
+        "triggered_symptoms",
+        "diagnosis",
+        "preserved_invariants"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^ex\\.(zh|en|ja)\\.[0-9]{3}$" },
+        "language": { "type": "string", "enum": ["zh-CN", "en", "ja"] },
+        "genre": {
+          "type": "string",
+          "enum": [
+            "technical-doc",
+            "workplace-message",
+            "public-essay",
+            "commentary",
+            "incident-report",
+            "support-counseling",
+            "literary-narrative",
+            "official-notice"
+          ]
+        },
+        "register": {
+          "type": "string",
+          "enum": ["formal", "professional", "neutral", "warm-supportive", "literary"]
+        },
+        "verdict": { "type": "string", "enum": ["rewrite", "keep"] },
+        "before": { "type": "string", "minLength": 1 },
+        "after": { "type": "string", "minLength": 1 },
+        "triggered_rules": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "triggered_symptoms": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "diagnosis": { "type": "string", "minLength": 10 },
+        "preserved_invariants": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "eval_case": {
+      "type": "object",
+      "required": [
+        "id",
+        "language",
+        "mode",
+        "category",
+        "genre",
+        "register",
+        "expected_action",
+        "input_text",
+        "context_note",
+        "must_preserve",
+        "must_avoid",
+        "reference_output",
+        "assertions"
+      ],
+      "properties": {
+        "id": { "type": "string", "pattern": "^eval\\.(zh|en|ja)\\.[0-9]{2}$" },
+        "language": { "type": "string", "enum": ["zh-CN", "en", "ja"] },
+        "mode": {
+          "type": "string",
+          "enum": ["generate", "review", "rewrite", "light-polish", "diagnose"]
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "context_sensitive_metaphor",
+            "valid_contrast_preservation",
+            "false_contrast_removal",
+            "anti_colloquial_overcorrection",
+            "literary_metaphor_preservation",
+            "technical_term_preservation",
+            "information_density_and_fidelity",
+            "register_and_keigo_calibration",
+            "well_written_no_op"
+          ]
+        },
+        "genre": { "type": "string" },
+        "register": { "type": "string" },
+        "expected_action": {
+          "type": "string",
+          "enum": ["rewrite", "keep", "diagnose_only", "generate", "escalate"]
+        },
+        "input_text": { "type": "string", "minLength": 1 },
+        "context_note": { "type": "string", "minLength": 5 },
+        "must_preserve": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "must_avoid": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string" }
+        },
+        "reference_output": { "type": "string", "minLength": 1 },
+        "assertions": {
+          "type": "array",
+          "minItems": 2,
+          "items": { "type": "string", "minLength": 5 }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

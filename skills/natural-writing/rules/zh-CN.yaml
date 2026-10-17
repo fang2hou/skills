@@ -1,0 +1,307 @@
+schema_version: "1.0.0"
+layer: language
+language: zh-CN
+description: "Layer 2 Simplified Chinese (zh-CN) realization rules grounded in Chinese grammar, collocation, rhetoric, and pragmatics."
+rules:
+  - id: zh.syntax.empty_light_verbs
+    layer: language
+    language: zh-CN
+    parent_principle: core.syntax.actors_and_actions
+    category: syntax
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Use direct Chinese verb predicates instead of omnipotent light verbs ('进行、加以、作出、予以、开展、实现') that turn actions into abstract noun objects."
+    problem: "Omnipotent light verbs (万能动词/形式动词) strip Chinese verbs of their natural agility and pad clauses with bureaucratic nominalizations."
+    triggers:
+      - "对…进行/加以/予以 + two-character verb (e.g., 对代码进行审查, 对问题加以解决)"
+      - "实现了…的提升/降低/优化 or 完成了对…的构建工作"
+    detection:
+      - "Locate '进行、加以、作出、予以、开展、实现' and check whether the following noun is actually a verb in disguise."
+      - "Test whether removing the light verb and restoring the action verb directly before its object keeps the exact meaning."
+    revision_strategy:
+      - "Promote the nominalized verb back to the main predicate ('对索引进行重建' -> '重建索引')."
+      - "Convert adjectival modifiers inside the noun phrase ('进行了深入的探讨') into adverbials ('深入探讨')."
+    exceptions:
+      - "Fixed statutory or regulatory phrasing ('依法予以行政拘留')"
+      - "Clauses where the nominalized object takes an essential frequency/duration measure that cannot attach cleanly to the bare verb ('开展了三轮封闭测试')"
+    sources:
+      - "lv-zhu-1952"
+      - "zhu-dexi-1982"
+      - "yu-kwangchung-1987"
+    examples:
+      - before: "通过对数据库索引的重建，我们实现了查询延迟从 120 ms 到 15 ms 的显著降低。"
+        after: "重建数据库索引后，查询延迟从 120 ms 降至 15 ms。"
+        context: "Engineering performance report"
+        verdict: "rewrite"
+        reason: "Eliminates the nominalized wrapper '通过对…的…实现了…的降低' and uses direct verbs '重建' and '降至'."
+      - before: "监管部门对违规采集生物识别信息的行为依法予以行政处罚。"
+        after: "监管部门对违规采集生物识别信息的行为依法予以行政处罚。"
+        context: "Legal compliance bulletin"
+        verdict: "keep"
+        reason: "In formal statutory enforcement notices, '依法予以行政处罚' is the standard legal register."
+
+  - id: zh.syntax.europeanized_prepositions_and_passives
+    layer: language
+    language: zh-CN
+    parent_principle: core.cohesion.old_before_new
+    category: syntax
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Follow Chinese topic-comment flow and chronological verb chains rather than Europeanized prepositional wrappers, stacked '的' modifiers, and unmotivated '被' passives."
+    problem: "Word-for-word calques of English prepositional phrases ('在…的背景下/情况下', '关于…而言') and relative clauses create top-heavy, breathless Chinese sentences."
+    triggers:
+      - "在…的情况下 / 在…的背景下 / 通过…的方式 / 关于…方面 / 对于…而言"
+      - "Three or more '的' modifiers stacked before a single head noun"
+      - "Unmotivated '被' before neutral or positive verbs where active or topic-comment order is natural"
+    detection:
+      - "Count pre-nominal '的' particles in each noun phrase; flag chains with three or more nested qualifiers."
+      - "Check whether '被' is used merely to mirror an English passive rather than to express adversity or necessary patient focus."
+    revision_strategy:
+      - "Unpack long pre-nominal '的' chains into sequential verb clauses following chronological order (Condition -> Action -> Result)."
+      - "Drop '在…的情况下' and '被' when topic-comment or active word order states the relationship directly."
+    exceptions:
+      - "Adversative or involuntary events where '被' marks genuine impact ('请求被防火墙拦截', '连接被对端重置')"
+      - "Strict mathematical definitions requiring exact scope bounding"
+    sources:
+      - "wang-li-1943"
+      - "zhu-dexi-1982"
+      - "yu-kwangchung-1987"
+    examples:
+      - before: "当配置文件在没有经过模式校验的情况下被工作进程加载时，系统就会出现崩溃的情况。"
+        after: "工作进程加载未经模式校验的配置文件时，系统就会崩溃。"
+        context: "System reliability documentation"
+        verdict: "rewrite"
+        reason: "Removes the translationese wrapper '当…在没有经过…的情况下被…时' and '出现…的情况'."
+      - before: "未携带有效签名头的 Webhook 请求会被网关直接拒绝，并返回 401 状态码。"
+        after: "未携带有效签名头的 Webhook 请求会被网关直接拒绝，并返回 401 状态码。"
+        context: "API security documentation"
+        verdict: "keep"
+        reason: "'Webhook 请求' is the topic and '被网关直接拒绝' naturally expresses an enforcement action on the request."
+
+  - id: zh.pragmatics.metaphor_and_intimacy_mismatch
+    layer: language
+    language: zh-CN
+    parent_principle: core.pragmatics.social_distance_and_register
+    category: pragmatics
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Match metaphors and interpersonal warmth to the social distance and communicative purpose of the exchange."
+    problem: "Pop-psychology metaphors ('稳稳地接住你的情绪') and corporate buzzword metaphors ('赋能、抓手、闭环、打通心智、对齐颗粒度') inject theatrical intimacy or hollow jargon into ordinary communication."
+    triggers:
+      - "Therapeutic or physical-catching metaphors ('接住、兜住、收口') applied to routine questions or tasks"
+      - "Corporate buzzword clusters ('赋能、抓手、闭环、沉淀、颗粒度、组合拳、心智、底层逻辑') used instead of concrete descriptions"
+    detection:
+      - "Check whether the metaphor's source domain (e.g., catching a falling object, military combat, psychotherapy) fits the communicative frame."
+      - "Evaluate Social Distance (D): does the relationship between writer and reader warrant emotional containment language?"
+    revision_strategy:
+      - "In technical, analytical, and workplace exchanges, replace performative emotional metaphors with direct acknowledgment ('我理解你的意思', '核心问题是…')."
+      - "Replace corporate buzzwords with the specific tool, metric, or workflow step."
+    exceptions:
+      - "Literal physical actions ('守门员稳稳地接住了球')"
+      - "Psychological counseling, grief support, or literary narratives where emotional containment is the actual topic"
+    sources:
+      - "lakoff-johnson-1980"
+      - "brown-levinson-1987"
+      - "zhu-guangqian-1946"
+    examples:
+      - before: "你的表达我稳稳地接住了！接下来我们拉齐一下颗粒度，用一套组合拳把这个痛点彻底闭环。"
+        after: "我明白你的意思了。接下来我们核对一下具体细节，分步解决这个性能瓶颈。"
+        context: "Workplace engineering discussion"
+        verdict: "rewrite"
+        reason: "Replaces performative therapy-speak ('稳稳地接住') and corporate buzzwords ('拉齐颗粒度、组合拳、闭环') with plain professional Chinese."
+      - before: "面对刚经历丧亲之痛的来访者，咨询师此时不必急于提供建议，更重要的是先接住对方倾泻而出的悲伤与无助。"
+        after: "面对刚经历丧亲之痛的来访者，咨询师此时不必急于提供建议，更重要的是先接住对方倾泻而出的悲伤与无助。"
+        context: "Clinical counseling training material"
+        verdict: "keep"
+        reason: "In grief counseling, '接住…悲伤与无助' accurately conveys therapeutic containment within its proper domain."
+
+  - id: zh.logic.false_adversative_contrast
+    layer: language
+    language: zh-CN
+    parent_principle: core.logic.earned_contrast_and_connectives
+    category: logic
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Use '不是……而是……' ('并非……而是……', '不只是……更是……') only when correcting a plausible misconception or contrasting genuinely opposed propositions."
+    problem: "AI and promotional prose repeatedly negate trivial strawmen ('这不是一次简单的升级，而是一场深刻的变革') to manufacture unearned drama."
+    triggers:
+      - "不是…而是… / 并非…而是… / 不只是…更是… / 与其说…不如说…"
+    detection:
+      - "Ask whether any reasonable reader believed the negated clause X."
+      - "Check whether X and Y are actually mutually exclusive, or whether deleting '不是 X，而是' leaves the meaning intact and cleaner."
+      - "Count how many times correlative negation appears in the same document."
+    revision_strategy:
+      - "Collapse theatrical contrasts into a direct statement of the concrete change and its measurable effect."
+      - "Preserve the contrast when ruling out a likely diagnostic error, configuration mistake, or competing interpretation."
+    exceptions:
+      - "Correcting a common technical or conceptual misunderstanding"
+      - "Contrasting two concrete implementation options or root causes"
+    sources:
+      - "grice-1975"
+      - "lv-zhu-1952"
+      - "zhu-guangqian-1946"
+    examples:
+      - before: "我们需要的不是冷冰冰的代码，而是有温度的工程文化；这不是一次简单的规范更新，而是一场研发心智的觉醒。"
+        after: "这次更新统一了代码审查清单，要求每次合并前补充回归测试与变更说明。"
+        context: "Internal engineering process announcement"
+        verdict: "rewrite"
+        reason: "Both '不是…而是…' clauses set up emotional strawmen instead of stating what the process update actually requires."
+      - before: "这次内存暴涨不是因为业务流量突增，而是因为日志采集协程在磁盘写满后未能释放缓冲区。"
+        after: "这次内存暴涨不是因为业务流量突增，而是因为日志采集协程在磁盘写满后未能释放缓冲区。"
+        context: "Incident root-cause analysis"
+        verdict: "keep"
+        reason: "Explicitly rules out the most common hypothesis (traffic spike) before naming the true root cause."
+
+  - id: zh.register.colloquial_overcorrection
+    layer: language
+    language: zh-CN
+    parent_principle: core.pragmatics.social_distance_and_register
+    category: register
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Keep written Chinese clear and unpretentious without slipping into internet memes, chat particles, or rough spoken shorthand."
+    problem: "When told to avoid 'AI tone', models often overcorrect into internet slang ('绝绝子、狠狠拿捏、一把梭') or casual chat ('我直接给你全搞完、服务挂了'), degrading professional register."
+    triggers:
+      - "Internet memes and slang ('绝绝子、狠狠拿捏、一把梭、yyds、真香、家人们、懂的都懂')"
+      - "Spoken shorthand in formal docs ('挂了、崩了、卡死、没人盯、干掉、全搞完')"
+      - "Performative chat openers ('说白了、讲真、其实吧、不吹不黑')"
+    detection:
+      - "Compare the lexical register against the target document genre (technical spec, report, essay vs. casual chat)."
+      - "Check whether slang verbs ('搞完、拿捏、干掉') obscure the exact technical or operational action."
+    revision_strategy:
+      - "Replace slang and spoken shorthand with plain, accurate written Chinese ('异常退出、不可用、请求阻塞、下线旧接口、一次性完成')."
+      - "Remove conversational particles ('啦、哦、哈、呗') outside informal chat contexts."
+    exceptions:
+      - "Verbatim quotes of user feedback or social media posts"
+      - "Fiction dialogue or explicitly informal personal chat where the user requests colloquial banter"
+    sources:
+      - "ye-shengtao-1934"
+      - "lv-zhu-1952"
+      - "brown-levinson-1987"
+    examples:
+      - before: "说白了，昨晚半夜发版没人盯，结果老节点直接崩了。今天我直接给你全搞完，把老接口一把梭干掉，性能狠狠拿捏住。"
+        after: "昨晚深夜无人值守发布期间，旧节点异常退出。今天我们会完成全部修复，下线旧接口并稳定吞吐性能。"
+        context: "Daily engineering status report"
+        verdict: "rewrite"
+        reason: "Replaces casual chat shorthand and internet slang with clear, professional written Chinese without adding bureaucratic stiffness."
+      - before: "受访者在问卷中写道：“每次点开账单页面都卡死，体验真是绝绝子。”"
+        after: "受访者在问卷中写道：“每次点开账单页面都卡死，体验真是绝绝子。”"
+        context: "User research report quoting a participant verbatim"
+        verdict: "keep"
+        reason: "Direct quotations of user research data must remain verbatim."
+
+  - id: zh.collocation.natural_verb_object_pairing
+    layer: language
+    language: zh-CN
+    parent_principle: core.clarity.meaning_chooses_word
+    category: collocation
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Pair verbs with objects and modifiers with heads that satisfy native Chinese semantic selection."
+    problem: "Blended templates and hasty compression produce mismatched verb-object pairs ('培养水平', '强化低延迟', '沉淀动作') that jar native readers."
+    triggers:
+      - "Verb-object pairs where the verb's semantic action cannot apply to the object noun"
+      - "Two coordinated verbs sharing one object when only one verb collocates with it ('培养和提高技术水平')"
+    detection:
+      - "Strip intervening modifiers and read the bare [Subject + Verb + Object] skeleton aloud."
+      - "Verify that every coordinated verb in 'V1 和 V2 + Object' can independently govern the object."
+    revision_strategy:
+      - "Replace the mismatched verb or split the coordinated phrase so each noun has its proper verb ('培养工程能力、提高技术水平')."
+    exceptions:
+      - "Deliberate poetic synesthesia or rhetorical zeugma in literary writing"
+    sources:
+      - "lv-zhu-1952"
+      - "zhu-dexi-1982"
+    examples:
+      - before: "各团队需要沉淀标准化的排障动作，持续强化系统的低延迟与高可用水平。"
+        after: "各团队需要总结标准化的排障流程，持续降低系统延迟并提高可用性。"
+        context: "Site reliability engineering charter"
+        verdict: "rewrite"
+        reason: "Fixes three collocation mismatches: '沉淀…动作' -> '总结…流程', '强化…低延迟' -> '降低…延迟', '强化…水平' -> '提高可用性'."
+      - before: "这批自动化测试既缩短了回归周期，又提高了发布质量。"
+        after: "这批自动化测试既缩短了回归周期，又提高了发布质量。"
+        context: "QA summary report"
+        verdict: "keep"
+        reason: "'缩短…周期' and '提高…质量' are each paired with their natural verb and object."
+
+  - id: zh.rhetoric.parallelism_and_four_char_cliche
+    layer: language
+    language: zh-CN
+    parent_principle: core.concision.information_density
+    category: rhetoric
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Use four-character compounds and parallel clauses for precision, not as ceremonial padding."
+    problem: "Strings of synonymous four-character idioms ('统筹兼顾、协同推进、多措并举') and mechanical three-part parallelisms ('不仅是…更是…还是…') create hollow officialese."
+    triggers:
+      - "Three or more four-character phrases chained together with顿号 ('、') that repeat the same general meaning"
+      - "Consecutive paragraphs built on symmetrical three-clause parallel frames"
+    detection:
+      - "Ask what distinct factual difference exists between Item 1, Item 2, and Item 3 in the parallel chain."
+      - "Distinguish settled four-character technical terms ('向下兼容、按需加载') from decorative slogan chains."
+    revision_strategy:
+      - "Keep settled four-character technical terms that compress a precise concept into four syllables."
+      - "Collapse synonymous slogan chains into concrete actions, metrics, or conditions."
+    exceptions:
+      - "Compact technical four-character terms ('向下兼容、平滑迁移、按需加载、故障隔离、幂等重试')"
+      - "Intentional parallel cadence in speeches or literary prose where each branch adds distinct imagery"
+    sources:
+      - "lv-zhu-1952"
+      - "zhu-guangqian-1946"
+      - "ye-shengtao-1934"
+    examples:
+      - before: "我们要坚持问题导向、目标导向、结果导向，统筹兼顾、多措并举、稳步推进数据库分库分表工作。"
+        after: "数据库分库分表将按订单归档、双写校验、读流量切换三个阶段推进。"
+        context: "Technical migration plan"
+        verdict: "rewrite"
+        reason: "Replaces six ceremonial four-character slogans with the three concrete migration steps."
+      - before: "新网关支持按需加载插件、故障隔离与平滑迁移，并保持对 v1 协议的向下兼容。"
+        after: "新网关支持按需加载插件、故障隔离与平滑迁移，并保持对 v1 协议的向下兼容。"
+        context: "Architecture overview"
+        verdict: "keep"
+        reason: "Each four-character compound ('按需加载、故障隔离、平滑迁移、向下兼容') names a distinct, standard engineering capability."
+
+  - id: zh.terminology.technical_precision_and_calques
+    layer: language
+    language: zh-CN
+    parent_principle: core.fidelity.preserve_voice_and_facts
+    category: terminology
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Use settled Chinese engineering terms or standard English identifiers rather than awkward literal metaphor calques or redundant textbook definitions."
+    problem: "Translating English idioms literally ('金丝雀发布、快乐路径、摇树优化、单一事实来源') or adding parenthetical beginner definitions to standard terms makes technical Chinese unnatural."
+    triggers:
+      - "Literal metaphor calques ('金丝雀发布、快乐路径、爆炸半径、发布火车、摇树优化、理智检查、单一事实来源')"
+      - "Parenthetical textbook definitions attached to standard terms ('幂等性（即多次执行结果一致）') in peer-level docs"
+    detection:
+      - "Check whether Chinese engineering practice uses a settled Chinese term ('灰度发布、主流程、影响范围') or keeps the English identifier ('tree-shaking', 'fallback')."
+      - "Verify whether the target audience consists of practitioners who already know standard domain terms."
+    revision_strategy:
+      - "Replace literal calques with settled Chinese terms ('灰度发布、主流程、影响范围、唯一可信数据源、合理性校验') or standard English ('tree-shaking', 'release gate')."
+      - "Remove unnecessary beginner textbook definitions in parentheses unless the document is introductory study material, while preserving concise first-mention English technical anchors ('脏矩形（Dirty Rectangle）', '强制同步布局（Forced Synchronous Layout）')."
+    exceptions:
+      - "Concise English original terms in parentheses on first mention in technical reports ('合成态锁（Composition Lock）', '本地事务表（Transactional Outbox）')"
+      - "Introductory tutorials or textbooks written for beginners where defining new terms on first appearance is required"
+    sources:
+      - "wang-li-1943"
+      - "yu-kwangchung-1987"
+      - "orwell-1946"
+    examples:
+      - before: "在执行金丝雀发布前，请先通过摇树优化缩减产物包体积，并对快乐路径进行理智检查，控制爆炸半径。"
+        after: "在执行灰度发布前，请先通过 tree-shaking 缩减产物包体积，并校验主流程的合理性，控制影响范围。"
+        context: "Frontend release checklist"
+        verdict: "rewrite"
+        reason: "Replaces awkward literal calques ('金丝雀发布、摇树优化、快乐路径、理智检查、爆炸半径') with standard engineering usage."
+      - before: "本节面向零基础实习生介绍分布式基础概念：幂等性（Idempotency，指同一请求被执行一次与执行多次所产生的系统状态完全相同）。"
+        after: "本节面向零基础实习生介绍分布式基础概念：幂等性（Idempotency，指同一请求被执行一次与执行多次所产生的系统状态完全相同）。"
+        context: "Intern onboarding textbook"
+        verdict: "keep"
+        reason: "The audience is explicitly beginners learning the concept for the first time, so defining the term on first appearance is appropriate."

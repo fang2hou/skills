@@ -1,0 +1,310 @@
+schema_version: "1.0.0"
+layer: language
+language: en
+description: "Layer 2 English (en) realization rules grounded in English syntax, lexicon, rhetoric, and pragmatics."
+rules:
+  - id: en.syntax.nominalization_and_false_limbs
+    layer: language
+    language: en
+    parent_principle: core.syntax.actors_and_actions
+    category: syntax
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Unpack zombie nominalizations and Orwellian verbal operators into concrete grammatical subjects and finite verbs."
+    problem: "Phrases like 'render inoperative', 'effectuate a reduction in', 'serves as a', and 'by examination of' pad syllable counts and hide who acts."
+    triggers:
+      - "Noun Ending in -tion/-ment/-ance/-ence + 'of' + Light Verb ('achieved a reduction in', 'performed an evaluation of')"
+      - "Copula substitutes ('serves as', 'stands as', 'functions as', 'boasts', 'features') where 'is' or 'has' fits"
+      - "Orwellian operators ('render inoperative', 'have the effect of', 'exhibit a tendency to', 'play a leading role in')"
+    detection:
+      - "Check whether the main verb of the clause is a weak operator ('make, perform, achieve, serve, exhibit') while the real action sits inside an abstract noun."
+      - "Test whether 'is', 'are', or 'has' can replace 'serves as / stands as / boasts' without loss of meaning."
+    revision_strategy:
+      - "Turn the nominalized noun into a finite verb and place the responsible actor or system in subject position."
+      - "Replace 'serves as / stands as / boasts' with 'is' or 'has'."
+    exceptions:
+      - "Established technical nouns ('authentication', 'garbage collection', 'linearizability')"
+      - "Nominalizations that summarize the previous sentence at the start of a new clause ('This change...')"
+      - "'Functions as' when describing a component taking on a secondary role distinct from its identity ('The spare node functions as a quorum witness')"
+    sources:
+      - "orwell-1946"
+      - "williams-1981"
+      - "pinker-2014"
+    examples:
+      - before: "An optimization of the index by the storage engine has the effect of achieving a reduction in query latency from 120 ms to 15 ms."
+        after: "Rebuilding the storage index cuts query latency from 120 ms to 15 ms."
+        context: "Database engineering documentation"
+        verdict: "rewrite"
+        reason: "Unpacks 'optimization', 'has the effect of achieving', and 'reduction' into the concrete subject 'Rebuilding the storage index' and verb 'cuts'."
+      - before: "When the primary coordinator goes offline, the read-only replica functions as a temporary tie-breaker for leader election."
+        after: "When the primary coordinator goes offline, the read-only replica functions as a temporary tie-breaker for leader election."
+        context: "Consensus protocol specification"
+        verdict: "keep"
+        reason: "Here 'functions as' accurately distinguishes temporary functional behavior from what the node permanently is."
+
+  - id: en.diction.pretentious_and_inflated_lexicon
+    layer: language
+    language: en
+    parent_principle: core.clarity.meaning_chooses_word
+    category: diction
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Use plain, exact English words instead of pompous Latinisms, promotional superlatives, and inflated significance."
+    problem: "Words like 'utilize', 'ameliorate', 'delve', 'pivotal', 'testament', and 'vibrant landscape' dress ordinary facts in borrowed grandeur or sales pitch."
+    triggers:
+      - "Bureaucratic Latinate substitutes ('utilize', 'facilitate', 'prior to', 'subsequent to', 'in the affirmative')"
+      - "Inflated significance framing ('stands as a testament to', 'marking a pivotal moment in the evolving landscape', 'indelible mark')"
+      - "Sales clichés ('nestled in the heart of', 'breathtaking', 'groundbreaking', 'rich tapestry')"
+    detection:
+      - "Apply Orwell's Rules (ii) and (v) and Gowers's plain-word test: does a shorter, everyday English word carry the exact same denotation?"
+      - "Check whether significance phrases ('pivotal milestone') are supported by facts or merely tell the reader how to feel."
+    revision_strategy:
+      - "Replace pompous substitutes with direct words ('use', 'before', 'after', 'help')."
+      - "Delete promotional framing and state the verifiable facts, dates, and quantities."
+    exceptions:
+      - "Exact scientific, medical, or legal terms with no everyday equivalent ('idempotent', 'amortized', 'subpoena', 'debridement')"
+    sources:
+      - "orwell-1946"
+      - "gowers-1954"
+      - "strunk-white-1959"
+      - "zinsser-1976"
+    examples:
+      - before: "Prior to utilizing the new compiler backend, teams must delve into the intricacies of its configuration landscape, which stands as a testament to modern optimization design."
+        after: "Before using the new compiler backend, teams must configure its target triple and linker flags."
+        context: "Compiler upgrade guide"
+        verdict: "rewrite"
+        reason: "Replaces 'Prior to utilizing', 'delve into the intricacies of its configuration landscape', and 'stands as a testament' with the concrete setup requirement."
+      - before: "The surgical team performed sharp debridement of necrotic tissue prior to skin grafting."
+        after: "The surgical team performed sharp debridement of necrotic tissue prior to skin grafting."
+        context: "Clinical operative report"
+        verdict: "keep"
+        reason: "'Sharp debridement' and 'necrotic tissue' are precise clinical terms with exact medical definitions."
+
+  - id: en.rhetoric.dying_and_mixed_metaphors
+    layer: language
+    language: en
+    parent_principle: core.rhetoric.figurative_coherence
+    category: rhetoric
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Eliminate worn-out print clichés and mixed metaphors whose source images clash."
+    problem: "Stock idioms ('toe the line', 'swan song', 'North Star', 'move the needle', 'rich tapestry') anesthetize thought and collide absurdly when combined."
+    triggers:
+      - "Multiple figurative expressions from incompatible domains in the same sentence or paragraph"
+      - "Print-worn idioms ('acid test', 'level playing field', 'paradigm shift', 'deep dive', 'synergistic ecosystem')"
+    detection:
+      - "Picture the literal physical scene described by the metaphor: does an octopus sing a swan song, or a North Star unlock a bottleneck?"
+      - "Test whether a literal verb phrase expresses the thought with higher precision."
+    revision_strategy:
+      - "Replace clashing or exhausted metaphors with plain verbs and concrete nouns."
+      - "Keep a single coherent analogy when it clarifies an unfamiliar mechanism for the reader."
+    exceptions:
+      - "Lexicalized technical metaphors ('deadlock', 'handshake', 'memory leak', 'backpressure', 'tree-shaking')"
+      - "Fresh, unified analogies in explanatory or literary prose"
+    sources:
+      - "orwell-1946"
+      - "lakoff-johnson-1980"
+      - "fowler-1926"
+    examples:
+      - before: "This architecture serves as our North Star to break through the data silo bottleneck and weave a seamless tapestry of real-time analytics."
+        after: "This architecture connects isolated departmental databases so analysts can query live event streams in one place."
+        context: "Data platform proposal"
+        verdict: "rewrite"
+        reason: "Removes three clashing clichés ('North Star', 'break through the silo bottleneck', 'weave a seamless tapestry') and states what the system actually does."
+      - before: "When a consumer stalls without sending credit updates, TCP backpressure halts upstream socket writes before the ring buffer overflows."
+        after: "When a consumer stalls without sending credit updates, TCP backpressure halts upstream socket writes before the ring buffer overflows."
+        context: "Networking internals documentation"
+        verdict: "keep"
+        reason: "'Backpressure' and 'ring buffer' are standard, unambiguous systems engineering terms."
+
+  - id: en.logic.theatrical_negation_and_strawmen
+    layer: language
+    language: en
+    parent_principle: core.logic.earned_contrast_and_connectives
+    category: logic
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Reserve 'not X, but Y' contrasts and objection refutations for claims a reasonable reader might actually hold."
+    problem: "Models and persuasive writers stage fake drama by negating things nobody believed ('It is not just a tool; it is a revolution') or arguing with imaginary critics ('Some might say...')."
+    triggers:
+      - "not (just/merely/only) X, (but/it's) Y"
+      - "This does not mean X. It means Y."
+      - "Some might argue / A tempting approach would be / I am not saying that..."
+    detection:
+      - "Ask: Who claimed X? If nobody in the discourse context would plausibly assume X, the negation is staging."
+      - "Check whether the sentence survives with higher clarity when 'not X, but' is deleted."
+    revision_strategy:
+      - "Delete the strawman negative branch and state the positive proposition directly."
+      - "Keep the contrast when ruling out a genuine misconception or documenting a rejected architectural alternative."
+    exceptions:
+      - "Correcting a common user mistake or false assumption"
+      - "Contrasting two concrete technical behaviors ('validates syntax, not types')"
+    sources:
+      - "grice-1975"
+      - "pinker-2014"
+      - "strunk-white-1959"
+    examples:
+      - before: "Observability is not merely about collecting logs and metrics; it is a fundamental philosophy of engineering excellence."
+        after: "Observability lets engineers trace failed requests across services using structured logs, metrics, and distributed spans."
+        context: "Engineering handbook"
+        verdict: "rewrite"
+        reason: "Replaces theatrical strawman negation and vague puffery ('fundamental philosophy of engineering excellence') with concrete capabilities."
+      - before: "The `timeout` parameter sets the per-request socket read deadline, not the total end-to-end retry duration."
+        after: "The `timeout` parameter sets the per-request socket read deadline, not the total end-to-end retry duration."
+        context: "HTTP client SDK reference"
+        verdict: "keep"
+        reason: "Developers frequently confuse socket read timeouts with total retry timeouts; the negative clause prevents production outages."
+
+  - id: en.syntax.dangling_participle_riders
+    layer: language
+    language: en
+    parent_principle: core.concision.information_density
+    category: syntax
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Do not bolt shallow '-ing' participial riders onto the end of factual clauses to claim unearned significance."
+    problem: "Trailing clauses like '..., highlighting the importance of...', '..., underscoring its commitment to...', or '..., fostering a culture of...' pad facts with vague editorializing."
+    triggers:
+      - "Comma + highlighting / underscoring / emphasizing / showcasing / ensuring / fostering / cultivating / reflecting at clause end"
+    detection:
+      - "Inspect the trailing '-ing' phrase: does it introduce a verifiable secondary action or metric, or does it just praise the main clause?"
+      - "Check whether the participle's implied subject even matches the grammatical subject of the main clause."
+    revision_strategy:
+      - "Delete the trailing '-ing' rider if it adds only vague significance."
+      - "If the rider contains a real causal or quantitative result, rewrite it as a coordinate verb or finite subordinate clause ('...which reduced latency by 30%')."
+    exceptions:
+      - "Simultaneous physical actions by the same animate subject ('She walked to the whiteboard, sketching the state machine as she spoke')"
+    sources:
+      - "orwell-1946"
+      - "strunk-white-1959"
+      - "williams-1981"
+    examples:
+      - before: "The library switched from JSON to Protocol Buffers in v3.0, underscoring our commitment to performance and ensuring a seamless developer experience."
+        after: "The library switched from JSON to Protocol Buffers in v3.0, cutting payload size by 60% and halving serialization time."
+        context: "Changelog announcement"
+        verdict: "rewrite"
+        reason: "Replaces the promotional '-ing' riders ('underscoring...', 'ensuring...') with the actual measured engineering outcomes."
+      - before: "The watchdog thread wakes every 500 ms, polling the heartbeat register and resetting the counter if the worker responded."
+        after: "The watchdog thread wakes every 500 ms, polling the heartbeat register and resetting the counter if the worker responded."
+        context: "Embedded firmware specification"
+        verdict: "keep"
+        reason: "'Polling' and 'resetting' describe concrete, sequential operations performed by the watchdog thread during each wake cycle."
+
+  - id: en.pragmatics.metadiscourse_and_throat_clearing
+    layer: language
+    language: en
+    parent_principle: core.concision.information_density
+    category: pragmatics
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Direct the reader's gaze to the subject itself rather than narrating the act of writing or staging fake candor."
+    problem: "Run-ups like 'Let's dive in', 'It is worth noting that', 'Honestly, here's the thing', and 'Great question!' delay the point and leave chatbot residue in standalone prose."
+    triggers:
+      - "Chatbot greetings/closers ('Great question!', 'Certainly!', 'I hope this helps!', 'Let me know if you want me to...')"
+      - "Staged run-ups ('Let's dive in', 'Here's what you need to know', 'Honestly?', 'Look, here's the thing')"
+      - "Empty metadiscourse ('It is worth noting that', 'It should be mentioned that', 'Needless to say')"
+    detection:
+      - "Apply Pinker's Classic Style test: is the sentence pointing at the subject in the world, or talking about the writer/document itself?"
+      - "Delete the opener and check whether the remaining clause stands stronger on its own."
+    revision_strategy:
+      - "Strip chatbot wrappers, staged candor, and 'It is worth noting that' prefixes outright."
+      - "In thread replies where the reader already knows the background, lead with the decision or answer rather than restating the prompt."
+    exceptions:
+      - "Explicit caveats that alter how the reader must act ('Note: running this command drops unindexed tables')"
+      - "Natural conversational asides in signed first-person essays"
+    sources:
+      - "pinker-2014"
+      - "zinsser-1976"
+      - "grice-1975"
+    examples:
+      - before: "Great question! Let's dive into how Next.js caching works. Honestly, here's what you need to know: it is worth noting that Next.js caches data at four distinct layers. I hope this helps!"
+        after: "Next.js caches data at four layers: request memoization, the data cache, the full-route cache, and the client router cache."
+        context: "Framework documentation / technical explanation"
+        verdict: "rewrite"
+        reason: "Removes chatbot wrapper, staged candor, and throat-clearing so the sentence states the four cache layers immediately."
+      - before: "Note: rotating the master key invalidates all active refresh tokens immediately; schedule this step during a maintenance window."
+        after: "Note: rotating the master key invalidates all active refresh tokens immediately; schedule this step during a maintenance window."
+        context: "Security operations runbook"
+        verdict: "keep"
+        reason: "This callout warns the operator of an irreversible side effect before execution."
+
+  - id: en.register.anti_slang_calibration
+    layer: language
+    language: en
+    parent_principle: core.pragmatics.social_distance_and_register
+    category: register
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Write plain, dignified English that fits the document's register without swinging into chat slang or flippant shorthand."
+    problem: "When avoiding bureaucratic stiffness, writers and models sometimes overcorrect into casual slang ('blew up', 'nuke the config', 'total no-brainer', 'crushed it') that undermines technical and analytical credibility."
+    triggers:
+      - "Colloquial slang verbs ('blew up', 'nuked', 'crushed', 'baked in', 'borked') in formal or technical prose"
+      - "Chatty filler idioms ('no-brainer', 'real talk', 'at the end of the day', 'game changer')"
+    detection:
+      - "Check whether the informal word replaces a more accurate technical description ('crashed', 'removed', 'corrupted')."
+      - "Verify whether the target audience expects formal/professional register."
+    revision_strategy:
+      - "Replace slang and chat shorthand with plain, exact standard English verbs ('crashed', 'deleted', 'failed', 'simplified')."
+    exceptions:
+      - "Informal personal blogs, fiction dialogue, or verbatim transcripts"
+    sources:
+      - "gowers-1954"
+      - "plain-language-2010"
+      - "orwell-1946"
+    examples:
+      - before: "Real talk: the legacy auth service totally blew up during the midnight push, so nuking the old session store is a no-brainer."
+        after: "The legacy auth service crashed during the midnight release, so we should retire the old session store."
+        context: "Architecture review proposal"
+        verdict: "rewrite"
+        reason: "Replaces chat slang ('Real talk', 'totally blew up', 'nuking', 'no-brainer') with clear, plain professional English."
+      - before: "In the postmortem interview, the on-call engineer remarked, 'The dashboard looked green even after the queue blew up.'"
+        after: "In the postmortem interview, the on-call engineer remarked, 'The dashboard looked green even after the queue blew up.'"
+        context: "Direct quotation in an incident timeline"
+        verdict: "keep"
+        reason: "Direct quotes of spoken interviews must remain verbatim."
+
+  - id: en.cohesion.sentence_variety_and_end_focus
+    layer: language
+    language: en
+    parent_principle: core.cohesion.old_before_new
+    category: cohesion
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Link clauses from known context to new end-focus information, and vary sentence structure organically rather than by mechanical rule."
+    problem: "Repeating the same sentence opener, forcing every point into a triad, or replacing all conjunctions with em dashes creates mechanical rhythm."
+    triggers:
+      - "Three or more consecutive sentences starting with the exact same subject or adverbial"
+      - "High density of em dashes (—) or double hyphens (--) used as universal clause connectors"
+      - "Dramatic one-line fragment paragraphs ('No priors. No compromise. Period.')"
+    detection:
+      - "Read the paragraph aloud: do sentences alternate length naturally and connect old information to new?"
+      - "Check whether em dashes are masking the exact logical relation ('because', 'although', 'namely') between clauses."
+    revision_strategy:
+      - "Combine choppy repetitive sentences or vary openings by starting with the transitional link from the prior sentence."
+      - "Replace habitual em dashes with commas, colons, parentheses, or explicit conjunctions unless matching an author's established style sample."
+    exceptions:
+      - "Intentional anaphora (deliberate repetition of an opening phrase for rhetorical climax)"
+      - "Author style samples that natively use em dashes at a deliberate rate"
+    sources:
+      - "williams-1981"
+      - "fowler-1926"
+      - "zinsser-1976"
+    examples:
+      - before: "The scheduler — redesigned last quarter — polls the queue. The scheduler checks worker load. The scheduler dispatches the batch — no waiting. That is the real win."
+        after: "Redesigned last quarter, the scheduler polls the queue, checks worker load, and dispatches each batch without waiting."
+        context: "System architecture overview"
+        verdict: "rewrite"
+        reason: "Merges three repetitive 'The scheduler...' clauses, removes mechanical em dashes and the clipped closer, and creates smooth forward flow."
+      - before: "We can tolerate stale reads for thirty seconds; we can tolerate delayed analytics for an hour; we cannot tolerate a single lost ledger write."
+        after: "We can tolerate stale reads for thirty seconds; we can tolerate delayed analytics for an hour; we cannot tolerate a single lost ledger write."
+        context: "Financial ledger design principles"
+        verdict: "keep"
+        reason: "Deliberate parallel anaphora ('We can tolerate... we can tolerate... we cannot tolerate...') builds sharp, earned contrast across three real SLA tiers."
