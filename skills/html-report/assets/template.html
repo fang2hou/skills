@@ -52,12 +52,6 @@
         --ls: 0.02em;
         --measure: 38em;
       }
-      :is(:lang(zh-Hant), :lang(zh-TW), :lang(zh-HK)) {
-        --ui:
-          "IBM Plex Sans TC", "Source Han Sans TC VF", "Source Han Sans TC", "PingFang TC",
-          sans-serif;
-        --body: "Source Han Serif TC", "Songti TC", serif;
-      }
       :lang(ja) {
         --ui:
           "IBM Plex Sans JP", "Source Han Sans VF", "Hiragino Sans", "Hiragino Kaku Gothic ProN",
@@ -67,14 +61,6 @@
         --lh: 1.9;
         --ls: 0.04em;
         --measure: 38em;
-      }
-      :lang(ko) {
-        --ui: "IBM Plex Sans KR", "Source Han Sans K VF", "Apple SD Gothic Neo", sans-serif;
-        --body: var(--ui);
-        --fs: 17.5px;
-        --lh: 1.8;
-        --ls: 0;
-        --measure: 36em;
       }
       *,
       *::before,
@@ -141,10 +127,6 @@
       }
       :lang(ja) {
         line-break: strict;
-      }
-      :lang(ko) {
-        word-break: keep-all;
-        text-autospace: no-autospace;
       }
       .page {
         display: grid;
@@ -411,6 +393,10 @@
       th.num {
         text-align: right;
         font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+      td > time {
+        white-space: nowrap;
       }
       .bars {
         display: grid;
@@ -690,13 +676,21 @@
         color: var(--ink-2);
       }
       .item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        column-gap: 24px;
+        align-items: center;
         border: 0;
         border-bottom: 1px solid var(--line);
         margin: 0;
         padding: 14px 0;
         min-width: 0;
       }
+      .item > * {
+        grid-column: 1 / -1;
+      }
       .item > legend {
+        grid-column: 1;
         float: left;
         width: 100%;
         padding: 0;
@@ -706,42 +700,25 @@
       .item > legend + * {
         clear: both;
       }
+      .item > .hint {
+        grid-column: 1;
+        margin: 0.15em 0 0;
+      }
+      .item > .seg {
+        grid-column: 2;
+        grid-row: 1;
+        flex-wrap: nowrap;
+        margin: 0;
+      }
+      .item:has(> .hint) > .seg {
+        grid-row: 1 / span 2;
+      }
       .item.missing > legend {
         color: var(--risk);
       }
       .item:last-child {
         border-bottom: 0;
         padding-bottom: 0;
-      }
-      fieldset.q:has(> .item) {
-        container-type: inline-size;
-      }
-      @container (min-width: 30em) {
-        .item {
-          display: grid;
-          grid-template-columns: minmax(0, 1fr) auto;
-          column-gap: 24px;
-          align-items: center;
-        }
-        .item > * {
-          grid-column: 1 / -1;
-        }
-        .item > legend,
-        .item > .hint {
-          grid-column: 1;
-        }
-        .item > .hint {
-          margin: 0.15em 0 0;
-        }
-        .item > .seg {
-          grid-column: 2;
-          grid-row: 1;
-          flex-wrap: nowrap;
-          margin: 0;
-        }
-        .item:has(> .hint) > .seg {
-          grid-row: 1 / span 2;
-        }
       }
       .seg {
         display: flex;
@@ -883,17 +860,6 @@
       .export.show {
         display: block;
       }
-      @media (max-width: 640px) {
-        .page {
-          padding: 32px 18px 96px;
-        }
-        h1 {
-          font-size: 1.7em;
-        }
-        .submit-dock {
-          padding-bottom: 10px;
-        }
-      }
       @media (prefers-reduced-motion: reduce) {
         * {
           transition: none !important;
@@ -1023,50 +989,27 @@
         if (!form) return;
         const STRINGS = {
           zh: {
-            progress: "已完成{n}/{t}",
+            progress: "已完成 {n}/{t}",
             saving: "正在保存…",
             saved: "已保存",
             offline: "未连接本地服务，答案暂存在浏览器",
             submit: "提交",
             submitted: "已提交，可以回到对话了",
-            missing: "还有{k}项未回答。再点一次“提交”可跳过这些项",
+            missing: "还有 {k} 项未回答。再点一次“提交”可跳过这些项",
             copy: "复制答案",
             copied: "已复制",
           },
-          "zh-hant": {
-            progress: "已完成{n}/{t}",
-            saving: "正在儲存…",
-            saved: "已儲存",
-            offline: "未連線到本機服務，答案暫存在瀏覽器",
-            submit: "送出",
-            submitted: "已送出，可以回到對話了",
-            missing: "還有{k}項未回答。再按一次「送出」可略過這些項目",
-            copy: "複製答案",
-            copied: "已複製",
-          },
           ja: {
-            progress: "回答済み{n}/{t}",
+            progress: "回答済み {n}/{t}",
             saving: "保存中…",
             saved: "保存しました",
             offline: "ローカルサーバーに接続できません。回答はブラウザに一時保存しています",
             submit: "送信",
             submitted: "送信しました。チャットに戻ってください",
             missing:
-              "未回答が{k}件あります。このまま送信する場合は、もう一度「送信」を押してください",
+              "未回答が {k} 件あります。このまま送信する場合は、もう一度「送信」を押してください",
             copy: "回答をコピー",
             copied: "コピーしました",
-          },
-          ko: {
-            progress: "응답 {n}/{t}",
-            saving: "저장 중…",
-            saved: "저장됨",
-            offline: "로컬 서버에 연결되지 않아 답변을 브라우저에 임시 저장했습니다",
-            submit: "제출",
-            submitted: "제출했습니다. 대화로 돌아가세요",
-            missing:
-              "답하지 않은 항목이 {k}개 있습니다. 그대로 제출하려면 '제출'을 한 번 더 누르세요",
-            copy: "답변 복사",
-            copied: "복사됨",
           },
           en: {
             progress: "{n} of {t} answered",
@@ -1080,8 +1023,7 @@
             copied: "Copied",
           },
         };
-        const tag = (document.documentElement.lang || "en").toLowerCase();
-        const lang = /^zh-(hant|tw|hk)/.test(tag) ? "zh-hant" : tag.slice(0, 2);
+        const lang = (document.documentElement.lang || "en").toLowerCase().slice(0, 2);
         const S = STRINGS[lang] || STRINGS.en;
         const fmt = (s, v) => s.replace(/\{(\w)\}/g, (_, k) => v[k]);
         let state = { title: document.title, answers: {}, submitted: false };

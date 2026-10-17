@@ -18,9 +18,7 @@ Each language sets three tokens on `:lang(...)`: `--ui` for headings, tables, la
 | Language         | `--ui` (first choice → fallback)                                        | `--body`                                                          | Why                                                                                                                          |
 | ---------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | zh-CN            | IBM Plex Sans SC → Source Han Sans SC VF → PingFang SC                  | FZPingXianYaSong-R-GBK → LXGW Neo ZhiSong Screen Full → Songti SC | The user prefers Song-style serif for long reading; FZ PingXian YaSong is drawn for screens.                                 |
-| zh-TW, zh-HK     | IBM Plex Sans TC → Source Han Sans TC VF → PingFang TC                  | Source Han Serif TC → Songti TC                                   | Traditional glyph shapes need TC fonts.                                                                                      |
 | ja               | IBM Plex Sans JP → Source Han Sans VF → Hiragino Sans                   | Hiragino Mincho ProN → Yu Mincho → Source Han Serif JP            | Mincho matches the Song-style preference. BIZ UDMincho is excluded: its Latin letters are monospaced and look broken.        |
-| ko               | IBM Plex Sans KR → Source Han Sans K VF → Apple SD Gothic Neo           | same as `--ui`                                                    | Korean screen reading uses Gothic; Myeongjo fonts on macOS render thin at body sizes.                                        |
 | en (and default) | IBM Plex Sans → IBM Plex Sans JP → system sans                          | Charter → Iowan Old Style → Georgia                               | Charter is a screen-friendly serif shipped with macOS. Plex Sans JP carries the same Latin glyphs when Plex Sans is missing. |
 | code (all)       | JetBrainsMono Nerd Font → JetBrains Mono → IBM Plex Mono → ui-monospace | —                                                                 | The user's code font.                                                                                                        |
 
@@ -50,8 +48,7 @@ Rules when changing sizes:
 
 ## CJK line breaking and spacing
 
-- `text-autospace: normal` on `body` adds about an eighth of an em between CJK and Latin letters or digits. Writers must not type spaces there; a typed space is wider and becomes a line-break point.
-- Korean turns autospace off and uses `word-break: keep-all`, so lines break at the spaces between words, not inside them.
+- Writers type a half-width space between CJK characters and Latin letters or digits (see writing-zh.md and writing-ja.md). `text-autospace: normal` on `body` adds a smaller gap wherever a space is missing; it adds nothing where one is typed. A typed space is also a line-break point, so short headings join a trailing number and its counter with `&nbsp;` (`3&nbsp;个`, `3&nbsp;個`).
 - Japanese uses `line-break: strict` (no small kana or prolonged sound marks at line start) and `word-break: auto-phrase` on headings, which breaks at phrase boundaries. Chrome applies `auto-phrase` only when `lang="ja"`.
 - `text-wrap: balance` on headings and `text-wrap: pretty` on prose avoid one-word last lines.
 

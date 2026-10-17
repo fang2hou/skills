@@ -37,9 +37,9 @@ Most sections need only headings, paragraphs, and at most one component. A page 
 
 ## Page frame
 
-Everything goes inside `<main class="page">`. Children use the narrow reading column. Add `class="wide"` to a compare grid, a table with many columns, or a large figure to let it break out to 1080 px. The contrast is deliberate: text stays narrow and easy to read, and the one thing the reader should look at side by side gets the full width. Use it for at most a few blocks per page; if everything is wide, nothing stands out.
+Everything goes inside `<main class="page">`, and its children use the narrow reading column. Add `class="wide"` to a compare grid, a table with many columns, or a large figure to let it break out to 1080 px. The contrast is deliberate: text stays narrow and easy to read, and the one thing to look at side by side gets the full width. Use it on a few blocks per page at most; if everything is wide, nothing stands out.
 
-The snippets below use English text. Write all visible text in the page language from Hard Rule 4; keep class names, `name`, and `value` as shown.
+The snippets below use English text. Write all visible text in the page language and keep class names, `name`, and `value` as shown.
 
 ```html
 <header class="masthead">
@@ -88,7 +88,7 @@ Chip, inside text or a table cell. Variants: `ok`, `warn`, `risk`, `accent`, or 
 <span class="chip ok">Remove</span>
 ```
 
-Steps:
+Steps, only for actions that must happen in order. Independent recommendations are a plain `<ol>` or a table:
 
 ```html
 <ol class="steps">
@@ -136,16 +136,16 @@ Key-value list, for a few facts about one thing. Use a table instead when severa
 
 ## Data components
 
-Figures row, right after the summary when two to four numbers carry the main finding. Put the unit in the number and keep each label to a few words:
+Figures row, right after the summary when two to four numbers carry the main finding. Each figure backs a claim in the summary; scope counts (files read, commits scanned, days covered) are not findings and belong in `.meta`. Put the unit in the number and keep each label to a few words:
 
 ```html
 <div class="figures">
-  <div><b>12</b><span>dependencies</span></div>
+  <div><b>3 of 12</b><span>dependencies removable</span></div>
   <div><b>180 KB</b><span>expected savings</span></div>
 </div>
 ```
 
-Table. Always wrap it so wide tables scroll instead of breaking the page; right-align numbers with `num`:
+Table. Always wrap it so wide tables scroll instead of breaking the page. Right-align numbers with `num`, and put dates in `<time>`; neither wraps inside its cell:
 
 ```html
 <div class="table-wrap">
@@ -154,6 +154,7 @@ Table. Always wrap it so wide tables scroll instead of breaking the page; right-
       <tr>
         <th>Package</th>
         <th class="num">Size</th>
+        <th>Last used</th>
         <th>Verdict</th>
       </tr>
     </thead>
@@ -161,6 +162,7 @@ Table. Always wrap it so wide tables scroll instead of breaking the page; right-
       <tr>
         <td>moment</td>
         <td class="num">96 KB</td>
+        <td><time>2026-10-16</time></td>
         <td><span class="chip ok">Remove</span></td>
       </tr>
     </tbody>
@@ -260,7 +262,7 @@ Single choice, as option cards. Add `cols` to the `options` div for two or three
 
 Multiple choice: the same markup with `type="checkbox"` and one shared `name`. The answer `value` becomes an array.
 
-Verdict per item, for reviewing a list. One `fieldset.item` per item inside a `fieldset.q`. The pill row sits to the right of the item name and hint when the card is wide enough, and below them on a narrow screen. Keep each pill label to about four CJK characters or two English words so the row fits beside the text.
+Verdict per item, for reviewing a list: one `fieldset.item` per item inside a `fieldset.q`. The pill row sits to the right of the item name and hint, so keep each pill label to about four CJK characters or two English words. Offer only the verdicts that make sense for that item: an item with nothing to merge into gets no "Merge" pill.
 
 Tone classes color each pill by what the choice does: `risk` for a destructive or irreversible action (delete, reject), `ok` for the safe or unchanged outcome (keep, approve), `warn` for a deferral or partial answer (later, unsure). A pill without a class gets a neutral dot and the accent color when selected. Give the same verdict the same tone on every item, so a color means one thing across the page:
 
