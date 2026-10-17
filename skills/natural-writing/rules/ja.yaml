@@ -1,0 +1,303 @@
+schema_version: "1.0.0"
+layer: language
+language: ja
+description: "Layer 2 Japanese (ja) realization rules grounded in Japanese syntax, keigo pragmatics, style register, and composition theory."
+rules:
+  - id: ja.register.style_consistency_keitai_jotai
+    layer: language
+    language: ja
+    parent_principle: core.pragmatics.social_distance_and_register
+    category: register
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Maintain consistent 'です・ます' (敬体) or 'だ・である' (常体) throughout body text, and vary predicate endings to prevent monotony."
+    problem: "Mixing 'です・ます' and 'だ・である' within the same document—or ending four consecutive sentences with '〜である'—jars Japanese readers immediately."
+    triggers:
+      - "Body sentences ending in '〜です / 〜ます' mixed with sentences ending in '〜だ / 〜である' in the same article"
+      - "Three or more consecutive sentences ending with the exact same copula ('〜である。〜である。〜である。')"
+    detection:
+      - "Scan every sentence-final predicate in body paragraphs (excluding headings, tables, and quotes) to verify a single base style."
+      - "Check whether consecutive sentences repeat the exact same sentence-ending morpheme."
+    revision_strategy:
+      - "Unify all body predicates to 'です・ます' (default for reader-facing docs and reports) or 'だ・である' (for specs and academic essays)."
+      - "Alternate verbal endings ('〜する / 〜になる / 〜できる') with copula endings ('〜である / 〜だ') to maintain natural rhythm."
+    exceptions:
+      - "Headings (見出し), table cells, and compact bullet labels using noun endings (体言止め)"
+      - "Direct quotations ('「……」') preserving the original speaker's style"
+    sources:
+      - "bunkacho-2022"
+      - "kinoshita-1981"
+      - "tanizaki-1934"
+    examples:
+      - before: "キャッシュはリクエストの 30% を処理します。これによりデータベースの負荷が大幅に軽減されるのだ。レイテンシも 15 ms に短縮されました。"
+        after: "キャッシュはリクエストの 30% を処理します。これによりデータベースの負荷が大幅に軽減され、レイテンシも 15 ms に短縮されました。"
+        context: "Technical architecture guide (です・ます base)"
+        verdict: "rewrite"
+        reason: "Eliminates the jarring mid-paragraph drop into '〜されるのだ' (常体) and connects the clauses smoothly in 'です・ます' style."
+      - before: "### 影響範囲の特定\n本障害によるデータ欠損はありません。対象期間中の未処理ジョブは再実行キューに格納されています。"
+        after: "### 影響範囲の特定\n本障害によるデータ欠損はありません。対象期間中の未処理ジョブは再実行キューに格納されています。"
+        context: "Incident report with a 体言止め heading and です・ます body"
+        verdict: "keep"
+        reason: "Noun-ending headings ('影響範囲の特定') paired with consistent 'です・ます' body text follow standard Japanese document conventions."
+
+  - id: ja.pragmatics.keigo_inflation_and_sasete_itadaku
+    layer: language
+    language: ja
+    parent_principle: core.pragmatics.social_distance_and_register
+    category: pragmatics
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Use honorifics accurately according to the five-category keigo framework; avoid double honorifics (二重敬語) and unwarranted '〜させていただく'."
+    problem: "Overusing '〜させていただく' when no permission or personal benefit exists (させていただく症候群) and stacking double honorifics ('おっしゃられる') make prose cloying and grammatically defective."
+    triggers:
+      - "〜させていただきます / 〜させていただいております used for routine explanations or unilateral company actions"
+      - "Double honorifics ('おっしゃられる', 'ご覧になられる', 'お見えになられる') or humble/respectful confusion ('ご確認していただけますか')"
+    detection:
+      - "Apply the Bunkacho (2007) two-part test for '〜させていただく': (1) Did the speaker receive permission from the addressee? (2) Does the speaker personally benefit?"
+      - "If either condition fails, replace '〜させていただく' with '〜いたします' (謙譲語II/丁重語) or '〜します' (丁寧語)."
+    revision_strategy:
+      - "Replace unwarranted 'ご説明させていただきます' with 'ご説明します' or 'ご説明いたします'."
+      - "Repair double honorifics ('おっしゃられる' -> 'おっしゃる') and humble/respectful mismatches ('ご確認していただけますか' -> 'ご確認いただけますか')."
+    exceptions:
+      - "Genuine permission + benefit contexts ('お送りいただいた資料を拝見させていただきます', '私用のため本日は早退させていただきます')"
+    sources:
+      - "bunkacho-2007"
+      - "bunkacho-2022"
+      - "brown-levinson-1987"
+    examples:
+      - before: "本稿では、新しい認証基盤の設計について解説させていただきます。また、先日お客様がおっしゃられていた課題についてもご回答させていただきます。"
+        after: "本稿では、新しい認証基盤の設計について解説します。また、先日お客様がおっしゃっていた課題についても回答いたします。"
+        context: "Technical proposal addressed to a client"
+        verdict: "rewrite"
+        reason: "Fixes two unwarranted '〜させていただきます' forms and repairs the double honorific 'おっしゃられていた' -> 'おっしゃっていた'."
+      - before: "貴社よりご提供いただいた検証環境を、来週月曜日まで利用させていただきます。"
+        after: "貴社よりご提供いただいた検証環境を、来週月曜日まで利用させていただきます。"
+        context: "Business email thanking a partner for lending a test environment"
+        verdict: "keep"
+        reason: "Both Bunkacho criteria are met: the partner granted permission to use their environment, and the speaker benefits from using it."
+
+  - id: ja.syntax.sino_nominalization_and_light_verbs
+    layer: language
+    language: ja
+    parent_principle: core.syntax.actors_and_actions
+    category: syntax
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Replace padded Sino-Japanese noun + light-verb chains ('〜の実行を行う', '〜することが可能である') with direct verbal predicates."
+    problem: "Stacking verbal nouns with '行う・実施する・実行する' and roundabout tails ('〜することが可能である', '〜という形になる') bloats character count and weakens the predicate."
+    triggers:
+      - "[Sino-Japanese verbal noun] + の + [実行/実施] + を行う (e.g., 検証の実施を行う, 削除の実行を行う)"
+      - "〜することが可能である / 〜することが可能です (where 〜できる suffices)"
+      - "〜という形になります / 〜することになります (when stating a direct action or rule)"
+    detection:
+      - "Inspect every '〜を行う / 〜を実施する' clause: can the preceding noun function directly as a '〜する' verb?"
+      - "Check whether '〜することが可能である' adds any nuance beyond simple potential '〜できる'."
+    revision_strategy:
+      - "Compress '[Noun] の実行を行う' -> '[Noun] する' or '[Noun] を実行する'."
+      - "Compress '〜することが可能である' -> '〜できる' and '〜という形になる' -> '〜する / 〜になる'."
+    exceptions:
+      - "Nouns that cannot take '〜する' directly ('会議を行う', '試験を行う')"
+      - "Contexts explicitly contrasting theoretical capability ('技術的には可能であるが、運用上は採用しない')"
+    sources:
+      - "kinoshita-1981"
+      - "bunkacho-2022"
+      - "iori-yasashii-2016"
+    examples:
+      - before: "インデックスの再構築の実行を行うことが可能であり、それによってクエリ遅延の削減を実現するという形になります。"
+        after: "インデックスを再構築でき、クエリの遅延を短縮できます。"
+        context: "Database operation manual"
+        verdict: "rewrite"
+        reason: "Cuts three layers of light-verb padding ('再構築の実行を行うことが可能', '削減を実現する', 'という形になります')."
+      - before: "新方式は理論上は適用可能であるが、既存クライアントとの互換性が失われるため今回は採用しない。"
+        after: "新方式は理論上は適用可能であるが、既存クライアントとの互換性が失われるため今回は採用しない。"
+        context: "Architecture decision record (ADR)"
+        verdict: "keep"
+        reason: "'理論上は適用可能であるが' specifically contrasts theoretical possibility against practical rejection."
+
+  - id: ja.syntax.modifier_order_and_kakariuke
+    layer: language
+    language: ja
+    parent_principle: core.cohesion.old_before_new
+    category: syntax
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Order Japanese modifiers from long/clausal to short and from broad context to narrow detail, using commas to prevent ambiguous dependency (係り受けのねじれ)."
+    problem: "In head-final Japanese, placing a short modifier before a long relative clause makes the short modifier attach to the noun inside the relative clause instead of the final head noun."
+    triggers:
+      - "[Adjective/Short Modifier] + [Relative Clause] + [Head Noun] where the first modifier is meant for the final head noun"
+      - "Long multi-clause sentences where the subject in Clause 1 does not match the predicate at the end of Clause 3 (ねじれ文)"
+    detection:
+      - "Apply Honda Katsuichi's rule: Is a short modifier standing before a longer modifying clause?"
+      - "Trace every modifier (`連体修飾・連用修飾`) to its target head; flag any pair that admits two grammatical parses."
+    revision_strategy:
+      - "Move long clausal modifiers to the front and keep short modifiers adjacent to the noun they modify (`長い修飾語は前に、短い修飾語は後に`)."
+      - "Insert a comma (`、`) after a modifier when separation is needed, or split a twisted sentence into two one-proposition sentences."
+    exceptions:
+      - "Fixed idiomatic compounds where modifier order is lexicalized"
+    sources:
+      - "honda-1976"
+      - "iwabuchi-1960"
+      - "kinoshita-1981"
+    examples:
+      - before: "深刻な昨日デプロイされた決済モジュールで発生したメモリリークを修正しました。"
+        after: "昨日デプロイされた決済モジュールで発生した、深刻なメモリリークを修正しました。"
+        context: "Incident resolution report"
+        verdict: "rewrite"
+        reason: "Moves the long relative clause ('昨日デプロイされた決済モジュールで発生した') before the short adjective ('深刻な') so '深刻な' clearly modifies 'メモリリーク'."
+      - before: "先月監査チームが指摘した権限設定の不備を解消するため、IAM ポリシーを最小権限へ変更した。"
+        after: "先月監査チームが指摘した権限設定の不備を解消するため、IAM ポリシーを最小権限へ変更した。"
+        context: "Security remediation log"
+        verdict: "keep"
+        reason: "Long modifier precedes the head noun, purpose clause is bounded by a comma, and subject-predicate alignment is unambiguous."
+
+  - id: ja.syntax.translationese_pronouns_and_passives
+    layer: language
+    language: ja
+    parent_principle: core.syntax.actors_and_actions
+    category: syntax
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Omit understood pronouns and replace English-calqued inanimate passives ('〜によって…が〜される') with natural Japanese active or intransitive clauses."
+    problem: "Direct translation from English fills Japanese sentences with redundant 'あなた・彼・彼女・それ' pronouns, mechanical '〜において' frames, and theatrical copulas ('単なる〜ではなく、まさに〜と言えるでしょう')."
+    triggers:
+      - "Repeated pronouns ('あなた、彼、彼女、それ、それら') in explanatory or technical prose"
+      - "Inanimate passive calques ('[System/Action] によって [Object] が [Verb-される]')"
+      - "Theatrical AI framing ('単なる〜ではなく、まさに〜と言えるでしょう', 'まず…次に…さらに…最後に')"
+    detection:
+      - "Check whether 'それ / あなた / 彼ら' can be deleted without creating reference ambiguity."
+      - "Test whether 'X によって Y が削減される' reads more naturally as 'X が Y を削減する' or 'X により Y が減る'."
+    revision_strategy:
+      - "Omit pronouns whose referent is already established by the topic or verb honors."
+      - "Convert '〜によって…が〜される' into active '[Actor] が [Object] を〜する' or natural intransitive '[Topic] で [Result] になる'."
+    exceptions:
+      - "Legal or cryptographic protocols where explicit actor disambiguation ('アリスは彼女の秘密鍵で…') prevents ambiguity between multiple parties"
+    sources:
+      - "tanizaki-1934"
+      - "honda-1976"
+      - "kinoshita-1981"
+    examples:
+      - before: "あなたがこの設定を有効化すると、それによって不要なポーリングが停止され、あなたのサーバーの CPU 使用率が 25% 削減されます。これは単なる調整ではなく、まさに効率化の鍵と言えるでしょう。"
+        after: "この設定を有効にすると、不要なポーリングが止まり、サーバーの CPU 使用率を 25% 削減できます。"
+        context: "Configuration guide"
+        verdict: "rewrite"
+        reason: "Removes redundant 'あなた / それによって', replaces inanimate passive with natural intransitive/active verbs, and cuts the theatrical '単なる〜ではなく、まさに〜と言えるでしょう' closer."
+      - before: "署名検証では、送信者が自身の秘密鍵で生成した署名を、受信者が送信者の公開鍵で検証する。"
+        after: "署名検証では、送信者が自身の秘密鍵で生成した署名を、受信者が送信者の公開鍵で検証する。"
+        context: "Public-key cryptography specification"
+        verdict: "keep"
+        reason: "Explicitly naming '送信者', '自身の秘密鍵', '受信者', and '送信者の公開鍵' is required to distinguish the two cryptographic roles."
+
+  - id: ja.pragmatics.vague_evasion_and_hedging
+    layer: language
+    language: ja
+    parent_principle: core.pragmatics.epistemic_calibration
+    category: pragmatics
+    severity: high
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Separate verified fact (事実) from inference (意見) at the Japanese predicate end; eliminate vague bureaucratic buffers."
+    problem: "Endings like '〜といったような状況が見受けられます', '〜かと思われます', and '〜という側面も否定できない' blur whether an event actually happened or is merely guessed."
+    triggers:
+      - "〜かと思われます / 〜ではないかと考えられます attached to observable facts"
+      - "〜といったような / 〜的な部分 / 〜という側面も否定できないのではないでしょうか"
+    detection:
+      - "Apply Kinoshita's (1981) test: Is the clause reporting an observed measurement/fact, or an inference?"
+      - "Check whether '〜といったような' is listing a concrete class or just blurring a single item."
+    revision_strategy:
+      - "End factual statements definitively ('〜です / 〜ました / 〜である')."
+      - "When stating an inference, name the evidence and use one clear epistemic predicate ('ログから〜と推測されます')."
+    exceptions:
+      - "Genuine hypotheses where evidence is incomplete and the basis for the conjecture is stated explicitly"
+    sources:
+      - "kinoshita-1981"
+      - "bunkacho-2022"
+      - "grice-1975"
+    examples:
+      - before: "昨日 14 時頃より、データベースへの接続遅延といったような事象が発生しているかと思われます。"
+        after: "昨日 14 時 12 分から、データベースへの接続遅延が発生しています。"
+        context: "System status notification"
+        verdict: "rewrite"
+        reason: "An observed production outage is a verified fact (事実), not a vague conjecture ('といったような事象が発生しているかと思われます')."
+      - before: "再現試験ではエラーが発生しなかったため、当時のネットワーク瞬断が原因であったと推測されます。"
+        after: "再現試験ではエラーが発生しなかったため、当時のネットワーク瞬断が原因であったと推測されます。"
+        context: "Postmortem analysis"
+        verdict: "keep"
+        reason: "Separates the verified fact ('再現試験ではエラーが発生しなかった') from the reasoned inference ('〜が原因であったと推測されます')."
+
+  - id: ja.register.colloquial_overcorrection
+    layer: language
+    language: ja
+    parent_principle: core.pragmatics.social_distance_and_register
+    category: register
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Write plain, readable Japanese without slipping into spoken slang, filler adverbs, or rough contractions."
+    problem: "When asked for natural Japanese without AI stiffness, models sometimes inject spoken slang ('ぶっちゃけ', 'いい感じに', 'サーバーが死んだ', 'バッサリ消す') into written documents."
+    triggers:
+      - "Spoken fillers and slang ('ぶっちゃけ、めっちゃ、いい感じに、〜っすね、ヤバい、バッサリ')"
+      - "Casual anthropomorphic verbs in incident/technical docs ('サーバーが死んだ / 落ちた / 固まった')"
+    detection:
+      - "Check whether the expression belongs to casual spoken conversation ('話し言葉') rather than clear written prose ('書き言葉')."
+      - "Verify whether 'いい感じに' or '死んだ' hides the actual technical condition."
+    revision_strategy:
+      - "Replace spoken slang with clear written equivalents ('異常終了した、応答が停止した、適切に処理する、廃止する')."
+    exceptions:
+      - "Verbatim transcripts of spoken interviews or casual chat logs"
+    sources:
+      - "bunkacho-2022"
+      - "kinoshita-1981"
+    examples:
+      - before: "ぶっちゃけ、夜中にリリースして誰も見ていない時にサーバーが死んだので、古いバッチ処理はバッサリ消していい感じに直しました。"
+        after: "深夜の無人リリース中にサーバーが異常終了したため、旧バッチ処理を廃止して再発防止策を適用しました。"
+        context: "Incident summary for engineering management"
+        verdict: "rewrite"
+        reason: "Replaces casual spoken expressions ('ぶっちゃけ、誰も見ていない、死んだ、バッサリ消して、いい感じに') with accurate written Japanese."
+      - before: "ユーザーヒアリングでは「決済ボタンを押した瞬間に画面が固まった」との報告が 4 件あった。"
+        after: "ユーザーヒアリングでは「決済ボタンを押した瞬間に画面が固まった」との報告が 4 件あった。"
+        context: "UX research summary quoting user reports"
+        verdict: "keep"
+        reason: "Preserves the user's exact reported phrasing inside quotation marks."
+
+  - id: ja.terminology.katakana_and_calque_balance
+    layer: language
+    language: ja
+    parent_principle: core.fidelity.preserve_voice_and_facts
+    category: terminology
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-18"
+    principle: "Prefer settled Japanese Kango/Wago terms over opaque Katakana business buzzwords or literal English metaphor calques, while keeping established technical loanwords."
+    problem: "Corporate Katakana jargon ('リクワイアメント、アグリー、エビデンス、プライオリティ') and literal metaphor calques ('ハッピーパス、爆発半径、正気チェック') obscure meaning that standard Japanese expresses cleanly."
+    triggers:
+      - "Opaque Katakana business loans ('リクワイアメント、イシュー、アグリー、コンセンサス、アサイン、プライオリティ') where common Japanese exists"
+      - "Literal English metaphor calques ('ハッピーパス、爆発半径、正気チェック、唯一の真実の源、リリーストレイン') or '<直訳漢字>（<定着カタカナ語>）' glosses ('鍵の回転（ローテーション）、メモリの足跡（メモリフットプリント）')"
+    detection:
+      - "Consult Bunkacho (2022) loanword guidance: does a concise, universally understood Kango/Wago word exist ('要件、課題、合意、優先順位')?"
+      - "Check whether an English technical metaphor has a settled Japanese engineering term ('正常系、影響範囲、妥当性確認') or whether a literal Kanji noun is glossed with the actual settled Katakana term in parentheses."
+    revision_strategy:
+      - "Replace opaque Katakana business words with standard Kango ('要件、課題、合意、根拠')."
+      - "Replace literal metaphor calques with settled Japanese engineering terms ('正常系、影響範囲、妥当性確認、信頼できる唯一の情報源、定期リリース') and collapse '<直訳漢字>（<定着カタカナ語>）' to the settled term ('鍵のローテーション、メモリフットプリント')."
+      - "Keep established technical loanwords ('パイプライン、キャッシュ、レイテンシ、ロールバック') and exact English identifiers ('tree-shaking', 'fallback')."
+    exceptions:
+      - "Product-specific UI labels or official framework terms (e.g., GitHub Issues)"
+    sources:
+      - "bunkacho-2022"
+      - "iori-yasashii-2016"
+      - "kinoshita-1981"
+    examples:
+      - before: "リクワイアメントにアグリーした上で、ハッピーパスの正気チェックを行い、爆発半径を最小化します。"
+        after: "要件に合意した上で、正常系の妥当性を確認し、影響範囲を最小限に抑えます。"
+        context: "Release engineering checklist"
+        verdict: "rewrite"
+        reason: "Replaces unnecessary Katakana buzzwords ('リクワイアメント、アグリー') and literal calques ('ハッピーパス、正気チェック、爆発半径') with natural Japanese engineering terms."
+      - before: "CDN のエッジキャッシュを有効にし、オリジンサーバーへのフォールバック時のレイテンシを計測します。"
+        after: "CDN のエッジキャッシュを有効にし、オリジンサーバーへのフォールバック時のレイテンシを計測します。"
+        context: "Infrastructure benchmark guide"
+        verdict: "keep"
+        reason: "'エッジキャッシュ', 'オリジンサーバー', 'フォールバック', and 'レイテンシ' are settled technical terms in Japanese engineering."

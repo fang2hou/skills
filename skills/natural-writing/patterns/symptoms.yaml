@@ -1,0 +1,767 @@
+schema_version: "1.0.0"
+layer: symptom
+description: >
+  Layer 3 versioned catalog of observable AI expression symptoms across Chinese (zh-CN),
+  English (en), and Japanese (ja). Every entry enforces action_on_match: review_only.
+  Symptom matches trigger contextual inspection against linked Layer 1/Layer 2 rules and
+  never automatically invalidate a passage.
+symptoms:
+  - id: symptom.zh.therapeutic_catching_metaphor
+    layer: symptom
+    version: "1.1.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2024-06"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family RLHF chat models (zh-CN post-training)"
+    languages:
+      - zh-CN
+    category: pragmatics
+    severity: high
+    linked_rules:
+      - core.pragmatics.social_distance_and_register
+      - core.rhetoric.figurative_coherence
+      - zh.pragmatics.metaphor_and_intimacy_mismatch
+    surface_patterns:
+      - "稳稳地接住"
+      - "稳稳接住"
+      - "接住你的情绪"
+      - "接住你的表达"
+      - "接住你的诉求"
+    why_it_occurs: >
+      Models fine-tuned on empathetic assistant dialogues over-generalize therapeutic
+      containment metaphors ('holding space / catching emotions') into routine technical,
+      analytical, and workplace replies, miscalculating social distance (D).
+    contextual_test:
+      - "Is the subject a physical object being caught, a conversational turn, or clinical grief/trauma counseling?"
+      - "Or is this a routine informational/workplace exchange where '我理解你的意思' is clearer and respects professional boundaries?"
+    valid_contexts:
+      - "Literal physical motion (sports, catching a falling object)"
+      - "Psychotherapy, grief support, or parenting discussions about emotional containment"
+      - "Conversational turn-taking ('接住话茬 / 接住抛出的梗')"
+    revision_guidance: "Replace with direct cognitive acknowledgment ('我理解你的意思', '你的重点是…', '这里需要解决的问题是…') in professional and informational prose."
+    examples:
+      - before: "你的报错反馈我稳稳地接住了，我们马上看下日志。"
+        after: "我看到你的报错反馈了，我们马上排查日志。"
+        context: "Technical support / engineering chat"
+        verdict: "rewrite"
+        reason: "Routine bug triage does not call for therapeutic containment metaphors."
+      - before: "棒球外野手向后急退三步，在围栏前稳稳地接住了这记高飞球。"
+        after: "棒球外野手向后急退三步，在围栏前稳稳地接住了这记高飞球。"
+        context: "Sports reportage"
+        verdict: "keep"
+        reason: "Literal physical action in its native source domain."
+
+  - id: symptom.zh.false_adversative_not_x_but_y
+    layer: symptom
+    version: "1.2.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-03"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family instruction-tuned LLMs (zh-CN)"
+    languages:
+      - zh-CN
+    category: logic
+    severity: high
+    linked_rules:
+      - core.logic.earned_contrast_and_connectives
+      - zh.logic.false_adversative_contrast
+    surface_patterns:
+      - "这不是一次简单的"
+      - "这不仅是一次"
+      - "不是……而是……"
+      - "并非……而是……"
+      - "我们需要的不是……而是……"
+    why_it_occurs: >
+      Contrastive framing creates an illusion of rhetorical depth and dialectical insight,
+      leading models to negate trivial strawmen even when no real opposition exists.
+    contextual_test:
+      - "Did anyone in the context claim or risk believing the negated branch X?"
+      - "Are X and Y genuinely incompatible alternatives, or is X just a miniature foil to inflate Y?"
+    valid_contexts:
+      - "Correcting a common technical misconception or diagnostic hypothesis"
+      - "Distinguishing two concrete configuration parameters or legal categories"
+    revision_guidance: "If X is a strawman, delete the negative clause and state Y at its factual scale; if X prevents a real misunderstanding, keep the contrast intact."
+    examples:
+      - before: "这不是一次简单的文档更新，而是一场工程文化的深刻变革。"
+        after: "这次文档更新补充了本地调试步骤与故障排查表。"
+        context: "Repository pull request description"
+        verdict: "rewrite"
+        reason: "Negates a trivial foil ('简单的文档更新') to inflate a routine documentation PR."
+      - before: "该接口返回的不是 UTC 时间戳，而是带有时区偏移量的 ISO 8601 字符串。"
+        after: "该接口返回的不是 UTC 时间戳，而是带有时区偏移量的 ISO 8601 字符串。"
+        context: "API field specification"
+        verdict: "keep"
+        reason: "Prevents callers from parsing the string as a raw numeric epoch timestamp."
+
+  - id: symptom.zh.colloquial_slang_overcorrection
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2024-09"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Models prompted to 'remove AI flavor' or 'sound human' without register constraints"
+    languages:
+      - zh-CN
+    category: register
+    severity: high
+    linked_rules:
+      - core.pragmatics.social_distance_and_register
+      - zh.register.colloquial_overcorrection
+    surface_patterns:
+      - "绝绝子"
+      - "狠狠拿捏"
+      - "直接给你全搞完"
+      - "一把梭"
+      - "懂的都懂"
+      - "家人们谁懂"
+    why_it_occurs: >
+      When instructed to avoid formal AI boilerplate, models conflate 'natural human writing'
+      with internet memes, livestream slang, and hyper-familiar chat particles.
+    contextual_test:
+      - "Is the text a verbatim quote of social-media speech or casual fiction dialogue?"
+      - "Or is it technical, professional, or expository prose where slang degrades precision and register?"
+    valid_contexts:
+      - "Verbatim quotation of social media posts or user interviews"
+      - "Creative fiction dialogue for a character who speaks in internet slang"
+    revision_guidance: "Replace slang and rough shorthand with plain, accurate standard Chinese ('一次性完成、准确掌握、下线旧接口')."
+    examples:
+      - before: "这个缓存预热脚本真的绝绝子，把冷启动延迟狠狠拿捏住了，我直接给你全搞完上线。"
+        after: "这个缓存预热脚本效果很好，将冷启动延迟稳定控制在 20 ms 以内，我今天完成部署上线。"
+        context: "Engineering team update"
+        verdict: "rewrite"
+        reason: "Restores concrete metrics and professional register without sounding bureaucratic."
+      - before: "样本 14 的原始评论为：“这波更新真的绝绝子，续航直接拉满。”"
+        after: "样本 14 的原始评论为：“这波更新真的绝绝子，续航直接拉满。”"
+        context: "Sentiment analysis dataset documentation"
+        verdict: "keep"
+        reason: "Verbatim corpus datum under analysis."
+
+  - id: symptom.zh.corporate_buzzword_cluster
+    layer: symptom
+    version: "1.1.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-06"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Models trained on Chinese corporate PR and internet-industry reports"
+    languages:
+      - zh-CN
+    category: diction
+    severity: medium
+    linked_rules:
+      - core.clarity.meaning_chooses_word
+      - zh.pragmatics.metaphor_and_intimacy_mismatch
+      - zh.syntax.empty_light_verbs
+    surface_patterns:
+      - "赋能"
+      - "抓手"
+      - "闭环"
+      - "拉齐颗粒度"
+      - "打通心智"
+      - "底层逻辑"
+      - "组合拳"
+    why_it_occurs: >
+      High-frequency corporate jargon acts as Orwellian 'operators' and 'pretentious diction',
+      allowing sentences to sound executive-ready without specifying who does what.
+    contextual_test:
+      - "Does '闭环' refer to a literal closed-loop control system (PID controller), or is it vague corporate filler for 'finishing a task'?"
+      - "Can '赋能 / 抓手' be replaced by the exact tool, permission, or metric?"
+    valid_contexts:
+      - "Control theory and hardware engineering ('闭环控制系统 / closed-loop control')"
+      - "Mechanical fixtures ('机械抓手 / robotic gripper')"
+      - "Satirical or sociological analysis explicitly studying corporate jargon"
+    revision_guidance: "Replace with the specific technical mechanism, workflow step, or measurable goal."
+    examples:
+      - before: "以监控告警为抓手，为业务团队深度赋能，形成稳定性治理的完整闭环。"
+        after: "接入监控告警后，业务团队可在 5 分钟内定位异常并完成回滚与复盘。"
+        context: "Observability platform README"
+        verdict: "rewrite"
+        reason: "Replaces '抓手、赋能、闭环' with the observable workflow and time-to-recovery."
+      - before: "机械臂末端的气动抓手采用闭环力控算法，将夹持误差控制在 0.1 N 以内。"
+        after: "机械臂末端的气动抓手采用闭环力控算法，将夹持误差控制在 0.1 N 以内。"
+        context: "Robotics hardware specification"
+        verdict: "keep"
+        reason: "'气动抓手' (pneumatic gripper) and '闭环力控' (closed-loop force control) are exact engineering terms."
+
+  - id: symptom.zh.hollow_macro_preamble
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-01"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family LLMs generating Chinese essays and introductions"
+    languages:
+      - zh-CN
+    category: concision
+    severity: medium
+    linked_rules:
+      - core.concision.information_density
+      - core.clarity.concrete_over_vague
+    surface_patterns:
+      - "在当今数字化浪潮"
+      - "随着科技的飞速发展"
+      - "在……的大背景下"
+      - "不言而喻"
+      - "众所周知"
+    why_it_occurs: >
+      Models default to high-entropy, universally true macro-statements at the beginning of
+      a generation before narrowing down to the user's specific topic.
+    contextual_test:
+      - "If the opening sentence is deleted, does the reader lose any fact needed to understand Paragraph 1?"
+    valid_contexts:
+      - "Historical surveys where dating a macroeconomic or technological shift is the actual thesis"
+    revision_guidance: "Delete the throat-clearing macro-opener and begin with the specific problem, finding, or thesis."
+    examples:
+      - before: "在当今云计算与微服务飞速发展的大背景下，配置管理的重要性不言而喻。本文将介绍如何迁移 etcd 集群。"
+        after: "在线迁移 etcd 集群时，需要先通过 Learner 节点同步快照，再逐台切换 Leader 流量。"
+        context: "Operations runbook"
+        verdict: "rewrite"
+        reason: "Cuts the generic cloud-era preamble and opens directly with the migration mechanism."
+      - before: "随着 1990 年代末商用千兆以太网网卡成本下降，机架内通信带宽在五年内提升了两个数量级。"
+        after: "随着 1990 年代末商用千兆以太网网卡成本下降，机架内通信带宽在五年内提升了两个数量级。"
+        context: "Data center networking history paper"
+        verdict: "keep"
+        reason: "Names a specific historical decade, hardware component, and quantitative bandwidth shift."
+
+  - id: symptom.en.not_x_but_y_staging
+    layer: symptom
+    version: "1.2.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-05"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family English LLMs (GPT, Claude, Gemini, Llama families)"
+    languages:
+      - en
+    category: logic
+    severity: high
+    linked_rules:
+      - core.logic.earned_contrast_and_connectives
+      - en.logic.theatrical_negation_and_strawmen
+    surface_patterns:
+      - "is not merely"
+      - "is not just about"
+      - "It's not X, it's Y"
+      - "not a tool, but a"
+      - "This does not mean X. It means Y."
+    why_it_occurs: >
+      Correlative negation builds rhetorical momentum by rejecting a small claim before
+      presenting a grander claim, even when no reader held the small claim.
+    contextual_test:
+      - "Does the negative half rule out a plausible misconception or contrast two real options?"
+      - "Or does it negate a strawman solely to make the second half sound profound?"
+    valid_contexts:
+      - "Disambiguating scope, units, or API behavior ('measures CPU time, not wall-clock time')"
+      - "Correcting a documented fallacy or user assumption"
+    revision_guidance: "Remove the negative foil and state the positive claim directly unless the contrast carries real disambiguating information."
+    examples:
+      - before: "Type systems are not merely bug catchers; they are living architectures of human thought."
+        after: "Static type systems catch interface mismatches at compile time and document data contracts across modules."
+        context: "Programming language guide"
+        verdict: "rewrite"
+        reason: "Replaces theatrical contrast and aphoristic puffery with concrete engineering benefits."
+      - before: "The profiler samples on-CPU instruction pointers, not wall-clock blocked time, so I/O waits do not appear in this flamegraph."
+        after: "The profiler samples on-CPU instruction pointers, not wall-clock blocked time, so I/O waits do not appear in this flamegraph."
+        context: "Performance profiling guide"
+        verdict: "keep"
+        reason: "Directly prevents engineers from misinterpreting why I/O waits are absent from the graph."
+
+  - id: symptom.en.shallow_ing_participle_tail
+    layer: symptom
+    version: "1.1.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-04"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family English LLMs"
+    languages:
+      - en
+    category: syntax
+    severity: high
+    linked_rules:
+      - core.concision.information_density
+      - en.syntax.dangling_participle_riders
+    surface_patterns:
+      - ", highlighting the"
+      - ", underscoring the"
+      - ", showcasing how"
+      - ", fostering a"
+      - ", ensuring seamless"
+      - ", reflecting a broader"
+    why_it_occurs: >
+      Models append present-participle riders to conclude factual sentences with a smooth,
+      evaluative cadence without committing to a verifiable causal conjunction.
+    contextual_test:
+      - "Does the '-ing' clause report a concrete simultaneous action or measurement?"
+      - "Or does it merely editorialize on the importance of the main clause?"
+    valid_contexts:
+      - "Concrete simultaneous action by an animate agent ('She stepped back, holding the lens to the light')"
+      - "Direct syntactic complement where the participle is not an evaluative tail"
+    revision_guidance: "Cut evaluative '-ing' tails; if a real result exists, write a finite clause with measurable evidence."
+    examples:
+      - before: "The city opened two new tram lines in 2025, underscoring its dedication to sustainable mobility and fostering a vibrant urban landscape."
+        after: "The city opened two new tram lines in 2025, adding 18 km of track and carrying 45,000 daily riders."
+        context: "Urban transit report"
+        verdict: "rewrite"
+        reason: "Replaces promotional '-ing' riders with concrete track length and ridership data."
+      - before: "The parser scans the buffer from left to right, emitting one token per delimiter and halting on the first null byte."
+        after: "The parser scans the buffer from left to right, emitting one token per delimiter and halting on the first null byte."
+        context: "Lexer specification"
+        verdict: "keep"
+        reason: "'Emitting' and 'halting' specify the exact mechanical operations of the scan loop."
+
+  - id: symptom.en.inflated_significance_and_testament
+    layer: symptom
+    version: "1.1.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-02"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family English LLMs"
+    languages:
+      - en
+    category: diction
+    severity: medium
+    linked_rules:
+      - core.pragmatics.epistemic_calibration
+      - en.diction.pretentious_and_inflated_lexicon
+    surface_patterns:
+      - "stands as a testament"
+      - "pivotal moment in the evolution"
+      - "plays a crucial role in shaping"
+      - "rich tapestry of"
+      - "delve into the intricacies"
+      - "indelible mark"
+    why_it_occurs: >
+      Encyclopedic and promotional training corpora reward framing every subject as historic,
+      pivotal, or intricate regardless of its actual scale.
+    contextual_test:
+      - "Does the phrase add a verifiable fact, or does it instruct the reader to feel awed?"
+    valid_contexts:
+      - "Direct historical quotations or legal wills ('last will and testament')"
+    revision_guidance: "Delete the inflated wrapper and keep the underlying factual predicate."
+    examples:
+      - before: "Established in 1998, the regional archive stands as an enduring testament to local preservation efforts and plays a pivotal role in the cultural tapestry."
+        after: "Established in 1998, the regional archive holds 14,000 municipal maps and parish registers dating to 1740."
+        context: "Institutional profile"
+        verdict: "rewrite"
+        reason: "Replaces hollow significance claims with the concrete collection size and date range."
+      - before: "The decedent's holographic codicil was admitted alongside her last will and testament."
+        after: "The decedent's holographic codicil was admitted alongside her last will and testament."
+        context: "Probate law case summary"
+        verdict: "keep"
+        reason: "'Last will and testament' is a fixed legal term of art."
+
+  - id: symptom.en.staged_candor_and_runups
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2024-01"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family English LLMs"
+    languages:
+      - en
+    category: pragmatics
+    severity: medium
+    linked_rules:
+      - core.concision.information_density
+      - en.pragmatics.metadiscourse_and_throat_clearing
+    surface_patterns:
+      - "Let's dive in"
+      - "Here's the thing:"
+      - "Here is what you need to know"
+      - "Honestly?"
+      - "Real talk:"
+      - "Let's break this down"
+    why_it_occurs: >
+      Models stage conversational intimacy or announcer energy before delivering routine
+      explanations, violating Classic Style windowpane transparency.
+    contextual_test:
+      - "Is this a scripted podcast host transcript or casual dialogue?"
+      - "Does removing the run-up let the reader reach the answer faster?"
+    valid_contexts:
+      - "Spoken podcast scripts or conversational dialogue in fiction"
+    revision_guidance: "Delete the run-up and start with the substantive claim."
+    examples:
+      - before: "Let's break this down. Here's the thing: Honestly? Connection pooling only helps when handshake latency dominates query time."
+        after: "Connection pooling helps most when handshake latency dominates query execution time."
+        context: "Database tuning guide"
+        verdict: "rewrite"
+        reason: "Strips three stacked run-ups ('Let's break this down', 'Here's the thing', 'Honestly?') before a straightforward technical rule."
+      - before: '"Honestly? I didn''t expect the bridge to hold," the foreman told reporters.'
+        after: '"Honestly? I didn''t expect the bridge to hold," the foreman told reporters.'
+        context: "News report direct quote"
+        verdict: "keep"
+        reason: "Verbatim spoken quote."
+
+  - id: symptom.all.chatbot_wrapper_residue
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2022-12"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "All conversational assistant LLMs (zh-CN, en, ja)"
+    languages:
+      - zh-CN
+      - en
+      - ja
+    category: pragmatics
+    severity: high
+    linked_rules:
+      - core.concision.information_density
+      - core.pragmatics.social_distance_and_register
+      - en.pragmatics.metadiscourse_and_throat_clearing
+    surface_patterns:
+      - "I hope this helps"
+      - "Great question!"
+      - "Certainly! Here is"
+      - "希望这对你有帮助"
+      - "这是一个非常好的问题"
+      - "お役に立てれば幸いです"
+      - "素晴らしいご質問ですね"
+    why_it_occurs: >
+      Assistant turn-taking wrappers leak into standalone documents, commit messages,
+      and reports where conversational framing is out of place.
+    contextual_test:
+      - "Is the text a standalone document, article, or code/doc artifact where assistant wrappers do not belong?"
+      - "Or is it a personal email where a human sign-off ('お役に立てれば幸いです') was explicitly requested?"
+    valid_contexts:
+      - "Polite human email correspondence where a closing courtesy line is standard epistolary form"
+    revision_guidance: "Remove conversational greeting, praise, and closing offers from standalone prose."
+    examples:
+      - before: "Certainly! That is a great question. Here is the migration guide for PostgreSQL 17. ... I hope this helps! Let me know if you need anything else."
+        after: "# PostgreSQL 17 Migration Guide\n..."
+        context: "Repository documentation file"
+        verdict: "rewrite"
+        reason: "Chatbot turn wrappers have no place inside a committed documentation file."
+      - before: "同封した資料が貴部門でのご検討のお役に立てれば幸いです。"
+        after: "同封した資料が貴部門でのご検討のお役に立てれば幸いです。"
+        context: "Closing line of a formal Japanese business cover letter"
+        verdict: "keep"
+        reason: "In a formal cover letter accompanying mailed documents, this closing sentence is natural Japanese epistolary etiquette."
+
+  - id: symptom.all.mechanical_triad_and_closer
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-09"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family LLMs across en, zh-CN, and ja"
+    languages:
+      - zh-CN
+      - en
+      - ja
+    category: cohesion
+    severity: medium
+    linked_rules:
+      - core.cohesion.old_before_new
+      - core.concision.information_density
+      - en.cohesion.sentence_variety_and_end_focus
+      - zh.rhetoric.parallelism_and_four_char_cliche
+    surface_patterns:
+      - "That is the real win."
+      - "And that changes everything."
+      - "Full stop."
+      - "这才是真正的破局之道。"
+      - "これこそが真の価値と言えるでしょう。"
+    why_it_occurs: >
+      Models punctuate paragraphs with punchy one-line restatement closers and symmetrical
+      three-item rhythms to simulate dramatic pacing.
+    contextual_test:
+      - "Does the one-line closer add a new fact or consequence not already stated in the paragraph?"
+      - "Do all three items in the triad carry distinct, non-overlapping meaning?"
+    valid_contexts:
+      - "A short concluding sentence that introduces a new quantitative consequence or concrete decision"
+    revision_guidance: "Delete restatement closers and merge padded triads into prose that matches the actual number of distinct points."
+    examples:
+      - before: "Pre-allocating the buffer avoids heap fragmentation, reduces GC pause times, and improves memory locality. That is the real win."
+        after: "Pre-allocating the buffer avoids heap fragmentation and cuts GC pause times."
+        context: "Systems optimization note"
+        verdict: "rewrite"
+        reason: "Cuts the hollow 'That is the real win.' closer and trims the redundant third triad item."
+      - before: "The node failed all three health probes within 15 seconds. The load balancer drained its traffic immediately."
+        after: "The node failed all three health probes within 15 seconds. The load balancer drained its traffic immediately."
+        context: "Incident timeline"
+        verdict: "keep"
+        reason: "The second sentence reports a new causal action ('drained its traffic'), not a rhetorical restatement."
+
+  - id: symptom.ja.sasete_itadaku_overuse
+    layer: symptom
+    version: "1.1.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-06"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Japanese LLMs and polite-mode instruction models"
+    languages:
+      - ja
+    category: pragmatics
+    severity: high
+    linked_rules:
+      - core.pragmatics.social_distance_and_register
+      - ja.pragmatics.keigo_inflation_and_sasete_itadaku
+    surface_patterns:
+      - "させていただきます"
+      - "させていただいております"
+      - "させていただきたく存じます"
+    why_it_occurs: >
+      Models over-index politeness by attaching '〜させていただく' to every verb, ignoring
+      the Bunkacho (2007) requirement of permission plus personal benefit.
+    contextual_test:
+      - "Did the speaker ask permission from the reader, and does the speaker personally benefit from the action?"
+      - "If not, '〜いたします' or '〜します' is cleaner and more accurate."
+    valid_contexts:
+      - "Using a resource granted by the addressee ('資料を拝見させていただきます') or taking personal leave ('早退させていただきます')"
+    revision_guidance: "Replace unwarranted '〜させていただきます' with '〜いたします' or '〜します'."
+    examples:
+      - before: "以下では、本ライブラリのインストール手順についてご説明させていただきます。"
+        after: "以下では、本ライブラリのインストール手順を説明します。"
+        context: "Software README in Japanese"
+        verdict: "rewrite"
+        reason: "A README explaining installation neither asks permission nor receives a personal favor."
+      - before: "ご送付いただいた設計書を拝見させていただきました。"
+        after: "ご送付いただいた設計書を拝見させていただきました。"
+        context: "Business correspondence acknowledging receipt of a partner's proprietary design doc"
+        verdict: "keep"
+        reason: "Genuine permission and benefit are present."
+
+  - id: symptom.ja.sino_nominal_light_verb_padding
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-04"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family Japanese LLMs"
+    languages:
+      - ja
+    category: syntax
+    severity: high
+    linked_rules:
+      - core.syntax.actors_and_actions
+      - ja.syntax.sino_nominalization_and_light_verbs
+    surface_patterns:
+      - "の実行を行う"
+      - "の実施を行う"
+      - "することが可能である"
+      - "することが可能です"
+      - "という形になります"
+    why_it_occurs: >
+      Models mimic bureaucratic and translated technical Japanese by stacking Sino-Japanese
+      verbal nouns with '行う' and wrapping potential verbs in '〜することが可能である'.
+    contextual_test:
+      - "Can '[Noun] の実行を行う' be shortened to '[Noun] する' or '[Noun] を実行する' without losing meaning?"
+      - "Does '〜することが可能である' contrast theoretical possibility with practical policy, or is it just a padded '〜できる'?"
+    valid_contexts:
+      - "Explicit contrast between theoretical feasibility and operational policy"
+    revision_guidance: "Use direct verbal predicates ('〜する', '〜できる')."
+    examples:
+      - before: "本コマンドにより、キャッシュの削除の実行を行うことが可能です。"
+        after: "本コマンドでキャッシュを削除できます。"
+        context: "CLI reference manual"
+        verdict: "rewrite"
+        reason: "Compresses 29 characters of padded nominalization into 16 clear characters."
+      - before: "旧プロトコルでの接続も技術的には可能ですが、セキュリティ基準上推奨しません。"
+        after: "旧プロトコルでの接続も技術的には可能ですが、セキュリティ基準上推奨しません。"
+        context: "Security configuration guide"
+        verdict: "keep"
+        reason: "Contrasts technical feasibility ('技術的には可能') with security policy ('推奨しません')."
+
+  - id: symptom.ja.theatrical_ai_copula_contrast
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2023-08"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family Japanese LLMs"
+    languages:
+      - ja
+    category: logic
+    severity: medium
+    linked_rules:
+      - core.logic.earned_contrast_and_connectives
+      - ja.syntax.translationese_pronouns_and_passives
+    surface_patterns:
+      - "単なる〜ではなく、まさに"
+      - "〜というだけでなく、〜と言えるでしょう"
+      - "まさに〜の結晶と言えるでしょう"
+    why_it_occurs: >
+      Direct calque of English 'Not merely X, but truly Y' combined with speculative
+      Japanese sentence-final hedging ('〜と言えるでしょう').
+    contextual_test:
+      - "Is there a genuine misconception being corrected, or is this promotional staging?"
+    valid_contexts:
+      - "Distinguishing a narrow classification from a broader legal or technical category without 'まさに〜と言えるでしょう' puffery"
+    revision_guidance: "State the concrete function or effect directly without '単なる〜ではなく、まさに〜と言えるでしょう'."
+    examples:
+      - before: "このツールは単なるリンターではなく、まさにコード品質の守護神と言えるでしょう。"
+        after: "このツールは構文チェックに加え、未使用の依存関係と型エラーを検出します。"
+        context: "Tool overview documentation"
+        verdict: "rewrite"
+        reason: "Replaces melodramatic metaphor ('コード品質の守護神と言えるでしょう') with the three concrete checks the tool performs."
+      - before: "本障害は単なる表示崩れではなく、決済リクエストの二重送信を引き起こす不具合です。"
+        after: "本障害は単なる表示崩れではなく、決済リクエストの二重送信を引き起こす不具合です。"
+        context: "Bug severity escalation notice"
+        verdict: "keep"
+        reason: "Corrects an initial mis-triage ('単なる表示崩れ') by naming the severe data integrity impact."
+
+  - id: symptom.ja.vague_evasive_tail
+    layer: symptom
+    version: "1.0.0"
+    status: monitoring
+    action_on_match: review_only
+    observed_since: "2024-02"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Japanese models generating business or analytical summaries"
+    languages:
+      - ja
+    category: pragmatics
+    severity: medium
+    linked_rules:
+      - core.pragmatics.epistemic_calibration
+      - ja.pragmatics.vague_evasion_and_hedging
+    surface_patterns:
+      - "といったような状況が見受けられます"
+      - "という側面も否定できないのではないでしょうか"
+      - "一概には言えない部分もあるかと思われます"
+    why_it_occurs: >
+      Models combine multiple Japanese softening markers to avoid making falsifiable claims,
+      blurring the boundary between fact (事実) and opinion (意見).
+    contextual_test:
+      - "Is the underlying claim an observed fact or a reasoned hypothesis?"
+    valid_contexts:
+      - "None for quadruple-stacked hedges; genuine uncertainty should be stated with a single clear epistemic verb ('〜と推測されます')."
+    revision_guidance: "Separate observed facts from inferences and use one direct predicate per clause."
+    examples:
+      - before: "レスポンス遅延といったような状況が見受けられるという側面も否定できないかと思われます。"
+        after: "ピーク時間帯にレスポンス遅延が観測されています。"
+        context: "Operations weekly report"
+        verdict: "rewrite"
+        reason: "Replaces four stacked evasive hedges with a clear factual observation."
+      - before: "現時点のログだけでは原因を特定できず、ハードウェア障害の可能性も残っています。"
+        after: "現時点のログだけでは原因を特定できず、ハードウェア障害の可能性も残っています。"
+        context: "Incident investigation update"
+        verdict: "keep"
+        reason: "States uncertainty clearly and names why the cause cannot yet be fixed."
+
+  - id: symptom.en.legacy_as_an_ai_disclaimer
+    layer: symptom
+    version: "1.0.0"
+    status: deprecated
+    deprecation_note: >
+      Retained as a historical Layer 3 lifecycle record. Explicit 'As an AI language model'
+      disclaimers were prevalent in 2022–2023 models (GPT-3.5 era) but are largely suppressed
+      in 2025–2026 frontier models; superseded by subtler metadiscourse symptoms
+      (symptom.en.staged_candor_and_runups, symptom.all.chatbot_wrapper_residue).
+    action_on_match: review_only
+    observed_since: "2022-11"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Legacy 2022-2023 RLHF models (GPT-3.5 / early Claude-1)"
+    languages:
+      - en
+      - zh-CN
+      - ja
+    category: pragmatics
+    severity: low
+    linked_rules:
+      - core.concision.information_density
+      - en.pragmatics.metadiscourse_and_throat_clearing
+    surface_patterns:
+      - "As an AI language model"
+      - "作为一个人工智能语言模型"
+      - "私は AI 言語モデルですので"
+    why_it_occurs: >
+      Early RLHF safety templates injected self-identification disclaimers into ordinary
+      informational outputs.
+    contextual_test:
+      - "Is the text a standalone document or article where model self-identification is irrelevant?"
+    valid_contexts:
+      - "Documentation or academic papers explicitly quoting 2023-era LLM outputs"
+    revision_guidance: "Remove self-identification disclaimers and state the factual boundary or answer directly."
+    examples:
+      - before: "As an AI language model, I do not have personal opinions, but PostgreSQL supports both B-tree and GIN indexes."
+        after: "PostgreSQL supports both B-tree and GIN indexes."
+        context: "Database FAQ"
+        verdict: "rewrite"
+        reason: "Removes legacy model self-reference before a factual technical answer."
+      - before: "Early 2023 chatbots frequently began refusals with the boilerplate phrase 'As an AI language model, I cannot...'"
+        after: "Early 2023 chatbots frequently began refusals with the boilerplate phrase 'As an AI language model, I cannot...'"
+        context: "Historical survey of RLHF alignment"
+        verdict: "keep"
+        reason: "Mentions the phrase as an historical linguistic specimen."
+
+  - id: symptom.all.verification_narration_preface
+    layer: symptom
+    version: "1.0.0"
+    status: monitoring
+    action_on_match: review_only
+    observed_since: "2026-10"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "glm-5.3-flashx (observed on Japanese rewrite outputs, 2026-10; other models unverified)"
+    languages:
+      - zh-CN
+      - en
+      - ja
+    category: pragmatics
+    severity: medium
+    linked_rules:
+      - core.concision.information_density
+      - core.pragmatics.social_distance_and_register
+    surface_patterns:
+      - "検証を通過"
+      - "検証が完了"
+      - "ファクト検証"
+      - "ファクトチェック"
+      - "ファクト保持チェック"
+      - "症状シグナル"
+      - "校验通过"
+      - "校验脚本"
+      - "症状扫描"
+      - "临时文件已清理"
+      - "fact-check"
+      - "Gate 2"
+    why_it_occurs: >
+      Agents that run a validator before replying announce the result at the top of the
+      delivered text, so tool-side workflow status leaks into a standalone document.
+    contextual_test:
+      - "Is the matched sentence a status report about running a validator, rather than content the reader asked for?"
+      - "Or is the document itself about validation tooling, where the phrase is its subject?"
+    valid_contexts:
+      - "Documentation, changelogs, or tutorials whose subject is the fact-check or scan tooling"
+    revision_guidance: "Delete the sentence that reports validator or gate results; keep the requested document and any plain fidelity claim unchanged."
+    examples:
+      - before: "検証を通過しました（数値の欠落なし）。以下が改訂後の設計メモです。\n\n# キャッシュ層の設計メモ"
+        after: "# キャッシュ層の設計メモ"
+        context: "Agent reply that delivers a rewritten design memo"
+        verdict: "rewrite"
+        reason: "The opening sentence reports tool status, not content the reader asked for."
+      - before: "本節ではファクト検証スクリプトの終了コードを説明する。"
+        after: "本節ではファクト検証スクリプトの終了コードを説明する。"
+        context: "Manual for the fact-check tooling itself"
+        verdict: "keep"
+        reason: "The phrase names the subject of the document."
