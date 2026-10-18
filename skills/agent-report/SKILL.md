@@ -74,7 +74,7 @@ base="${TMPDIR:-/tmp}"; dir="${base%/}/agent-report/$(date +%Y%m%d-%H%M)-<short-
 mkdir -p "$dir"
 kit="$HOME/.local/share/agent-report-kit"   # one clone, reused by every report
 if [ -d "$kit/.git" ]; then git -C "$kit" pull --ff-only -q && pnpm -C "$kit" install --silent; else
-  git clone --depth 1 https://github.com/fang2hou/agent-report-kit "$kit" && pnpm -C "$kit" install --silent
+  git clone -q https://github.com/fang2hou/agent-report-kit "$kit" && pnpm -C "$kit" install --silent
 fi
 ```
 
