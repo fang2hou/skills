@@ -26,7 +26,7 @@ Draft, review, diagnose, and rewrite English (`en`), Simplified Chinese (`zh-CN`
 
 ## When NOT to Use
 
-- Building interactive HTML review pages or visual dashboards (use `html-report`)
+- Building interactive HTML review pages or visual dashboards (use `agent-report`)
 - Reviewing source code diffs or pull request logic (use `review-and-fix`)
 - Editing non-prose artifacts such as source code, configuration files, raw logs, CLI commands, or verbatim legal stipulations
 - Word-for-word literal glossing where the user explicitly requests syntactic mirroring of the source language
