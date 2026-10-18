@@ -8,8 +8,8 @@ license: MIT
 compatibility: Optional validation and scan script requires Python 3.11+ (or uv). Core writing and review workflows require no external tools.
 metadata:
   author: fang2hou
-  version: "1.3.0"
-  sources: "Orwell 1946; Strunk & White 1959; Williams 1981; Pinker 2014; Gowers 1954; Lv & Zhu 1952; Zhu Dexi 1982; Wang Li 1943; Yu Kwang-chung 1987; Honda 1976; Kinoshita 1981; Bunkacho 2007/2022; Iori 2016; Grice 1975; Brown & Levinson 1987"
+  version: "1.4.0"
+  sources: "Orwell 1946; Strunk & White 1959; Williams 1981; Pinker 2014; Gowers 1954; Vercel 2026; Lv & Zhu 1952; Zhu Dexi 1982; Wang Li 1943; Yu Kwang-chung 1987; Honda 1976; Kinoshita 1981; Bunkacho 2007/2022; Iori 2016; Grice 1975; Brown & Levinson 1987"
 ---
 
 # Natural Writing
@@ -78,7 +78,7 @@ Timeless writing principles are kept apart from model quirks so rules do not dec
 
 ### Step 1: Identify Purpose, Audience, Language, and Register
 
-State the communicative goal, reader expertise, target language (`zh-CN`, `en`, `ja`), and register (`formal`, `professional`, `neutral`, `warm-supportive`, `literary`). Load the matching language guide from the References section below.
+State the communicative goal (as a testable verb such as `configure`, `explain`, or `debug`), reader expertise, target language (`zh-CN`, `en`, `ja`), and register (`formal`, `professional`, `neutral`, `warm-supportive`, `literary`). For documentation (`technical-doc`), pick one content type (`Tutorial`: warm and predictable; `How-to`: terse and direct for a mid-task reader; `Reference`: neutral, exhaustive, quotable; `Conceptual`: teach-it-back clarity with analogies; `Troubleshooting`: empathetic without apology, acknowledge then fix) so a single page does one job rather than mixing three. Load the matching language guide from the References section below.
 
 ### Step 2: Extract the Intended Meaning and Invariants
 
@@ -104,6 +104,7 @@ Verify that every connective (`because`, `therefore`, `not X but Y`, `不是…�
 Test whether subjects and predicates pair naturally in the target language:
 
 - Replace zombie nominalizations and verbal false limbs (`achieve a reduction`, `进行优化`, `実行を行う`) with direct verbs.
+- Rewrite **spec-sheet voice** (`provides`, `is configurable`, `is explicitly labeled`), **personified artifacts** (`hand the browser a URL` $\to$ `the browser fetches the URL`; `the token holds` $\to$ `the token is stored`), and filler cadence verbs (`moves through`, `lands`, `carries`, `hits`) into literal actors and actions. Apply the **"by monkeys" test** for unintended passives and the **second-read test**: if you must re-read a sentence at speech pace to parse it, name the subject, action, and consequence directly.
 - Strip translationese scaffolding (`在……的背景下`, `通过……的方式`, `〜によって…が〜される`) when active clauses or native topic-comment flow express the thought directly.
 - Resolve bilingual glosses and literal English metaphor calques with the language guide loaded in Step 1: settled domain terms over calques, no literal-translation-plus-loanword glosses in Japanese, first-mention English anchors kept in Chinese, settled compounds kept in English.
 
@@ -112,7 +113,8 @@ Test whether subjects and predicates pair naturally in the target language:
 Verify that the tone matches the relationship between writer and reader:
 
 - Remove unsolicited emotional performance or intimate metaphors (`我会稳稳地接住你的情绪`) in professional or informational prose; preserve them in counseling, caregiving, or physical descriptions where the context earns them.
-- Remove chatbot wrapper residue (`Certainly!`, `希望这对你有帮助`), sycophantic praise, and defensive throat-clearing.
+- Remove chatbot wrapper residue (`Certainly!`, `希望这对你有帮助`), sycophantic praise, marketing rhetorical questions, and defensive throat-clearing.
+- Replace **reader-pressuring minimizers** (`easy`, `simple`, `quick`, `简单`, `轻松`, `簡単`, `手軽`) with concrete descriptions (`"one command"`, `"default settings"`), and in documentation address the reader directly (`you`, imperative steps) rather than `the user`, `one can`, or stand-in `we`.
 - In Japanese, keep `です・ます` and `だ・である` consistent across body text, and replace unwarranted `〜させていただく` or double honorifics (`ご覧になられる`) with standard polite forms (`いたします`, `ご覧になる`).
 
 ### Step 6: Test Whether Rhetoric Serves Meaning
@@ -124,7 +126,7 @@ Apply Orwell's image test:
 
 ### Step 7: Calibrate Information Density and Rhythm
 
-Cut words and sections that add zero semantic or pragmatic weight (stacked hedges, summary sentences that repeat the preceding paragraph, mechanical three-part parallelisms, promotional `-ing` riders). In technical reports, state each metric once in its main home (summary or table, not both plus a conclusion), skip one-sentence subsections, keep metadata bullets short, and omit a closing summary when a table already closes the report.
+Cut words and sections that add zero semantic or pragmatic weight: stacked hedges, filler intensifiers (`very`, `just`, `really`), **summary-style transitions** that recap the previous paragraph (`With this setup complete…`, `Now that we've explored…`), **reused template framing** (`The question most teams face is whether…`), mechanical three-part parallelisms, and promotional `-ing` riders. Merge **stop-start fragments** (`Previously this was manual. Now it's automatic. This saves time.` $\to$ one sentence) and connect **cold-open body paragraphs** to their prior subject (`Because…`, `Once…`). Replace weasel qualifiers (`significantly`, `typically`, `generally`) and vague quantifiers (`near-zero`, `sub-second`, `most requests`) with cited figures when available in the source (or earn every detail when drafting in `generate` mode). In technical reports, state each metric once in its main home (summary or table, not both plus a conclusion), skip one-sentence subsections, keep metadata bullets short, and omit a closing summary when a table already closes the report.
 
 ### Step 8: Decide Intervention Scope by Mode
 
@@ -164,7 +166,7 @@ The reply is the deliverable: its first line is the document's `# Title` (or the
   2. Below `---`, add a concise section in the **same language and register as the document** (`## 修订说明` / `## Key Adjustments & Preserved Elements` / `## 主な改訂点`) with 3–5 bullets naming the rule ID applied (`layer.category.name`), why it improved clarity or register, and which valid contrasts, technical anchors, or exceptions were preserved.
 - **`review` / `diagnose`**:
   1. **Context & Register Assessment**: Target audience, register, and overall communicative effectiveness.
-  2. **Findings**: Quoted span, rule ID (`core.*` or `zh|en|ja.*`), severity (`high`/`medium`/`low`), principle-based explanation of why it helps or hurts the reader, and concrete revision or preservation recommendation.
+  2. **Findings**: Quoted span, rule ID (`core.*` or `zh|en|ja.*`), severity (`high`/`medium`/`low`), principle-based explanation of why it helps or hurts the reader, and concrete revision or preservation recommendation. When auditing files or patterns in batch, you may also emit a terse clickable `file:line - issue [rule_id]` list (or `✓ pass` for clean files) with no preamble.
 
 ### Worked Example (`rewrite` vs `keep` contextual judgment)
 

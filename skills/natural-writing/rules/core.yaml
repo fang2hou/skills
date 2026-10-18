@@ -45,19 +45,20 @@ rules:
     language: all
     category: clarity
     severity: high
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Prefer definite, specific, concrete nouns and quantities over cloudy category abstractions."
-    problem: "Abstract umbrella nouns ('phenomena', 'elements', 'aspects', 'dimensions', 'landscape') force the reader to guess the real-world referent."
+    principle: "Prefer definite, specific, concrete nouns, literal step verbs, and cited quantities over cloudy category abstractions, weasel qualifiers, and vague quantifiers."
+    problem: "Abstract umbrella nouns ('phenomena', 'elements', 'aspects', 'dimensions', 'landscape'), weasel qualifiers ('significantly', 'typically', 'generally'), vague quantifiers ('near-zero', 'sub-second', 'most requests'), and filler cadence verbs ('moves through', 'lands', 'carries', 'hits') force the reader to guess the real-world referent."
     triggers:
       - "Umbrella nouns such as phenomenon, element, aspect, dimension, 维度, 层面, 側面, 要素 used without concrete referents"
-      - "Vague evaluative adjectives ('significant', 'optimal', 'various') where exact numbers or mechanisms exist in context"
+      - "Weasel qualifiers ('significantly', 'many', 'often', 'typically', 'generally') or vague quantifiers ('near-zero', 'sub-second', 'most requests') where exact numbers or mechanisms exist in context"
+      - "Cadence/metaphor verbs ('moves through', 'lands', 'carries', 'hits') replacing the literal operational step"
     detection:
       - "Check whether the noun points to a discoverable object, metric, or event."
-      - "Verify whether the source context provides specific numbers or examples that were blurred into abstractions."
+      - "Verify whether the source context provides specific numbers or examples that were blurred into abstractions or vague quantifiers."
     revision_strategy:
-      - "Name the concrete entity, failure mode, or measurement present in the source material."
-      - "When exact figures are unknown, state the concrete boundary of what is known rather than padding with abstract nouns."
+      - "Name the concrete entity, literal step verb, failure mode, or measurement present in the source material."
+      - "When exact figures are unknown, state the concrete boundary of what is known rather than padding with abstract nouns or weasel qualifiers."
     exceptions:
       - "High-level mathematical, philosophical, or architectural definitions where abstraction is the explicit subject"
       - "Situations where the source provides no finer-grained data (never fabricate numbers to fake concreteness)"
@@ -65,6 +66,7 @@ rules:
       - "orwell-1946"
       - "strunk-white-1959"
       - "kinoshita-1981"
+      - "vercel-writing-2026"
     examples:
       - before: "Objective consideration of contemporary operational phenomena indicates that resource utilization exhibits problematic tendencies under peak conditions."
         after: "During peak traffic above 12,000 requests per second, worker memory usage exceeds 8 GB and triggers out-of-memory restarts."
@@ -82,18 +84,22 @@ rules:
     language: all
     category: syntax
     severity: high
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Cast central actors as grammatical subjects and their primary actions as finite verbs."
-    problem: "Nominalizations ('zombie nouns') and verbal false limbs lock actions inside abstract nouns and attach them to empty light verbs, obscuring who did what."
+    principle: "Cast central actors as grammatical subjects and their primary actions as finite verbs, avoiding nominalizations, spec-sheet voice, and personified artifacts."
+    problem: "Nominalizations ('zombie nouns'), verbal false limbs, spec-sheet predicates ('provides', 'is configurable', 'is explicitly labeled'), and personified artifacts ('hand the browser a URL', 'the token holds') obscure who did what and fail the speech-pace second-read test."
     triggers:
       - "Light-verb operators ('render inoperative', 'effectuate', '进行…', '加以…', '〜の実行を行う') paired with nominalized verbs"
-      - "Agentless passive clauses where the actor is known and central to the decision"
+      - "Agentless passive clauses where the actor is known and central to the decision (caught by the 'by monkeys' mental test)"
+      - "Spec-sheet voice ('provides', 'is configurable', 'is explicitly labeled') or personified inanimate artifacts ('hand the browser a URL', 'the token holds')"
+      - "Sentences that require a second read at speech pace due to metaphor verbs or pronouns reaching back several sentences"
     detection:
-      - "Underline the grammatical subject and main verb of the clause."
-      - "Ask whether the true action is hidden inside a noun phrase ('the implementation of', '对…的优化', '〜の削減の実現')."
+      - "Underline the grammatical subject and main verb of the clause, and apply the 'by monkeys' test for unintended passives."
+      - "Ask whether the true action is hidden inside a noun phrase ('the implementation of', '对…的优化', '〜の削減の実現'), a datasheet predicate, or an anthropomorphic verb."
+      - "Read the sentence once at speech pace (second-read test): if you must re-read to parse it, name the subject, the action, and the consequence."
     revision_strategy:
-      - "Promote the real semantic agent to subject position and convert the nominalized noun back into an active finite verb."
+      - "Promote the real semantic agent to subject position and convert the nominalized noun or spec-sheet predicate back into an active finite verb."
+      - "Replace personified artifact verbs with literal technical operations ('the browser fetches the URL', 'the token is stored')."
       - "Keep the passive or patient-topic structure only when the receiver of the action is the persistent paragraph topic or the actor is immaterial."
     exceptions:
       - "Established technical nouns ('authentication', 'serialization', '幂等性', '排他制御')"
@@ -105,6 +111,7 @@ rules:
       - "pinker-2014"
       - "lv-zhu-1952"
       - "zhu-dexi-1982"
+      - "vercel-writing-2026"
     examples:
       - before: "An optimization of the query planner by the database team resulted in the elimination of full-table scans."
         after: "The database team optimized the query planner and eliminated full-table scans."
@@ -122,27 +129,29 @@ rules:
     language: all
     category: concision
     severity: medium
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Every sentence, clause, and modifier must contribute new semantic proposition or necessary pragmatic framing."
-    problem: "Throat-clearing preambles, self-referential announcements, tautological adjectives, and repetitive closing summaries dilute signal and tax reader attention."
+    principle: "Every sentence, clause, and modifier must contribute a new semantic proposition or necessary pragmatic framing."
+    problem: "Throat-clearing preambles, summary-style paragraph transitions, reused template framing, rhetorical questions, filler intensifiers ('very', 'just', 'really'), and repetitive closing summaries dilute signal and tax reader attention."
     triggers:
       - "Staged openers ('Let's dive in', 'Here is what you need to know', '在当今时代', '以下では〜について述べる')"
-      - "One-line paragraph closers or concluding sections that merely restate the preceding claim in grander words"
+      - "Summary-style transitions recapping the previous paragraph ('With this setup complete…', 'Now that we have explored…') or reused framing ('The question most teams face is whether…')"
+      - "Filler intensifiers ('very', 'just', 'really', 'simply'), marketing rhetorical questions, or one-line paragraph closers that restate the preceding claim"
     detection:
       - "Delete the candidate phrase or sentence and check whether any fact, logical link, or needed courtesy disappears."
-      - "Check whether a concluding paragraph introduces a concrete decision or consequence, or merely echoes earlier sentences."
+      - "Check whether a paragraph opener merely recaps the paragraph above instead of pivoting directly to the next point."
     revision_strategy:
-      - "Cut staged run-ups and start directly with the first substantive proposition."
+      - "Cut staged run-ups, summary-style recap transitions, and filler intensifiers; pivot straight to the next proposition ('In practice…', 'The catch is…')."
       - "End sections on the final concrete fact, trade-off, or action item rather than a ceremonial send-off."
     exceptions:
-      - "Explicit roadmap paragraphs in long multi-chapter manuals where readers navigate selectively"
+      - "Explicit roadmap paragraphs, one-paragraph page TL;DRs, and section summary openers in documentation"
       - "Deliberate rhetorical refrain in speeches or literary essays"
     sources:
       - "strunk-white-1959"
       - "zinsser-1976"
       - "grice-1975"
       - "pinker-2014"
+      - "vercel-writing-2026"
     examples:
       - before: "Let's dive right in! It is worth noting that caching cuts repeat database queries. That is the real win."
         after: "Caching cuts repeat database queries."
@@ -234,27 +243,31 @@ rules:
     language: all
     category: pragmatics
     severity: high
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Calibrate formality, politeness, and emotional intimacy to the social distance, relative power, and genre of the exchange."
-    problem: "Prose fails pragmatically both when it adopts cold bureaucratic pomposity and when it crosses boundaries into unsolicited therapy-speak, sycophancy, or internet slang."
+    principle: "Calibrate formality, politeness, emotional intimacy, and content-type tone to the social distance, relative power, and genre of the exchange."
+    problem: "Prose fails pragmatically when it adopts cold bureaucratic pomposity, crosses boundaries into unsolicited therapy-speak or internet slang, or pressures readers by calling tasks 'easy', 'simple', or 'quick'."
     triggers:
       - "Unsolicited emotional containment or flattery in technical/professional replies ('我会稳稳地接住你的情绪', 'What a brilliant question!')"
       - "Internet slang or spoken shorthand ('绝绝子', '狠狠拿捏', 'no-brainer', 'ぶっちゃけ') injected into formal or analytical prose"
+      - "Reader-pressuring minimizers ('easy', 'simple', 'quick', 'simply', '简单', '轻松', '簡単', '手軽') describing reader actions"
     detection:
-      - "Assess Social Distance (D), Relative Power (P), and Genre: is this an expert-to-expert spec, a public essay, a customer notice, or an intimate chat?"
-      - "Check whether the tone spotlights the writer's emotional performance instead of serving the reader's task."
+      - "Assess Social Distance (D), Relative Power (P), and Genre/Content Type ('Tutorial', 'How-to', 'Reference', 'Conceptual', 'Troubleshooting', 'public-essay', 'workplace')."
+      - "Check whether the tone spotlights the writer's emotional performance or pressures the reader with 'easy/simple/quick' instead of stating concrete steps."
     revision_strategy:
       - "In professional and informational genres, replace emotional performance and slang with clear, courteous, direct statements."
+      - "Replace 'easy', 'simple', and 'quick' with concrete scope ('one command', 'default settings', 'most projects do not need this')."
       - "Preserve warmth or colloquialisms only when the genre (such as personal correspondence, fiction dialogue, or counseling) genuinely calls for them."
     exceptions:
       - "Counseling, mental-health support, or intimate personal letters where emotional containment is the explicit purpose"
       - "Direct quotations of spoken dialogue or social-media posts"
+      - "Established technical names containing those words ('Simple Storage Service', 'quicksort')"
     sources:
       - "brown-levinson-1987"
       - "gowers-1954"
       - "bunkacho-2007"
       - "bunkacho-2022"
+      - "vercel-writing-2026"
     examples:
       - before: "你的焦虑我稳稳地接住了！这个线上报错其实绝绝子好修，我直接给你一把梭全搞完。"
         after: "我明白这个线上报错很紧急。原因是连接池配置过小，我现在把上限从 20 调到 100 并发布修复。"
@@ -309,26 +322,29 @@ rules:
     language: all
     category: cohesion
     severity: medium
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Build flow by moving from familiar context ('old') to new, high-weight information ('new'), and let sentence rhythm follow thought structure."
-    problem: "Sentences that front-load unfamiliar subordinate clauses or stamp every paragraph into identical three-item patterns tire the reader and obscure emphasis."
+    principle: "Build flow by moving from familiar context ('old') to new, high-weight information ('new'), carrying antecedents across paragraphs, and letting sentence rhythm follow thought structure."
+    problem: "Sentences that front-load unfamiliar subordinate clauses, cold-open body paragraphs without antecedents, split one dependent idea into stop-start fragments, or stamp every paragraph into identical three-item patterns tire the reader and obscure emphasis."
     triggers:
       - "Every paragraph or list containing exactly three symmetrical items regardless of content"
       - "Long, complex new definitions placed in the subject position before a tiny predicate at the end"
+      - "Cold-open body paragraphs whose first sentence works as a standalone heading with no antecedent link to the prior paragraph"
+      - "Stop-start choppy fragments splitting one dependent idea ('Previously this was manual. Now it is automatic. This saves time.')"
     detection:
-      - "Check whether the opening of each sentence connects cleanly to concepts introduced in the previous sentence."
-      - "Inspect three-part lists and parallelisms: do all three items carry distinct weight, or is the third item rhythmic filler?"
+      - "Check whether the opening of each sentence and body paragraph connects cleanly to concepts introduced previously ('Because…', 'Once…', 'This token…')."
+      - "Inspect three-part lists, parallelisms, and short fragment sequences: do they carry distinct weight, or are they stop-start fragments and rhythmic filler?"
     revision_strategy:
-      - "Place known context at the start of the clause and shift heavy, new, or emphatic information to the end (end-focus)."
-      - "Vary sentence length and list cardinality (2 items, 4 items, or prose) to match the actual material."
+      - "Place known context at the start of the clause, carry the prior subject across paragraph boundaries, and shift heavy, new, or emphatic information to the end (end-focus)."
+      - "Merge dependent stop-start fragments into one cohesive sentence, and vary list cardinality (2 items, 4 items, or prose) to match the actual material."
     exceptions:
       - "Head-final modifier ordering in Japanese where long clausal modifiers must precede short head nouns to prevent ambiguity (Honda 1976)"
-      - "Domain taxonomies that genuinely consist of three orthogonal categories"
+      - "Domain taxonomies that genuinely consist of three orthogonal categories, or a single short sentence used for deliberate emphasis"
     sources:
       - "williams-1981"
       - "honda-1976"
       - "pinker-2014"
+      - "vercel-writing-2026"
     examples:
       - before: "A new token bucket algorithm that dynamically adjusts refill rates based on downstream p99 latency and error budgets was deployed by the gateway team."
         after: "The gateway team deployed a new token bucket algorithm that dynamically adjusts refill rates based on downstream p99 latency and error budgets."

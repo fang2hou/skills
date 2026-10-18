@@ -38,24 +38,24 @@ When two principles pull in different directions, resolve the conflict in this e
 
 ## P2. Concrete Specifics Over Cloudy Abstraction (`core.clarity.concrete_over_vague`)
 
-- **Theoretical Basis**: `orwell-1946`, `strunk-white-1959`, `kinoshita-1981`
-- **Principle**: Name specific objects, quantities, failure modes, and actions rather than dissolving them into high-level category nouns (_phenomena, elements, aspects, 维度, 生态, 側面_).
-- **Cognitive Mechanism**: Concrete nouns and measurable quantities allow readers to construct a mental model immediately; stacked abstractions force readers to guess what concrete reality is being summarized.
+- **Theoretical Basis**: `orwell-1946`, `strunk-white-1959`, `kinoshita-1981`, `vercel-writing-2026`
+- **Principle**: Name specific objects, quantities, failure modes, and literal actions rather than dissolving them into high-level category nouns (_phenomena, elements, aspects, 维度, 生态, 側面_), weasel qualifiers (`significantly`, `many`, `often`, `typically`, `generally`), vague quantifiers (`near-zero`, `sub-second`, `most requests`), or filler cadence verbs (`moves through`, `lands`, `carries`, `hits`).
+- **Cognitive Mechanism**: Concrete nouns, cited figures (`99.37% of requests see zero cold starts`), and literal step verbs allow readers to construct a mental model immediately; stacked abstractions and vague quantifiers force readers to guess what concrete reality is being summarized.
 - **Exception**: When defining a genuinely abstract mathematical, philosophical, or architectural invariant, or when the source text provides no lower-level data (never invent specifics to fake concreteness).
 
 ## P3. Align Grammatical Subjects and Verbs with Actors and Actions (`core.syntax.actors_and_actions`)
 
-- **Theoretical Basis**: `orwell-1946`, `williams-1981`, `pinker-2014`, `lv-zhu-1952`, `zhu-dexi-1982`
-- **Principle**: Cast the semantic agent as the grammatical subject and the key action as a finite verb, rather than locking the action inside an abstract nominalization paired with a weak light verb (_make, perform, conduct, 进行, 作出, 行う_).
-- **Cognitive Mechanism**: Clauses built around real verbs require fewer tokens and less syntactic tree-building than nominalized noun phrases linked by prepositions.
-- **Exception**: Established technical nouns (`authentication`, `serialization`, `幂等性`, `排他制御`) or compact topic references (`This migration...`) that anchor old-before-new cohesion.
+- **Theoretical Basis**: `orwell-1946`, `williams-1981`, `pinker-2014`, `lv-zhu-1952`, `zhu-dexi-1982`, `vercel-writing-2026`
+- **Principle**: Cast the semantic agent as the grammatical subject and the key action as a finite verb, rather than locking the action inside an abstract nominalization paired with a weak light verb (_make, perform, conduct, 进行, 作出, 行う_), reading from a datasheet in **spec-sheet voice** (`provides`, `is configurable`, `is explicitly labeled`), or assigning human-physical actions to **personified artifacts** (`hand the browser a URL` $\to$ `the browser fetches the URL`; `the token holds` $\to$ `the token is stored`). Apply the **"by monkeys" mental test** to catch unintended passives and the speech-pace **second-read test**: if you must re-read a sentence to parse it, name the subject, the action, and the consequence, and cut metaphor verbs or pronouns reaching back several sentences.
+- **Cognitive Mechanism**: Clauses built around real verbs and literal agents require fewer tokens and less syntactic tree-building than nominalized noun phrases or datasheet predicates.
+- **Exception**: Established technical nouns (`authentication`, `serialization`, `幂等性`, `排他制御`) or compact topic references (`This migration...`) that anchor old-before-new cohesion, or intentional patient-topic continuity (`the token is stored`).
 
 ## P4. High Information Density, Low Cognitive Friction (`core.concision.information_density`)
 
-- **Theoretical Basis**: `strunk-white-1959`, `zinsser-1976`, `grice-1975` (Maxim of Quantity & Manner)
-- **Principle**: Every sentence and paragraph must advance the reader's understanding. Cut throat-clearing run-ups, self-referential announcements, tautological modifiers, and one-line closers that merely restate the paragraph above.
-- **Cognitive Mechanism**: Reader attention is finite. Words that carry zero semantic or pragmatic payload dilute the salience of the actual argument.
-- **Exception**: Deliberate pedagogical signposting in long reference manuals, or rhythmic repetition in literary speeches.
+- **Theoretical Basis**: `strunk-white-1959`, `zinsser-1976`, `grice-1975` (Maxim of Quantity & Manner), `vercel-writing-2026`
+- **Principle**: Every sentence and paragraph must advance the reader's understanding. Cut throat-clearing run-ups, **summary-style paragraph transitions** that recap the previous paragraph (`With this setup complete…`, `Now that we've explored…`), **reused template framing** (`The question most teams face is whether…`), marketing rhetorical questions, filler intensifiers (`very`, `just`, `really`), and one-line closers that restate the paragraph above. When drafting (`generate` mode), earn every detail—cut implementation trivia if general phrasing would not change the reader's understanding or action (while strictly preserving all source facts under `P10` in `rewrite`/`light-polish` modes).
+- **Cognitive Mechanism**: Reader attention is finite. Words and recap transitions that carry zero semantic or pragmatic payload dilute the salience of the actual argument.
+- **Exception**: Deliberate pedagogical signposting in long reference manuals, one-paragraph page TL;DRs and section summary openers in documentation (`vercel-writing-2026`), or rhythmic repetition in literary speeches.
 
 ## P5. Earned Contrast and Honest Connectives (`core.logic.earned_contrast_and_connectives`)
 
@@ -73,10 +73,10 @@ When two principles pull in different directions, resolve the conflict in this e
 
 ## P7. Social Distance and Register Fit (`core.pragmatics.social_distance_and_register`)
 
-- **Theoretical Basis**: `brown-levinson-1987`, `gowers-1954`, `bunkacho-2007`, `bunkacho-2022`, `ye-shengtao-1934`
-- **Principle**: Calibrate formality, politeness, and emotional intimacy to the social distance ($D$), relative power ($P$), and imposition ($R$) of the communicative situation. Avoid both pompous institutional distance and unsolicited emotional intimacy or internet slang.
-- **Cognitive Mechanism**: Register violations shift the reader's attention from the message to the speaker's inappropriate social posture (either "why is this person lecturing me like a bureaucrat?" or "why is this tool acting like my therapist/ drinking buddy?").
-- **Exception**: Fiction dialogue, intentional persona writing, or intimate personal correspondence where high affective closeness is requested.
+- **Theoretical Basis**: `brown-levinson-1987`, `gowers-1954`, `bunkacho-2007`, `bunkacho-2022`, `ye-shengtao-1934`, `vercel-writing-2026`
+- **Principle**: Calibrate formality, politeness, and emotional intimacy to the social distance ($D$), relative power ($P$), imposition ($R$), and content type (`Tutorial`: warm and predictable; `How-to`: terse and direct for a mid-task reader; `Reference`: neutral, exhaustive, quotable; `Conceptual`: teach-it-back clarity with analogies; `Troubleshooting`: empathetic without apology—acknowledge then fix). Avoid pompous institutional distance, unsolicited emotional intimacy, internet slang, and **reader-pressuring minimizers** (`easy`, `simple`, `quick`, `简单`, `轻松`, `簡単`, `手軽`—replace with concrete descriptions like `"one command"` or `"default settings"`).
+- **Cognitive Mechanism**: Register violations and difficulty minimizers shift the reader's attention from the message to the writer's inappropriate posture—either lecturing like a bureaucrat, acting like an uninvited therapist, or pressuring a struggling reader by calling a task "easy."
+- **Exception**: Fiction dialogue, intentional persona writing, intimate personal correspondence, or settled technical names containing those words (_Simple Mail Transfer Protocol_, _quicksort_).
 
 ## P8. Epistemic Calibration: Fact vs. Inference (`core.pragmatics.epistemic_calibration`)
 
@@ -87,9 +87,9 @@ When two principles pull in different directions, resolve the conflict in this e
 
 ## P9. Old-Before-New Cohesion and Organic Rhythm (`core.cohesion.old_before_new`)
 
-- **Theoretical Basis**: `williams-1981`, `honda-1976`, `tanizaki-1934`, `pinker-2014`
-- **Principle**: Link sentences by placing familiar context before new information, ordering modifiers so syntactic dependencies resolve on the first pass, and letting sentence length vary naturally with the complexity of the thought rather than stamping out mechanical triads or uniform staccato fragments.
-- **Cognitive Mechanism**: Readers integrate new propositions by attaching them to active nodes in working memory ("old-before-new"); uniform mechanical cadence (such as three parallel items in every paragraph) lulls attention and signals template generation.
+- **Theoretical Basis**: `williams-1981`, `honda-1976`, `tanizaki-1934`, `pinker-2014`, `vercel-writing-2026`
+- **Principle**: Link sentences and paragraphs by placing familiar context before new information, carrying the prior subject forward so body paragraphs never **cold-open** like standalone headings without antecedents (`Because…`, `Once…`), ordering modifiers so syntactic dependencies resolve on the first pass, and merging **stop-start choppy fragments** (`Previously this was manual. Now it's automatic. This saves time.` $\to$ one sentence) while reserving short sentences for genuine emphasis.
+- **Cognitive Mechanism**: Readers integrate new propositions by attaching them to active nodes in working memory ("old-before-new"); cold-open paragraphs, stop-start fragments, and mechanical triads break discourse continuity and signal template generation.
 - **Exception**: Exhaustive enumerations where a system genuinely has three components, or parallel clauses used once for deliberate climactic emphasis.
 
 ## P10. Fidelity to Facts, Precision, and Authorial Voice (`core.fidelity.preserve_voice_and_facts`)

@@ -13,12 +13,13 @@ Contents:
 - [7. Windowpane Prose vs. Metadiscourse (`en.pragmatics.metadiscourse_and_throat_clearing`)](#7-windowpane-prose-vs-metadiscourse-enpragmaticsmetadiscourse_and_throat_clearing)
 - [8. Register Calibration: Plain English Is Not Chat Slang (`en.register.anti_slang_calibration`)](#8-register-calibration-plain-english-is-not-chat-slang-enregisteranti_slang_calibration)
 - [9. Old-Before-New Cohesion, End-Focus, and Cadence (`en.cohesion.sentence_variety_and_end_focus`)](#9-old-before-new-cohesion-end-focus-and-cadence-encohesionsentence_variety_and_end_focus)
+- [10. Developer Documentation & Technical Prose Conventions (`vercel-writing-2026`)](#10-developer-documentation--technical-prose-conventions-vercel-writing-2026)
 
 ---
 
 ## 1. Core Mechanics of Clear English Prose
 
-Drawing on Orwell (`orwell-1946`), Strunk & White (`strunk-white-1959`), Zinsser (`zinsser-1976`), Williams (`williams-1981`), Pinker (`pinker-2014`), and Gowers (`gowers-1954`), natural English prose rests on four structural habits:
+Drawing on Orwell (`orwell-1946`), Strunk & White (`strunk-white-1959`), Zinsser (`zinsser-1976`), Williams (`williams-1981`), Pinker (`pinker-2014`), Gowers (`gowers-1954`), and the Vercel Writing Guidelines (`vercel-writing-2026`), natural English prose rests on four structural habits:
 
 1. **Grammatical subjects name concrete characters or systems; finite verbs name their actions.**
 2. **Everyday words carry the argument; technical terms are used for precision, never for ornament.**
@@ -40,6 +41,13 @@ Orwell called padded verb phrases **operators or verbal false limbs** (`orwell-1
 
 **When to keep**: Keep a nominalization when it refers back to a previous clause as a compact topic link (_"The database **migration** took four hours. This **migration** also..."_) or when it is an immutable technical noun (_authentication_, _garbage collection_, _linearizability_).
 
+**Spec-sheet voice, personified artifacts, and cadence verbs (`vercel-writing-2026`)**:
+
+- **Rewrite spec-sheet voice**: Sentences that read like a system reading a datasheet (`provides`, `is configurable`, `is explicitly labeled`) hide what the developer or system actually does. State the concrete behavior directly (`The SDK retries failed writes` rather than `Automatic retry functionality is provided`).
+- **De-personify artifacts**: Inanimate tokens, URLs, and configs do not perform human physical actions (`hand the browser a URL` $\to$ `the browser fetches the URL`; `the token holds the user ID` $\to$ `the token stores the user ID` or `the user ID is stored in the token`).
+- **Replace cadence/metaphor verbs with literal steps**: Cut vague motion verbs (`moves through`, `lands`, `carries`, `hits`) in favor of the literal protocol or runtime operation (`parses`, `writes to disk`, `forwards`, `matches`).
+- **Apply the "by monkeys" test and second-read test**: Append _"by monkeys"_ after the verb to spot unintended passives. Read each sentence once at speech pace: if you must re-read it to parse the syntax, name the subject, the action, and the consequence, and cut pronouns reaching back several sentences.
+
 ---
 
 ## 3. Plain Words Over Pretentious Diction (`en.diction.pretentious_and_inflated_lexicon`)
@@ -51,6 +59,11 @@ Both human bureaucrats (`gowers-1954`) and LLMs reach for Latinate or promotiona
   - `facilitate / enable` $\to$ name the exact action (`let`, `help`, `speed up`, `route`)
   - `prior to` $\to$ `before`; `subsequent to` $\to$ `after`; `in order to` $\to$ `to`
   - `with respect to / in regard to` $\to$ `about`, `for`, `on`
+- **Cut reader-pressuring minimizers and filler intensifiers (`vercel-writing-2026`)**:
+  - Never call a reader action `easy`, `simple`, or `quick` (`simply run`, `easily configure`)—it pressures struggling readers and sounds like marketing. Replace with concrete scope (`"one command"`, `"default settings"`, `"most projects don't need this"`).
+  - Cut filler intensifiers (`very`, `just`, `really`).
+- **Replace weasel qualifiers and vague quantifiers with cited figures**:
+  - Replace `significantly`, `many`, `often`, `typically`, `generally`, `near-zero`, `sub-second`, and `most requests` with the exact claim or measurement (`99.37% of requests see zero cold starts`) when data exists in the source.
 - **Strip inflated significance and sales dressing**:
   - Cut phrases that tell the reader how impressed to feel: `stands as a testament to`, `a pivotal milestone in the evolving landscape`, `plays a crucial role in shaping`, `rich tapestry`, `nestled in the heart of`, `delve into the intricacies of`.
   - Keep the underlying factual proposition and let the data or example speak for itself.
@@ -97,9 +110,10 @@ A pervasive syntactic defect in AI-generated and press-release English is boltin
 
 ## 7. Windowpane Prose vs. Metadiscourse (`en.pragmatics.metadiscourse_and_throat_clearing`)
 
-In _Classic Style_ (`pinker-2014`), the writer does not narrate their own outline or stage fake candor:
+In _Classic Style_ (`pinker-2014`) and `vercel-writing-2026`, the writer does not narrate their own outline, recap the previous paragraph, or stage fake candor:
 
 - **Cut staged run-ups and candor**: `Let's dive in.`, `Here's what you need to know.`, `Honestly? Here's the thing:`, `Without further ado, let's explore...`
+- **Cut summary-style transitions and template framing**: Never open a paragraph by recapping the last one (`With this setup complete…`, `Now that we've explored…`, `Having configured the client…`); pivot straight to the next point (`In practice…`, `The catch is…`). Cut reused framing templates (`The question most teams face is whether…`) and rhetorical questions.
 - **Cut self-describing document chatter**: `This section is organized by...`, `It is worth noting that...`, `It should be mentioned that...`
 - **Cut defensive hedge stacks**: `It could potentially be argued that the change might somewhat affect latency.` $\to$ `The change may increase tail latency by 5–10 ms.` (Keep a single honest modal verb when uncertainty is real.)
 
@@ -118,9 +132,35 @@ Sir Ernest Gowers (`gowers-1954`) and the _Federal Plain Language Guidelines_ (`
 
 ## 9. Old-Before-New Cohesion, End-Focus, and Cadence (`en.cohesion.sentence_variety_and_end_focus`)
 
-1. **Old-before-new**: Start a sentence with a reference to what the reader just read, and put the new or complex point at the end (`williams-1981`).
-2. **Avoid mechanical triads and em-dash addiction**:
+1. **Old-before-new and no cold-open body paragraphs**: Start a sentence with a reference to what the reader just read, and put the new or complex point at the end (`williams-1981`). A body paragraph whose first sentence works as a standalone heading has no antecedent (`cold-open`); carry the prior subject forward (`Because…`, `Once…`, `This token…`).
+2. **Avoid mechanical triads and em-dash punctuation**:
    - Do not force examples or adjectives into groups of three (_"fast, reliable, and scalable"_ on every paragraph) unless there are three distinct properties with evidence.
-   - Use em dashes (`—`) sparingly and only when the author's voice calls for a sharp parenthetical turn; usually a comma, colon, parentheses, or separate sentence states the logical relation more clearly.
-3. **Vary sentence length organically**: Alternate medium explanatory clauses with concise, fact-bearing statements—never with hollow one-line dramatic fragments (_"And that changes everything."_, _"Full stop."_).
+   - Avoid em dashes (`—`) or spaced hyphens (`-`) as general-purpose clause connectors (`vercel-writing-2026`); use colons, commas, parentheses, or separate sentences to state the logical relation explicitly (preserving em dashes only when retaining a signed human author's deliberate style sample under `P10`).
+3. **Merge stop-start fragments and keep paragraphs focused**:
+   - Do not split one dependent thought into choppy stop-start fragments (`Previously this was manual. Now it's automatic. This saves time.` $\to$ `Automating this step saves time.`), and never append hollow dramatic fragments (_"And that changes everything."_, _"Full stop."_). Short sentences for genuine emphasis are fine.
+   - Keep paragraphs to 2–4 sentences covering one idea; aim for an average sentence length under ~20 words in instructional prose.
 4. **Technical report restraint**: Keep settled domain compounds (`cold-start cache stampede`, `mark-assist stall`) intact for peer engineers rather than paraphrasing them into folksy clauses, and do not duplicate `## Summary` sentences verbatim inside a two-sentence `## Background` stub.
+
+---
+
+## 10. Developer Documentation & Technical Prose Conventions (`vercel-writing-2026`)
+
+When drafting or editing developer documentation (`Tutorial`, `How-to`, `Reference`, `Conceptual`, `Troubleshooting`, `Landing`), apply these structural and typographic conventions:
+
+1. **Single-job pages and user-shaped titles**:
+   - Each page does one job (a tutorial OR a how-to OR a reference, not all three). State a testable verb goal (`configure`, `explain`, `debug`).
+   - Shape titles around the reader's task or question (`Configure environment variables`), not an internal feature label. For multi-audience pages, open with a short shared summary before technical subsections.
+2. **Direct address and tone by content type**:
+   - Address the reader as `you` (never `the user` or `one can`). Use imperatives for steps (`Click **Add Project**`, not `You will need to click **Add Project**`), present tense, and natural contractions (`you'll`, `it's`). Restrict `we` to deliberate organization actions (`we recommend`, `we deprecated`), never as a stand-in for `you`.
+   - Calibrate tone to the page type: **Tutorial** (warm, encouraging, predictable), **How-to** (terse, direct for a mid-task reader), **Reference** (neutral, exhaustive, quotable), **Conceptual** (teach-it-back clarity with analogies), **Troubleshooting** (empathetic without apology: acknowledge then fix).
+3. **Headings, openings, and definitions**:
+   - Use **sentence case** for page headings (`H1`–`H6`: `Configure environment variables`, not Title Case) and **descriptive subheadings** (`Caveats when self-hosting on Cloudflare`, never bare `Overview`, `Caveats`, or `Notes`).
+   - Open every page with a one-paragraph TL;DR and every major section with a summary sentence.
+   - Spell out acronyms on first use (`Content Security Policy (CSP) blocks inline scripts`) and define or link new terms the first time they appear, using destination-naming anchor text (never bare URLs, `here`, or `link`).
+4. **Lists, emphasis, and units**:
+   - Convert three or more list-shaped items in a paragraph into a list introduced with a colon (`:`). Use numbered lists for ordered steps or lifecycles, bulleted lists for unordered items, and omit trailing periods on list items unless they are full sentences. For bold lead-ins, place a colon immediately after the bold term: `- **Term**: description`.
+   - Reserve **bold** for UI elements (`Click **Deploy**`) or critical facts—if you reach for bold just to make a sentence sound emphatic, rewrite the sentence. Use `inline code` for paths, extensions, identifiers, and parameters (`/api`, `.tsx`, `req`).
+   - Format data sizes and units with a space and uppercase unit (`64 KB`, `5 MB`, `200 ms`), except seconds, which stay bare (`30s`). Use `…` (not `...`) for ellipses and loading states (`Loading…`).
+5. **Code snippets and placeholders**:
+   - Every code block requires a language tag (`typescript` by default when not language-agnostic), stays $\le 80$ columns and $\le 25$ lines (split longer flows with prose or `<Steps/>`), highlights load-bearing lines, omits defaults, and is explained in surrounding prose (never drop an unexplained block or punt to `"See train.py at the end of the guide"`).
+   - Use descriptive `snake_case` text placeholders (`your_access_token_here`, selectable on double-click) and counting digits (`1234567890123`) for number placeholders—never `<TOKEN>`, `xxx`, `your-token`, or `ABC123`. Use current model identifiers (`anthropic/claude-opus-4-7`, `google/gemini-3.1-flash-image-preview`) and `Intl.DateTimeFormat` / `Intl.NumberFormat` in examples.
