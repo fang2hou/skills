@@ -5,7 +5,7 @@ description: >
   page. Use unasked when told to investigate, summarize recent work or commits, compare,
   audit, or explain a system, or when the user must decide several questions.
 license: MIT
-compatibility: Requires file write access and a browser. Building a page needs Node 24 + pnpm (the skill clones the renderer); review pages additionally need uv (or Python 3.11+) for the local server on 127.0.0.1.
+compatibility: Requires file write access and a browser. Building a page needs Node 24 + pnpm (the skill clones the renderer); review pages run the kit’s zero-dependency Node server (`tools/serve.ts`) on 127.0.0.1 — no extra runtime beyond Node.
 metadata:
   author: fang2hou
   version: "2.2"
@@ -43,7 +43,7 @@ Instructions the user gives in the current conversation (language, layout, color
 2. **Conclusion first.** The first screen holds a title that states the main finding and a summary box with 2–5 points. The reader decides from these whether to read on.
 3. **Prose through natural-writing.** Language quality — register, technical terms, sentence shape, CJK spacing — belongs to the `natural-writing` skill in this repository. Load it when drafting (Step 3) and review with it exactly once before hand-over (Step 6). [references/writing.md](references/writing.md) adds only the report-specific rules: structure, numbers, translated quotes, and question wording.
 4. **The reader's language.** Set the report's `lang` field to the language the user names, or else the language of their latest message (`zh-CN`, `ja`, `en`). Fonts, line breaking, and every UI string follow it. Never default to the language of the sources, the repository, or these instructions. A quote in another language goes in a `pair` block with the translation first, because the user decides from the translation and the agent acts on the original.
-5. **Answers come back through a file.** Review pages run the kit's server (`$kit/tools/serve.py`), and the agent reads `state.json`. Ask the user to copy and paste answers only when the server cannot run.
+5. **Answers come back through a file.** Review pages run the kit's server (`$kit/tools/serve.ts`), and the agent reads `state.json`. Ask the user to copy and paste answers only when the server cannot run. The handed-over artifact carries no server UI: on a page opened as a file the renderer hides the top-left connection chip and the chat channel entirely — verify that once in Step 6 before delivering.
 6. **Budgets live in the kit.** The renderer sets the size and media budgets (inline-SVG figure rules, raster-image limits) — they are documented in `$kit/docs/report-schema.md` next to the schema that enforces them. Check what the compile step prints against that budget; a page that cannot stay inside it is carrying content that belongs in a linked file, not in the page.
 7. **The renderer owns the look.** Theme, components, default buttons, and chrome strings are the kit's code, documented in `$kit/docs/components.md` and `$kit/docs/typography.md` — changing them means changing agent-report-kit, never the page. Do not fight the renderer with custom markup: if the content does not fit a component, the content shape is wrong. Style or component work in agent-report-kit requires no change here.
 8. **Verify before handing over.** Build and render the page, and fix what you see (Step 6).
@@ -65,7 +65,7 @@ The purpose sets the page type, what the page leads with, and where the file goe
 - A file the user will share goes to `~/Downloads` whatever its purpose. It is a plain report: no review form, and no local paths or references to this conversation that its reader cannot follow.
 - Write into a project's `docs/` only when the user asks for project documentation there.
 - When the purpose is unclear, use tmp and offer a `~/Downloads` copy in the hand-over.
-- Live reports and review pages run `serve.py` (Step 5); a plain report opens as a file. A report that ends with questions is a review page.
+- Live reports and review pages run `serve.ts` (Step 5); a plain report opens as a file. A report that ends with questions is a review page.
 
 ### Step 2: Create the working directory and fetch the renderer
 
@@ -104,11 +104,11 @@ Write the `review.questions` array per report-schema.md. For each question:
 ```bash
 node "$kit/tools/build.ts" "$dir/report.json" "$dir/index.html"
 # OK: <dir>/index.html (NNNNN bytes)   — INVALID lines name the field to fix
-uv run "$kit/tools/serve.py" start "$dir"
+node "$kit/tools/serve.ts" start "$dir"
 # prints {"url": "http://127.0.0.1:PORT/", "dir": ..., "pid": ..., "state": ".../state.json"}
 ```
 
-The compile step validates the JSON against the schema, builds the renderer, and injects the data in one command. Plain reports stop after it. `start` reuses a running server for the same directory. Without uv, run the server script with `python3` 3.11 or newer. To change a served page, edit `report.json`, re-run the build command, and open tabs reload within two seconds keeping answers and scroll position.
+The compile step validates the JSON against the schema, builds the renderer, and injects the data in one command. Plain reports stop after it. `start` reuses a running server for the same directory. To change a served page, edit `report.json`, re-run the build command, and open tabs reload within two seconds keeping answers and scroll position.
 
 ### Step 6: Verify
 
@@ -117,17 +117,18 @@ Verify before the user opens the page, so test answers never reach them.
 1. Check the size the compile step printed against the 1 MB budget.
 2. Load the page at 1280 px wide with a browser tool, or take a headless screenshot: `"<chrome-binary>" --headless --screenshot=/tmp/check.png --window-size=1280,2400 "<url-or-file-url>"`. Check the screenshot, the console for errors, and that `document.documentElement.scrollWidth` does not exceed `clientWidth`. Confirm the UI chrome (summary heading, submit button) is in `lang`. Chrome here is only for checking; Step 7 opens the page for the user.
 3. On a review page, click one option and confirm `state.json` changed. Then close that tab and delete `state.json`.
-4. If no browser runs at all, walk the report JSON against the read-through checklist at the end of `$kit/docs/components.md`, and say in the hand-over that the page was checked by reading only.
-5. Run the single prose review: `natural-writing` in `review` mode over the page text in the page language, plus the report checklist at the end of [references/writing.md](references/writing.md). Fix what it flags, rebuild, and hand over — there is no second review round.
+4. Open the compiled file itself as `file://` once: the top-left connection chip and the whole chat channel must not appear — the artifact the user keeps is server-free. If any server UI shows, the renderer is broken; report it rather than patching the page.
+5. If no browser runs at all, walk the report JSON against the read-through checklist at the end of `$kit/docs/components.md`, and say in the hand-over that the page was checked by reading only.
+6. Run the single prose review: `natural-writing` in `review` mode over the page text in the page language, plus the report checklist at the end of [references/writing.md](references/writing.md). Fix what it flags, rebuild, and hand over — there is no second review round.
 
 ### Step 7: Open, hand over, and collect answers
 
 1. Open the URL, or the file path for a plain report (the `~/Downloads` or docs copy when one was made), in the user's default browser: `open "<url-or-file>"` on macOS, `xdg-open` on Linux, `start "" "<url-or-file>"` on Windows. Do not name a browser with `open -a`.
 2. Reply with one line on what the page holds and its path or URL. For a review page, also say what the user needs to decide and that Submit sends the answers back.
 3. Collect the answers:
-   - If the harness can run a background command and notify you when it exits, run `uv run "$kit/tools/serve.py" wait "$dir" --timeout 3600` in the background and end your turn. It exits 0 and prints the state when the user clicks Submit.
-   - Selection questions: the served page shows「与 Agent 连接中」top left; the user can select any text and send a question. Watch for them with `uv run "$kit/tools/serve.py" chat "$dir" --wait 3600` in the background — one JSON line per question: `{"id", "quote", "text"}`. Poll `chat` without `--wait` when the user mentions a question.
-   - Answer with `uv run "$kit/tools/serve.py" reply "$dir" <id> "<answer>"`; the id may be the question or any follow-up in its thread. The page underlines the quoted text and shows the answer on hover. Track the last id you answered and pass `--since` on the next watch.
+   - If the harness can run a background command and notify you when it exits, run `node "$kit/tools/serve.ts" wait "$dir" --timeout 3600` in the background and end your turn. It exits 0 and prints the state when the user clicks Submit.
+   - Selection questions: the served page shows the connection chip top left; the user can select any text and send a question. Watch for them with `node "$kit/tools/serve.ts" chat "$dir" --wait 3600` in the background — one JSON line per question: `{"id", "quote", "text"}`. Poll `chat` without `--wait` when the user mentions a question.
+   - Answer with `node "$kit/tools/serve.ts" reply "$dir" <id> "<answer>"`; the id may be the question or any follow-up in its thread. The page underlines the quoted text and shows the answer on hover. Track the last id you answered and pass `--since` on the next watch.
    - Discussions survive reloads and your page edits: the page rebuilds them from `chat.json`, and the connection chip opens the list, so editing the page mid-discussion is safe.
    - Otherwise end your turn. When the user says they are done, read `$dir/state.json`; the page saves every change within a second, Submit or not.
    - If `wait` exits 5 (timeout), read `state.json` for partial answers and ask in chat about the rest.
@@ -150,26 +151,26 @@ Verify before the user opens the page, so test answers never reach them.
 }
 ```
 
-Act on `value` and quote `label` when confirming back to the user. Summarize the decisions in one to three lines before acting, and ask in chat only about the items in `unanswered`. When the review is finished, stop the server with `uv run "$kit/tools/serve.py" stop "$dir"` and keep the directory.
+Act on `value` and quote `label` when confirming back to the user. Summarize the decisions in one to three lines before acting, and ask in chat only about the items in `unanswered`. When the review is finished, stop the server with `node "$kit/tools/serve.ts" stop "$dir"` and keep the directory.
 
 For a new round of questions, create a new directory, because `wait` returns at once when `state.json` already says `submitted`.
 
 ## Failure Handling
 
-| Symptom                                                            | Action                                                                                                                                                                                                                             |
-| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `build.ts` prints `INVALID`                                        | The line names the JSON field; fix `report.json` and re-run. The field reference is `$kit/docs/report-schema.md` in the cloned renderer.                                                                                           |
-| `git clone` or `pnpm install` fails (no Node 24 / no pnpm)         | Install Node 24 and pnpm (mise or corepack), or retry on a machine that has them; the renderer cannot compile without them.                                                                                                        |
-| 页面左上显示"未连接"，划词没有提问气泡                             | The page was opened as a file or the server stopped. Start it again with `serve.py start "$dir"` and reload. On `file://` answers stay in the browser with Copy answers, and selection chat is unavailable.                        |
-| `serve.py reply` exits 6                                           | The question id does not exist in `$dir/chat.json`. Run `serve.py chat "$dir"` to list questions, then reply to one of those ids.                                                                                                  |
-| `serve.py start` exits 4                                           | Read `$dir/.server.log`. If no Python 3.11+ runs, deliver the page as a file; answers then stay in the browser and the user sends them with Copy answers.                                                                          |
-| `serve.py` exits 3                                                 | The directory does not exist. Run Step 2 first.                                                                                                                                                                                    |
-| The page says it is offline, or `state.json` is missing at the end | The server stopped (it exits after 4 hours without requests). Run `serve.py start "$dir"` again; it takes the previous port when that port is free. Ask the user to reload, and the page sends the answers it kept in the browser. |
-| Fonts look like the system default in the screenshot               | The renderer's font stacks expect locally installed families; check with `fc-list : family \| rg -i "<name>"`. A missing family falls back — see `$kit/docs/typography.md`.                                                        |
+| Symptom                                                            | Action                                                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `build.ts` prints `INVALID`                                        | The line names the JSON field; fix `report.json` and re-run. The field reference is `$kit/docs/report-schema.md` in the cloned renderer.                                                                                                                            |
+| `git clone` or `pnpm install` fails (no Node 24 / no pnpm)         | Install Node 24 and pnpm (mise or corepack), or retry on a machine that has them; the renderer cannot compile without them.                                                                                                                                         |
+| 页面左上显示"未连接"，划词没有提问气泡                             | The page was served over http but the server stopped. Start it again with `serve.ts start "$dir"` and reload. Opened as a `file://` artifact there is no chip at all (by design), answers stay in the browser with Copy answers, and selection chat is unavailable. |
+| `serve.ts reply` exits 6                                           | The question id does not exist in `$dir/chat.json`. Run `serve.ts chat "$dir"` to list questions, then reply to one of those ids.                                                                                                                                   |
+| `serve.ts start` exits 4                                           | Read `$dir/.server.log` (usually a busy port — pass `--port`). If the server cannot run at all, deliver the page as a file; answers then stay in the browser and the user sends them with Copy answers.                                                             |
+| `serve.ts` exits 3                                                 | The directory does not exist. Run Step 2 first.                                                                                                                                                                                                                     |
+| The page says it is offline, or `state.json` is missing at the end | The server stopped (it exits after 4 hours without requests). Run `serve.ts start "$dir"` again; it takes the previous port when that port is free. Ask the user to reload, and the page sends the answers it kept in the browser.                                  |
+| Fonts look like the system default in the screenshot               | The renderer's font stacks expect locally installed families; check with `fc-list : family \| rg -i "<name>"`. A missing family falls back — see `$kit/docs/typography.md`.                                                                                         |
 
 ## Gotchas
 
-- A page opened from `file://` cannot write files, which is why review pages need `serve.py`. On `file://` the page keeps answers in the browser and offers Copy answers as the last resort.
+- A page opened from `file://` cannot write files, which is why review pages need `serve.ts`. On `file://` the page keeps answers in the browser and offers Copy answers as the last resort.
 - A typed space between CJK text and a number is a line-break point: a Japanese heading once broke as "3 / 個". In short headings, join a trailing number and its counter with `&nbsp;` (`3&nbsp;個`) — rich-text fields accept it.
 - Fonts follow the `lang` field. Japanese quoted inside a Chinese report needs the `pair` block with `origLang: "ja"`, or its kanji render in Chinese glyph shapes.
 - Submit with unanswered required items first highlights them. A second click submits anyway and records them in `unanswered`.
@@ -183,6 +184,6 @@ For a new round of questions, create a new directory, because `wait` returns at 
 
 ## References
 
-- The cloned renderer repo (`$kit`) owns the template content: `docs/report-schema.md` (authoring contract), `docs/components.md` (content shapes, visual contract, read-through checklist), `docs/typography.md` (fonts and color tokens), and `tools/serve.py --help` (commands, HTTP API, exit codes). This skill deliberately carries none of it — changing the look, a component, or the server means changing agent-report-kit, not this file.
+- The cloned renderer repo (`$kit`) owns the template content: `docs/report-schema.md` (authoring contract), `docs/components.md` (content shapes, visual contract, read-through checklist), `docs/typography.md` (fonts and color tokens), and `tools/serve.ts --help` (commands, HTTP API, exit codes). This skill deliberately carries none of it — changing the look, a component, or the server means changing agent-report-kit, not this file.
 - The `natural-writing` skill (same repository): register, terms, and sentence shape per language (`en`, `zh-CN`, `ja`); loaded in Step 3 and reviewed with in Step 6.
 - [references/writing.md](references/writing.md): the report-specific prose rules — structure, numbers, quotes, questions — on top of natural-writing; read in Step 3.
