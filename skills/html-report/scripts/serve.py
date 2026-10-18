@@ -10,6 +10,11 @@ Commands:
                                          Reuses a server that is already running for DIR; a restart
                                          takes the previous port when it is free, so open tabs reconnect.
   wait DIR [--timeout SECONDS]           Block until state.json has "submitted": true, then print the state JSON.
+  chat DIR [--since N] [--wait SECONDS]  Print user questions from the page, one JSON object per line
+                                         ({"id", "quote", "text", ...}). --since skips up to an id;
+                                         --wait keeps watching for that many seconds (0 prints once).
+  reply DIR ID TEXT                      Answer in the thread of ID (a question or any follow-up
+                                         in it); the page shows TEXT next to the quoted text.
   status DIR                             Print server info and answer counts as JSON.
   stop DIR                               Stop the server for DIR. Succeeds when none is running.
   run DIR [--port N] [--idle-hours H]    Run in the foreground (start uses this).
@@ -18,8 +23,15 @@ HTTP API (127.0.0.1 only):
   GET  /api/state    Current state.json, or {} when no answers exist yet.
   PUT  /api/state    Replace state.json. Requires Content-Type: application/json, same-origin, at most 1 MB.
   GET  /api/version  Changes when any served file except state.json changes; pages poll it to reload.
+  GET  /api/chat?since=N  Messages with an id greater than N, plus the newest id as "cursor".
+  POST /api/chat     Add a message. Body {"text", "quote?", "replyTo?"}; returns {"id"}. Same rules as PUT.
 
-Exit codes: 0 success; 2 usage error; 3 DIR or state missing; 4 server failed to start; 5 wait timed out.
+Chat questions and answers live in DIR/chat.json. The page rebuilds its discussions from this file on
+reload, and offers selection questions only while the server is reachable; replyTo is always stored as
+the thread's root question id, so any message id of a thread works in reply.
+
+Exit codes: 0 success; 2 usage error; 3 DIR or state missing; 4 server failed to start; 5 wait timed out;
+6 reply target id not found.
 """
 
 from __future__ import annotations
@@ -39,11 +51,17 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 STATE_FILE = "state.json"
+CHAT_FILE = "chat.json"
 INFO_FILE = ".server.json"
 LOG_FILE = ".server.log"
 # Answers for one review page are a few KB; 1 MB rejects accidental uploads.
 MAX_BODY = 1_000_000
+# One chat message is a question or a reply; anything longer belongs in the page.
+MAX_TEXT = 4_000
+MAX_QUOTE = 500
 # Long enough to read a long report; short enough not to leave servers running for days.
+# POST /api/chat and `reply` can overlap; chat.json is a read-modify-write file.
+CHAT_LOCK = threading.Lock()
 DEFAULT_IDLE_HOURS = 4.0
 # Seconds to wait for the background server to bind its port.
 START_TIMEOUT = 10.0
@@ -76,6 +94,35 @@ def read_json(path: Path) -> dict | None:
     return data if isinstance(data, dict) else None
 
 
+def read_chat(root: Path) -> dict:
+    data = read_json(root / CHAT_FILE)
+    if not data or not isinstance(data.get("messages"), list):
+        return {"messages": [], "next": 1}
+    return data
+
+
+def chat_append(root: Path, message: dict) -> dict:
+    with CHAT_LOCK:
+        data = read_chat(root)
+        message = {"id": data["next"], "ts": now_iso(), **message}
+        data["messages"].append(message)
+        data["next"] = message["id"] + 1
+        write_json_atomic(root / CHAT_FILE, data)
+    return message
+
+
+def thread_root(messages: list, mid: int) -> int:
+    """Map any message id in a thread to its root question id."""
+    by_id = {m["id"]: m for m in messages}
+    root = mid
+    for _ in range(len(by_id) + 1):
+        parent = by_id.get(root, {}).get("replyTo")
+        if parent is None:
+            return root
+        root = parent
+    return mid
+
+
 def write_json_atomic(path: Path, data: dict) -> None:
     fd, tmp = tempfile.mkstemp(dir=path.parent, prefix=".state-", suffix=".tmp")
     with os.fdopen(fd, "w", encoding="utf-8") as handle:
@@ -89,7 +136,7 @@ def content_version(root: Path) -> int:
     for dirpath, dirnames, filenames in os.walk(root):
         dirnames[:] = [d for d in dirnames if not d.startswith(".")]
         for name in filenames:
-            if name == STATE_FILE or name.startswith("."):
+            if name in (STATE_FILE, CHAT_FILE) or name.startswith("."):
                 continue
             try:
                 newest = max(newest, (Path(dirpath) / name).stat().st_mtime_ns)
@@ -132,13 +179,26 @@ def make_handler(root: Path, activity: dict):
         def do_GET(self) -> None:
             if not self.host_ok():
                 return
-            route = self.path.split("?", 1)[0]
+            route, _, query = self.path.partition("?")
             if route == "/api/version":
                 self.send_json(200, {"version": content_version(root)})
                 return
             activity["last"] = time.monotonic()
             if route == "/api/state":
                 self.send_json(200, read_json(root / STATE_FILE) or {})
+                return
+            if route == "/api/chat":
+                since = 0
+                for part in query.split("&"):
+                    if part.startswith("since="):
+                        try:
+                            since = int(part[6:])
+                        except ValueError:
+                            since = 0
+                messages = read_chat(root)["messages"]
+                new = [m for m in messages if m["id"] > since]
+                cursor = max([since, *(m["id"] for m in messages)])
+                self.send_json(200, {"messages": new, "cursor": cursor})
                 return
             if any(part.startswith(".") for part in route.split("/")):
                 self.send_error(404)
@@ -179,6 +239,50 @@ def make_handler(root: Path, activity: dict):
             data["updated"] = now_iso()
             write_json_atomic(root / STATE_FILE, data)
             self.send_json(200, data)
+
+        def do_POST(self) -> None:
+            if not self.host_ok():
+                return
+            activity["last"] = time.monotonic()
+            if self.path.split("?", 1)[0] != "/api/chat":
+                self.send_error(404)
+                return
+            origin = self.headers.get("Origin")
+            if origin and origin != f"http://{self.headers.get('Host', '')}":
+                self.send_json(403, {"error": "cross-origin write rejected"})
+                return
+            if not self.headers.get("Content-Type", "").startswith("application/json"):
+                self.send_json(415, {"error": "expected Content-Type: application/json"})
+                return
+            length = int(self.headers.get("Content-Length") or 0)
+            if length <= 0 or length > MAX_BODY:
+                self.send_json(413, {"error": f"body must be 1..{MAX_BODY} bytes"})
+                return
+            try:
+                data = json.loads(self.rfile.read(length))
+            except json.JSONDecodeError:
+                self.send_json(400, {"error": "body is not valid JSON"})
+                return
+            text = str(data.get("text") or "").strip()
+            if not text or len(text) > MAX_TEXT:
+                self.send_json(400, {"error": f"text must be 1..{MAX_TEXT} chars"})
+                return
+            message = {
+                "role": "user",
+                "text": text,
+                "quote": str(data.get("quote") or "")[:MAX_QUOTE],
+            }
+            reply_to = data.get("replyTo")
+            if reply_to is not None:
+                messages = read_chat(root)["messages"]
+                if not any(m["id"] == reply_to for m in messages):
+                    self.send_json(404, {"error": f"no message {reply_to} to reply to"})
+                    return
+                # Follow-ups may name any message of the thread; the page keys
+                # threads by the root question id, so store that.
+                message["replyTo"] = thread_root(messages, reply_to)
+            saved = chat_append(root, message)
+            self.send_json(200, {"id": saved["id"]})
 
     return Handler
 
@@ -304,6 +408,31 @@ def cmd_wait(root: Path, timeout: float) -> None:
         time.sleep(1)
 
 
+def cmd_chat(root: Path, since: int, wait: float) -> None:
+    """Print new user questions (one JSON per line) as they arrive."""
+    deadline = time.monotonic() + wait
+    seen = since
+    while True:
+        for message in read_chat(root)["messages"]:
+            if message["id"] > seen and message["role"] == "user":
+                seen = message["id"]
+                print(json.dumps(message, ensure_ascii=False))
+        sys.stdout.flush()
+        if wait <= 0 or time.monotonic() >= deadline:
+            return
+        time.sleep(1)
+
+
+def cmd_reply(root: Path, mid: int, text: str) -> None:
+    messages = read_chat(root)["messages"]
+    if not any(m["id"] == mid for m in messages):
+        fail(6, f"No message {mid} in {root / CHAT_FILE}. Run `chat` to list questions.")
+    # Any id of a thread works; the page keys threads by the root question id.
+    root_id = thread_root(messages, mid)
+    saved = chat_append(root, {"role": "agent", "replyTo": root_id, "text": text.strip()})
+    print(json.dumps({"id": saved["id"], "replyTo": root_id}, ensure_ascii=False))
+
+
 def cmd_status(root: Path) -> None:
     info = read_json(root / INFO_FILE)
     running = server_alive(info)
@@ -352,6 +481,24 @@ def main() -> None:
     p = sub.add_parser("wait")
     p.add_argument("dir")
     p.add_argument("--timeout", type=float, default=1800, help="seconds (default 1800)")
+    p = sub.add_parser(
+        "chat",
+        help="print user questions from the page as JSON lines",
+    )
+    p.add_argument("dir")
+    p.add_argument(
+        "--since", type=int, default=0, help="skip messages up to this id (default 0)"
+    )
+    p.add_argument(
+        "--wait",
+        type=float,
+        default=0,
+        help="keep watching for this many seconds (0 prints once and exits)",
+    )
+    p = sub.add_parser("reply", help="answer a question from the page")
+    p.add_argument("dir")
+    p.add_argument("id", type=int, help="id of the message being answered")
+    p.add_argument("text", help="the reply shown next to the quoted text")
     for name in ("status", "stop"):
         sub.add_parser(name).add_argument("dir")
     args = parser.parse_args()
@@ -362,6 +509,10 @@ def main() -> None:
         cmd_start(root, args.port, args.idle_hours)
     elif args.command == "wait":
         cmd_wait(root, args.timeout)
+    elif args.command == "chat":
+        cmd_chat(root, args.since, args.wait)
+    elif args.command == "reply":
+        cmd_reply(root, args.id, args.text)
     elif args.command == "status":
         cmd_status(root)
     else:
