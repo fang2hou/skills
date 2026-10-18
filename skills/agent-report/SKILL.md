@@ -11,7 +11,7 @@ metadata:
   version: "2.2"
 ---
 
-# HTML Report
+# Agent Report
 
 Turns findings into one calm HTML page for reading on a desktop screen, and turns decisions the user must make into a review page whose answers land in `state.json` for the agent to read.
 

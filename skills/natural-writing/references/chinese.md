@@ -129,7 +129,7 @@ Check that every verb and object pair natively (`lv-zhu-1952`):
 
 ## 9. Technical Terminology and Calques (`zh.terminology.technical_precision_and_calques`)
 
-In Chinese technical writing (`skills/agent-report/references/writing-zh.md`):
+In Chinese technical writing:
 
 - **Keep standard English terms in English** when Chinese engineers use the English term natively and coined translations sound bizarre: `tree-shaking` (not `摇树优化`), `release gate` (not `发布门禁`), `smoke test` (not `冒烟测试` in formal specs where `smoke test` is clearer, or use settled usage consistently), `blue-green deploy`, `fallback`, `workaround`, `dead-letter queue`.
 - **Use settled Chinese engineering terms** instead of literal translations of English metaphors:
