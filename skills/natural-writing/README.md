@@ -25,11 +25,11 @@ graph TD
 ```
 
 1. **Layer 1: Core Human Expression Principles (`layer: core`)**
-   Timeless communicative principles established long before LLMs (Orwell 1946, Strunk & White 1959, Zinsser 1976, Williams 1981, Pinker 2014, Gowers 1954, Grice 1975, Brown & Levinson 1987, Lakoff & Johnson 1980). These principles hold across languages and models.
+   Timeless communicative principles established long before LLMs (Orwell 1946, Strunk & White 1959, Zinsser 1976, Williams 1981, Pinker 2014, Gowers 1954, Grice 1975, Brown & Levinson 1987, Lakoff & Johnson 1980), reinforced by modern developer-documentation standards (Vercel Writing Guidelines 2026). These principles hold across languages and models.
 2. **Layer 2: Language & Context Realization (`layer: language`)**
    Language-specific realizations grounded in each language's own grammar, collocation system, politeness calculus, and stylistic tradition:
    - **Chinese (`zh-CN`)**: Lv Shuxiang & Zhu Dexi (1952), Wang Li (1943), Zhu Dexi (1982), Ye Shengtao (1934), Zhu Guangqian (1946), Yu Kwang-chung (1987).
-   - **English (`en`)**: Orwell (1946), Strunk & White (1959), Zinsser (1976), Williams (1981), Pinker (2014), Gowers (1954), Fowler (1926), US Federal Plain Language Guidelines (2010).
+   - **English (`en`)**: Orwell (1946), Strunk & White (1959), Zinsser (1976), Williams (1981), Pinker (2014), Gowers (1954), Fowler (1926), US Federal Plain Language Guidelines (2010), Vercel Writing Guidelines (2026).
    - **Japanese (`ja`)**: Tanizaki (1934), Iwabuchi (1960), Honda Katsuichi (1976), Kinoshita Koreo (1981), Agency for Cultural Affairs _Keigo no Shishin_ (2007) and _Kouyoubun Sakusei no Kangaekata_ (2022), and _Yasashii Nihongo_ research.
 3. **Layer 3: Versioned AI Symptom Library (`layer: symptom`)**
    An independently versioned catalog of model-specific surface habits (`patterns/symptoms.yaml`). Every symptom entry enforces `action_on_match: review_only` and links to the Layer 1/Layer 2 rules that govern when the pattern is a flaw and when it is a valid choice.

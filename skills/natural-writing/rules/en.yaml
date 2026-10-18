@@ -9,19 +9,22 @@ rules:
     parent_principle: core.syntax.actors_and_actions
     category: syntax
     severity: high
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Unpack zombie nominalizations and Orwellian verbal operators into concrete grammatical subjects and finite verbs."
-    problem: "Phrases like 'render inoperative', 'effectuate a reduction in', 'serves as a', and 'by examination of' pad syllable counts and hide who acts."
+    principle: "Unpack zombie nominalizations, Orwellian operators, spec-sheet predicates, and personified artifacts into concrete grammatical subjects and literal finite verbs."
+    problem: "Phrases like 'render inoperative', 'effectuate a reduction in', 'serves as a', spec-sheet voice ('provides', 'is configurable', 'is explicitly labeled'), and personified artifacts ('hand the browser a URL', 'the token holds') pad syllable counts and hide who acts."
     triggers:
       - "Noun Ending in -tion/-ment/-ance/-ence + 'of' + Light Verb ('achieved a reduction in', 'performed an evaluation of')"
       - "Copula substitutes ('serves as', 'stands as', 'functions as', 'boasts', 'features') where 'is' or 'has' fits"
       - "Orwellian operators ('render inoperative', 'have the effect of', 'exhibit a tendency to', 'play a leading role in')"
+      - "Spec-sheet voice ('provides', 'is configurable', 'is explicitly labeled'), personified artifacts ('hand the browser a URL', 'the token holds'), or cadence metaphor verbs ('moves through', 'lands', 'carries', 'hits')"
     detection:
-      - "Check whether the main verb of the clause is a weak operator ('make, perform, achieve, serve, exhibit') while the real action sits inside an abstract noun."
+      - "Check whether the main verb of the clause is a weak operator ('make, perform, achieve, serve, exhibit') or datasheet predicate while the real action sits inside an abstract noun."
+      - "Apply the 'by monkeys' test for unintended passives and the speech-pace second-read test: if you must re-read to parse it, name the subject, the action, and the consequence."
       - "Test whether 'is', 'are', or 'has' can replace 'serves as / stands as / boasts' without loss of meaning."
     revision_strategy:
       - "Turn the nominalized noun into a finite verb and place the responsible actor or system in subject position."
+      - "Replace spec-sheet voice and personified artifact verbs with literal technical steps ('the browser fetches the URL', 'the token is stored')."
       - "Replace 'serves as / stands as / boasts' with 'is' or 'has'."
     exceptions:
       - "Established technical nouns ('authentication', 'garbage collection', 'linearizability')"
@@ -31,6 +34,7 @@ rules:
       - "orwell-1946"
       - "williams-1981"
       - "pinker-2014"
+      - "vercel-writing-2026"
     examples:
       - before: "An optimization of the index by the storage engine has the effect of achieving a reduction in query latency from 120 ms to 15 ms."
         after: "Rebuilding the storage index cuts query latency from 120 ms to 15 ms."
@@ -49,27 +53,33 @@ rules:
     parent_principle: core.clarity.meaning_chooses_word
     category: diction
     severity: high
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Use plain, exact English words instead of pompous Latinisms, promotional superlatives, and inflated significance."
-    problem: "Words like 'utilize', 'ameliorate', 'delve', 'pivotal', 'testament', and 'vibrant landscape' dress ordinary facts in borrowed grandeur or sales pitch."
+    principle: "Use plain, exact English words and concrete descriptions instead of pompous Latinisms, reader-pressuring minimizers, weasel qualifiers, and inflated significance."
+    problem: "Words like 'utilize', 'delve', 'pivotal', 'testament', reader-pressuring minimizers ('easy', 'simple', 'quick'), filler intensifiers ('very', 'just', 'really'), and vague quantifiers ('near-zero', 'sub-second', 'most requests') dress ordinary facts in borrowed grandeur, pressure the reader, or evade specifics."
     triggers:
       - "Bureaucratic Latinate substitutes ('utilize', 'facilitate', 'prior to', 'subsequent to', 'in the affirmative')"
+      - "Reader-pressuring minimizers ('easy', 'simple', 'quick', 'simply', 'easily') or filler intensifiers ('very', 'just', 'really')"
+      - "Weasel qualifiers ('significantly', 'many', 'often', 'typically', 'generally') and vague quantifiers ('near-zero', 'sub-second', 'most requests') without a cited figure"
       - "Inflated significance framing ('stands as a testament to', 'marking a pivotal moment in the evolving landscape', 'indelible mark')"
       - "Sales clichés ('nestled in the heart of', 'breathtaking', 'groundbreaking', 'rich tapestry')"
     detection:
       - "Apply Orwell's Rules (ii) and (v) and Gowers's plain-word test: does a shorter, everyday English word carry the exact same denotation?"
+      - "Check whether 'easy', 'simple', or 'quick' can be replaced by a concrete description ('one command', 'default settings') and whether weasel quantifiers hide a specific metric."
       - "Check whether significance phrases ('pivotal milestone') are supported by facts or merely tell the reader how to feel."
     revision_strategy:
-      - "Replace pompous substitutes with direct words ('use', 'before', 'after', 'help')."
+      - "Replace pompous substitutes with direct words ('use', 'before', 'after', 'help') and cut filler intensifiers ('very', 'just', 'really')."
+      - "Replace 'easy/simple/quick' with concrete scope ('one command', 'default settings') and replace vague quantifiers with cited figures when available."
       - "Delete promotional framing and state the verifiable facts, dates, and quantities."
     exceptions:
       - "Exact scientific, medical, or legal terms with no everyday equivalent ('idempotent', 'amortized', 'subpoena', 'debridement')"
+      - "Established technical names containing 'simple' or 'quick' ('Simple Mail Transfer Protocol', 'quicksort')"
     sources:
       - "orwell-1946"
       - "gowers-1954"
       - "strunk-white-1959"
       - "zinsser-1976"
+      - "vercel-writing-2026"
     examples:
       - before: "Prior to utilizing the new compiler backend, teams must delve into the intricacies of its configuration landscape, which stands as a testament to modern optimization design."
         after: "Before using the new compiler backend, teams must configure its target triple and linker flags."
@@ -201,27 +211,30 @@ rules:
     parent_principle: core.concision.information_density
     category: pragmatics
     severity: medium
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Direct the reader's gaze to the subject itself rather than narrating the act of writing or staging fake candor."
-    problem: "Run-ups like 'Let's dive in', 'It is worth noting that', 'Honestly, here's the thing', and 'Great question!' delay the point and leave chatbot residue in standalone prose."
+    principle: "Direct the reader's gaze to the subject itself rather than narrating the act of writing, recapping the previous paragraph, or staging fake candor."
+    problem: "Run-ups like 'Let's dive in', 'It is worth noting that', summary-style transitions ('With this setup complete…', 'Now that we have explored…'), reused framing ('The question most teams face is whether…'), and rhetorical questions delay the point and leave AI or chatbot residue in standalone prose."
     triggers:
       - "Chatbot greetings/closers ('Great question!', 'Certainly!', 'I hope this helps!', 'Let me know if you want me to...')"
       - "Staged run-ups ('Let's dive in', 'Here's what you need to know', 'Honestly?', 'Look, here's the thing')"
-      - "Empty metadiscourse ('It is worth noting that', 'It should be mentioned that', 'Needless to say')"
+      - "Summary-style transitions recapping the previous paragraph ('With this setup complete…', 'Now that we have explored…') or reused framing ('The question most teams face is whether…')"
+      - "Empty metadiscourse ('It is worth noting that', 'It should be mentioned that', 'Needless to say') and marketing rhetorical questions"
     detection:
       - "Apply Pinker's Classic Style test: is the sentence pointing at the subject in the world, or talking about the writer/document itself?"
-      - "Delete the opener and check whether the remaining clause stands stronger on its own."
+      - "Check whether the paragraph opens by recapping the paragraph above instead of pivoting directly to the next point."
     revision_strategy:
-      - "Strip chatbot wrappers, staged candor, and 'It is worth noting that' prefixes outright."
-      - "In thread replies where the reader already knows the background, lead with the decision or answer rather than restating the prompt."
+      - "Strip chatbot wrappers, staged candor, summary-style recap transitions, and 'It is worth noting that' prefixes outright."
+      - "Pivot straight to the next point ('In practice…', 'The catch is…') and address the reader directly as 'you' in documentation rather than 'the user', 'one can', or stand-in 'we'."
     exceptions:
       - "Explicit caveats that alter how the reader must act ('Note: running this command drops unindexed tables')"
+      - "One-paragraph page TL;DRs and section summary sentences in documentation"
       - "Natural conversational asides in signed first-person essays"
     sources:
       - "pinker-2014"
       - "zinsser-1976"
       - "grice-1975"
+      - "vercel-writing-2026"
     examples:
       - before: "Great question! Let's dive into how Next.js caching works. Honestly, here's what you need to know: it is worth noting that Next.js caches data at four distinct layers. I hope this helps!"
         after: "Next.js caches data at four layers: request memoization, the data cache, the full-route cache, and the client router cache."
@@ -276,27 +289,29 @@ rules:
     parent_principle: core.cohesion.old_before_new
     category: cohesion
     severity: medium
-    version: "1.0.0"
+    version: "1.1.0"
     updated_at: "2026-10-18"
-    principle: "Link clauses from known context to new end-focus information, and vary sentence structure organically rather than by mechanical rule."
-    problem: "Repeating the same sentence opener, forcing every point into a triad, or replacing all conjunctions with em dashes creates mechanical rhythm."
+    principle: "Link clauses and paragraphs from known context to new end-focus information, merge stop-start fragments, and vary sentence structure organically."
+    problem: "Repeating the same sentence opener, cold-opening body paragraphs without antecedents, splitting one dependent idea into choppy stop-start fragments, forcing every point into a triad, or using em dashes (—) as universal connectors creates mechanical rhythm."
     triggers:
       - "Three or more consecutive sentences starting with the exact same subject or adverbial"
-      - "High density of em dashes (—) or double hyphens (--) used as universal clause connectors"
-      - "Dramatic one-line fragment paragraphs ('No priors. No compromise. Period.')"
+      - "Cold-open body paragraphs whose first sentence works as a standalone heading with no link to the prior subject"
+      - "Stop-start choppy fragments splitting one dependent idea ('Previously this was manual. Now it is automatic. This saves time.') or dramatic one-line fragment paragraphs ('No priors. No compromise. Period.')"
+      - "Em dashes (—) or spaced hyphens ( - ) used as general-purpose clause punctuation"
     detection:
-      - "Read the paragraph aloud: do sentences alternate length naturally and connect old information to new?"
-      - "Check whether em dashes are masking the exact logical relation ('because', 'although', 'namely') between clauses."
+      - "Read the paragraph aloud: do sentences alternate length naturally (targeting ~20 words in instructional prose, 2–4 sentences per paragraph) and connect old information to new?"
+      - "Check whether body paragraphs cold-open without carrying the prior subject forward ('Because…', 'Once…') and whether em dashes are masking the exact logical relation ('because', 'although', 'namely')."
     revision_strategy:
-      - "Combine choppy repetitive sentences or vary openings by starting with the transitional link from the prior sentence."
+      - "Combine choppy stop-start or repetitive sentences and carry the prior subject across paragraph openings."
       - "Replace habitual em dashes with commas, colons, parentheses, or explicit conjunctions unless matching an author's established style sample."
     exceptions:
-      - "Intentional anaphora (deliberate repetition of an opening phrase for rhetorical climax)"
+      - "Intentional anaphora (deliberate repetition of an opening phrase for rhetorical climax) or a single short sentence for emphasis"
       - "Author style samples that natively use em dashes at a deliberate rate"
     sources:
       - "williams-1981"
       - "fowler-1926"
       - "zinsser-1976"
+      - "vercel-writing-2026"
     examples:
       - before: "The scheduler — redesigned last quarter — polls the queue. The scheduler checks worker load. The scheduler dispatches the batch — no waiting. That is the real win."
         after: "Redesigned last quarter, the scheduler polls the queue, checks worker load, and dispatches each batch without waiting."

@@ -366,7 +366,7 @@ symptoms:
 
   - id: symptom.en.staged_candor_and_runups
     layer: symptom
-    version: "1.0.0"
+    version: "1.1.0"
     status: active
     action_on_match: review_only
     observed_since: "2024-01"
@@ -387,15 +387,20 @@ symptoms:
       - "Honestly?"
       - "Real talk:"
       - "Let's break this down"
+      - "With this setup complete,"
+      - "Now that we've explored"
+      - "Now that we have explored"
+      - "The question most teams face is whether"
     why_it_occurs: >
-      Models stage conversational intimacy or announcer energy before delivering routine
-      explanations, violating Classic Style windowpane transparency.
+      Models stage conversational intimacy, recap the previous paragraph with summary-style
+      transitions, or open with reused template framing before delivering routine explanations,
+      violating Classic Style windowpane transparency.
     contextual_test:
       - "Is this a scripted podcast host transcript or casual dialogue?"
-      - "Does removing the run-up let the reader reach the answer faster?"
+      - "Does removing the run-up or summary-style recap transition let the reader reach the next point faster?"
     valid_contexts:
       - "Spoken podcast scripts or conversational dialogue in fiction"
-    revision_guidance: "Delete the run-up and start with the substantive claim."
+    revision_guidance: "Delete the run-up or summary-style recap transition and pivot directly to the substantive claim ('In practice…', 'The catch is…')."
     examples:
       - before: "Let's break this down. Here's the thing: Honestly? Connection pooling only helps when handshake latency dominates query time."
         after: "Connection pooling helps most when handshake latency dominates query execution time."
@@ -407,6 +412,55 @@ symptoms:
         context: "News report direct quote"
         verdict: "keep"
         reason: "Verbatim spoken quote."
+
+  - id: symptom.en.spec_sheet_and_minimizers
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2025-01"
+    last_reviewed: "2026-10-18"
+    affected_models:
+      - "Cross-family English LLMs generating developer documentation"
+    languages:
+      - en
+    category: diction
+    severity: medium
+    linked_rules:
+      - core.syntax.actors_and_actions
+      - core.pragmatics.social_distance_and_register
+      - en.syntax.nominalization_and_false_limbs
+      - en.diction.pretentious_and_inflated_lexicon
+    surface_patterns:
+      - "simply run"
+      - "easily configure"
+      - "is configurable"
+      - "is explicitly labeled"
+      - "hand the browser a URL"
+      - "near-zero"
+      - "sub-second"
+    why_it_occurs: >
+      Models generating technical docs fall into spec-sheet voice ('is configurable',
+      'is explicitly labeled'), personify inanimate artifacts ('hand the browser a URL'),
+      use vague quantifiers ('near-zero', 'sub-second'), or pressure readers with
+      difficulty minimizers ('simply run', 'easily configure').
+    contextual_test:
+      - "Does the phrase pressure the reader by calling a step 'easy/simple/quick' instead of stating concrete scope ('one command', 'default settings')?"
+      - "Does it use datasheet passive predicates or vague quantifiers where a literal verb or cited figure exists?"
+    valid_contexts:
+      - "Established technical names ('Simple Storage Service', 'quicksort') or verbatim product quotes"
+    revision_guidance: "Replace 'easy/simple/quick' with concrete scope ('one command', 'default settings'), rewrite spec-sheet predicates and personified artifacts into active literal verbs, and replace vague quantifiers with cited figures."
+    examples:
+      - before: "Retry behavior is configurable, so you can simply run one CLI flag to achieve sub-second failover."
+        after: "Set `--max-retries=3` to trigger failover within 400 ms."
+        context: "CLI configuration guide"
+        verdict: "rewrite"
+        reason: "Replaces spec-sheet voice ('is configurable'), the minimizer ('simply run'), and the vague quantifier ('sub-second') with the exact flag and 400 ms measurement."
+      - before: "Amazon Simple Storage Service (S3) replicates objects across availability zones within a region."
+        after: "Amazon Simple Storage Service (S3) replicates objects across availability zones within a region."
+        context: "Cloud storage architecture overview"
+        verdict: "keep"
+        reason: "'Simple Storage Service' is a proper product name."
 
   - id: symptom.all.chatbot_wrapper_residue
     layer: symptom

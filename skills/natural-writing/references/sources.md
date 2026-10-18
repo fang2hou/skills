@@ -94,6 +94,16 @@ Contents:
 - **Applicable Scope**: Government notices, user documentation, compliance guides, and operational runbooks.
 - **Limitations**: Designed for utilitarian instruction and public comprehension; does not target essayistic nuance or literary cadence.
 
+### `vercel-writing-2026`
+
+- **Title**: _Vercel Writing Guidelines_ (`vercel-labs/writing-guidelines`)
+- **Author**: Vercel Labs
+- **Year**: 2026
+- **URL**: https://raw.githubusercontent.com/vercel-labs/writing-guidelines/main/command.md
+- **Core Thesis**: Establishes high-signal engineering and developer documentation rules across eleven dimensions: (1) **Planning & content type** (explicit single-job pages declared as `Tutorial`, `How-to`, `Reference`, `Conceptual`, `Troubleshooting`, or `Landing`; user-shaped titles; testable Bloom's taxonomy verb goals; shared openers on multi-audience pages), (2) **Voice & tone** (active voice checked via the "by monkeys" mental test; direct `you` address; imperative steps; ~20-word target; warm contractions; present tense; restricted `we` for deliberate author/vendor actions; no marketing rhetorical questions; and the speech-pace **second-read test**), (3) **Reader-pressuring & filler words** (cutting `easy`, `simple`, `quick` in favor of concrete descriptions like `"one command"` or `"default settings"`, and pruning `very`, `just`, `really`), (4) **Concision** (earning every detail when drafting; replacing weasel words like `significantly`, `typically`, `generally` and vague quantifiers like `near-zero`, `sub-second`, `most requests` with cited figures; replacing cadence metaphor verbs like `moves through`, `lands`, `carries`, `hits` with literal steps), (5) **AI-generated tells** (flagging summary-style recap transitions like `With this setup complete…`, stop-start choppy fragments, spec-sheet voice like `provides` / `is configurable`, cold-open body paragraphs without antecedents, personified artifacts like `hand the browser a URL` / `the token holds`, and reused template framing like `The question most teams face is whether…`), (6) **Tone by content type**, and (7–11) **Headings, structure, lists, code blocks, and placeholders** (sentence-case headings, descriptive subheadings, opening TL;DR paragraph, section summary sentences, first-use acronym expansion and term definition, 2–4 sentence paragraphs, colon-introduced lists for 3+ items, ≤25-line / ≤80-column explained code snippets, and `snake_case` text / `1234567890123` number placeholders).
+- **Applicable Scope**: Developer documentation, tutorials, how-to guides, reference manuals, troubleshooting guides, and technical explanations.
+- **Limitations**: In `rewrite` and `light-polish` modes on existing texts, `core.fidelity.preserve_voice_and_facts` outranks "Earn every detail" (never delete checkable source figures or scope qualifiers). Direct `you` address, contractions, and TypeScript defaults apply to developer documentation rather than academic papers, incident postmortems, or Japanese/Chinese formal registers. Words like `simple` or `quick` remain valid inside established technical names (_Simple Storage Service_, _quicksort_).
+
 ---
 
 ## 2. Chinese Grammar, Rhetoric, and Stylistics Tradition
@@ -284,6 +294,7 @@ Contents:
 | `gowers-1954`         | Gowers (1954)           | English      | Reader-centered official prose, plain words over bureaucratic officialese     |
 | `fowler-1926`         | Fowler (1926)           | English      | Direct vigor, critique of elegant variation and battered ornaments            |
 | `plain-language-2010` | PLAIN (2010)            | English      | Audience fit, active voice, structural scannability                           |
+| `vercel-writing-2026` | Vercel Labs (2026)      | English/Core | Content-type tone, second-read test, anti-weasel/minimizers, AI doc tells     |
 | `lv-zhu-1952`         | Lv & Zhu (1952)         | Chinese      | Collocation integrity, cutting empty light verbs (`进行/加以/作出`)           |
 | `zhu-dexi-1982`       | Zhu Dexi (1980/1982)    | Chinese      | Predicative subjects/objects (`谓词性成分作主宾语`), anti-nominalization      |
 | `wang-li-1943`        | Wang Li (1943)          | Chinese      | Diagnosis of Europeanized syntax (`被`, stacked `的`, `-性/-化`)              |
