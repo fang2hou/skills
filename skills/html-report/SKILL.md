@@ -73,8 +73,8 @@ The purpose sets the page type, what the page leads with, and where the file goe
 base="${TMPDIR:-/tmp}"; dir="${base%/}/html-report/$(date +%Y%m%d-%H%M)-<short-slug>"
 mkdir -p "$dir"
 kit="$HOME/.local/share/report-kit"   # one clone, reused by every report
-if [ -d "$kit/.git" ]; then git -C "$kit" pull --ff-only -q; else
-  git clone --depth 1 https://github.com/fang2hou/report-kit "$kit" && (cd "$kit" && pnpm install --silent)
+if [ -d "$kit/.git" ]; then git -C "$kit" pull --ff-only -q && pnpm -C "$kit" install --silent; else
+  git clone --depth 1 https://github.com/fang2hou/report-kit "$kit" && pnpm -C "$kit" install --silent
 fi
 ```
 
