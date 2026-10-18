@@ -41,10 +41,10 @@ Instructions the user gives in the current conversation (language, layout, color
 
 1. **One self-contained file, compiled by the renderer.** Every page comes out of `node tools/build.ts` in the cloned report-kit repo, which validates `report.json`, compiles, and injects the data in one step. No CDN scripts, web fonts, or remote images, because the page must open offline and stay small. The page is read on a desktop monitor; do not add mobile layouts or test phone widths.
 2. **Conclusion first.** The first screen holds a title that states the main finding and a summary box with 2–5 points. The reader decides from these whether to read on.
-3. **Formal, precise writing.** Follow [references/writing.md](references/writing.md), plus [references/writing-zh.md](references/writing-zh.md) for `zh-CN` or [references/writing-ja.md](references/writing-ja.md) for `ja`. Write in a formal register, keep established technical terms, put a space between CJK characters and Latin letters or digits, and do the final pass before Step 6.
+3. **Prose through natural-writing.** Language quality — register, technical terms, sentence shape, CJK spacing — belongs to the `natural-writing` skill in this repository. Load it when drafting (Step 3) and review with it exactly once before hand-over (Step 6). [references/writing.md](references/writing.md) adds only the report-specific rules: structure, numbers, translated quotes, and question wording.
 4. **The reader's language.** Set the report's `lang` field to the language the user names, or else the language of their latest message (`zh-CN`, `ja`, `en`). Fonts, line breaking, and every UI string follow it. Never default to the language of the sources, the repository, or these instructions. A quote in another language goes in a `pair` block with the translation first, because the user decides from the translation and the agent acts on the original.
 5. **Answers come back through a file.** Review pages run [scripts/serve.py](scripts/serve.py), and the agent reads `state.json`. Ask the user to copy and paste answers only when the server cannot run.
-6. **Size budget.** The compiled page is ~160 KB before content; it stays under 1 MB. Draw charts and structured diagrams as hand-written inline SVG per the figure rules in [references/report-schema.md](references/report-schema.md). Each raster image is WebP or JPEG, at most 1600 px wide and 200 KB, embedded as a data URI. Base64 adds a third to an image's size.
+6. **Size budget.** The compiled page is ~180 KB before content; it stays under 1 MB. Draw charts and structured diagrams as hand-written inline SVG per the figure rules in [references/report-schema.md](references/report-schema.md). Each raster image is WebP or JPEG, at most 1600 px wide and 200 KB, embedded as a data URI. Base64 adds a third to an image's size.
 7. **Keep the renderer's look.** The theme is fixed code: cream background, blue-black ink, one accent color, status colors (`ok`, `warn`, `risk`) only for status, prose in the narrow reading column. Do not fight it with custom markup — if the content does not fit a component, the content shape is wrong. Only a comparison, a many-column table, or a large figure breaks out wide (`.wide` flags in the JSON), so the one thing to compare side by side stands out. No gradients, emoji headings, decorative icons, or animations, and no text below 14 px.
 8. **Verify before handing over.** Build and render the page, and fix what you see (Step 6).
 
@@ -82,7 +82,7 @@ Pull and `pnpm install` are cheap; a fresh clone takes one round of installs. On
 
 ### Step 3: Write report.json
 
-1. Read [references/report-schema.md](references/report-schema.md) — the authoring contract for every field — and [references/components.md](references/components.md) for which component fits which content shape. Read the writing guide for the page language: [references/writing-zh.md](references/writing-zh.md) for `zh-CN`, [references/writing-ja.md](references/writing-ja.md) for `ja`.
+1. Read [references/report-schema.md](references/report-schema.md) — the authoring contract for every field — and [references/components.md](references/components.md) for which component fits which content shape. Then load the `natural-writing` skill for the page language and [references/writing.md](references/writing.md), and draft through natural-writing (`generate` mode, genre `technical-doc`, audience a senior engineer who reads technical English).
 2. Outline in the order Step 1 gives: a title that states the main finding, 2–5 summary points, and section headings that each state their section's point.
 3. Write `$dir/report.json` with `lang` set per Hard Rule 4. Rich-text fields take the trusted subset listed in report-schema.md (`<strong>`, `<code>`, chips, `<time>`); everything else is plain data.
 4. Pick one block per idea from the "Choose by content shape" table in components.md. Use a `table` block where items share fields, a `figures` row when two to four numbers carry the finding, `bars` for one measure across items, `compare` cards for options weighed against each other. Leave the rest as short `p` blocks. With five or more sections the table of contents appears on its own.
@@ -118,6 +118,7 @@ Verify before the user opens the page, so test answers never reach them.
 2. Load the page at 1280 px wide with a browser tool, or take a headless screenshot: `"<chrome-binary>" --headless --screenshot=/tmp/check.png --window-size=1280,2400 "<url-or-file-url>"`. Check the screenshot, the console for errors, and that `document.documentElement.scrollWidth` does not exceed `clientWidth`. Confirm the UI chrome (summary heading, submit button) is in `lang`. Chrome here is only for checking; Step 7 opens the page for the user.
 3. On a review page, click one option and confirm `state.json` changed. Then close that tab and delete `state.json`.
 4. If no browser runs at all, walk the report JSON against the read-through checklist at the end of components.md, and say in the hand-over that the page was checked by reading only.
+5. Run the single prose review: `natural-writing` in `review` mode over the page text in the page language, plus the report checklist at the end of [references/writing.md](references/writing.md). Fix what it flags, rebuild, and hand over — there is no second review round.
 
 ### Step 7: Open, hand over, and collect answers
 
@@ -183,9 +184,8 @@ For a new round of questions, create a new directory, because `wait` returns at 
 ## References
 
 - [references/report-schema.md](references/report-schema.md): the report.json authoring contract — every field, block, and question type; read in Step 3.
-- [references/writing.md](references/writing.md): prose and structure rules for every page; read in Step 3.
-- [references/writing-zh.md](references/writing-zh.md): Simplified Chinese register, terms, spacing, and punctuation; read when `lang="zh-CN"`.
-- [references/writing-ja.md](references/writing-ja.md): Japanese register, terms, spacing, and punctuation; read when `lang="ja"`.
+- The `natural-writing` skill (same repository): register, terms, and sentence shape per language (`en`, `zh-CN`, `ja`); loaded in Step 3 and reviewed with in Step 6.
+- [references/writing.md](references/writing.md): the report-specific prose rules — structure, numbers, quotes, questions — on top of natural-writing; read in Step 3.
 - [references/components.md](references/components.md): which component fits which content shape, plus the read-through checklist for Step 6.
 - [references/typography.md](references/typography.md): font stacks, sizes, colors, and adding a language; read only when changing them.
 - `scripts/serve.py --help`: commands, HTTP API, and exit codes of the local server.

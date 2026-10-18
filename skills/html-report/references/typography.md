@@ -13,7 +13,7 @@ Contents:
 
 ## Font stacks by language
 
-Each language sets three tokens on `:lang(...)`: `--ui` for headings, tables, labels, and controls; `--body` for long prose; `--mono` for code. Because the tokens are set per element, an element with its own `lang` attribute switches fonts inside a page of another language.
+Each language sets `--ui` and `--body` on `:lang(...)`: `--ui` for headings, tables, labels, and controls; `--body` for long prose. `--font-mono` is one static token for code in every language. Because `--ui` and `--body` are set per element, an element with its own `lang` attribute switches fonts inside a page of another language. All tokens are defined once in the renderer's `src/app.css` (`@theme` block; Tailwind v4).
 
 | Language         | `--ui` (first choice → fallback)                                        | `--body`                                                          | Why                                                                                                                          |
 | ---------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -48,7 +48,7 @@ Rules when changing sizes:
 
 ## CJK line breaking and spacing
 
-- Writers type a half-width space between CJK characters and Latin letters or digits (see writing-zh.md and writing-ja.md). `text-autospace: normal` on `body` adds a smaller gap wherever a space is missing; it adds nothing where one is typed. A typed space is also a line-break point, so short headings join a trailing number and its counter with `&nbsp;` (`3&nbsp;个`, `3&nbsp;個`).
+- Writers type a half-width space between CJK characters and Latin letters or digits (a natural-writing convention). `text-autospace: normal` on `body` adds a smaller gap wherever a space is missing; it adds nothing where one is typed. A typed space is also a line-break point, so short headings join a trailing number and its counter with `&nbsp;` (`3&nbsp;个`, `3&nbsp;個`).
 - Japanese uses `line-break: strict` (no small kana or prolonged sound marks at line start) and `word-break: auto-phrase` on headings, which breaks at phrase boundaries. Chrome applies `auto-phrase` only when `lang="ja"`.
 - `text-wrap: balance` on headings and `text-wrap: pretty` on prose avoid one-word last lines.
 
@@ -56,20 +56,21 @@ These properties are ignored by browsers that lack them; the page still reads co
 
 ## Color tokens
 
-Contrast ratios are against the cream background `--bg` `#faf6ef`. Every text color passes WCAG AA (4.5:1). Black is softened to blue-black for a calmer page without losing contrast.
+Contrast ratios are against the cream background `--color-bg` `#faf6ef`. Every text color passes WCAG AA (4.5:1). Black is softened to blue-black for a calmer page without losing contrast. Figure SVGs and rich text reference these by their full names, `var(--color-accent)` and so on.
 
-| Token                | Value                | Contrast | Use                                              |
-| -------------------- | -------------------- | -------- | ------------------------------------------------ |
-| `--ink`              | `#28303b`            | 12.4     | Body text and headings                           |
-| `--ink-2`            | `#4a5462`            | 7.1      | Secondary text, table headers                    |
-| `--muted`            | `#646c78`            | 4.9      | Meta lines, hints, captions; the lightest text   |
-| `--accent`           | `#3a5470`            | 7.3      | Links, focus, selected controls, one data series |
-| `--ok` / `--ok-soft` | `#3d6a4c`            | 5.8      | Done, safe, keep                                 |
-| `--warn`             | `#85571a`            | 5.8      | Needs attention                                  |
-| `--risk`             | `#99392f`            | 6.5      | Breaking, unsafe, missing                        |
-| `--line`, `--line-2` | `#e4dccf`, `#d3c9b8` | —        | Rules and borders only, never text               |
+| Token                               | Value                | Contrast | Use                                              |
+| ----------------------------------- | -------------------- | -------- | ------------------------------------------------ |
+| `--color-ink`                       | `#28303b`            | 12.4     | Body text and headings                           |
+| `--color-ink-2`                     | `#4a5462`            | 7.1      | Secondary text, table headers                    |
+| `--color-muted`                     | `#646c78`            | 4.9      | Meta lines, hints, captions; the lightest text   |
+| `--color-accent`                    | `#3a5470`            | 7.3      | Links, focus, selected controls, one data series |
+| `--color-ok` / `--color-ok-soft`    | `#3d6a4c`            | 5.8      | Done, safe, keep                                 |
+| `--color-warn`                      | `#85571a`            | 5.8      | Needs attention                                  |
+| `--color-risk`                      | `#99392f`            | 6.5      | Breaking, unsafe, missing                        |
+| `--color-line`, `--color-line-2`    | `#e4dccf`, `#d3c9b8` | —        | Rules and borders only, never text               |
+| `--color-mark`, `--color-mark-soft` | `#f0e2ad`, `#f8f1d6` | —        | Selection-chat highlights on quoted passages     |
 
-Do not add colors for decoration. If a chart needs a second series, use `--ink-2` or `--muted`, not a new hue. Never use a gray lighter than `--muted` for text; earlier reports used `#8a8175` (3.5:1), which the user found hard to read.
+Do not add colors for decoration. If a chart needs a second series, use `--color-ink-2` or `--color-muted`, not a new hue. Never use a gray lighter than `--color-muted` for text; earlier reports used `#8a8175` (3.5:1), which the user found hard to read.
 
 ## Corners
 
@@ -77,11 +78,11 @@ Large surfaces (cards, the summary, question cards, the submit bar) use 14 px co
 
 ## Controls and scrollbars
 
-Radio buttons and checkboxes are drawn by the template at 1.15 em, so they match the option text instead of the small browser default. The page scrollbar is a thin thumb in the ink color, 3 px from the window edge. It shows while the page scrolls or the pointer nears the right edge, fades out after about a second, and can be dragged. Inner scroll areas (wide tables, code blocks) use the browser's thin scrollbar in the same color. Do not restyle these per page.
+Radio buttons and checkboxes are drawn by the renderer at 1.15 em, so they match the option text instead of the small browser default. The page scrollbar is the browser default; do not restyle it per page. Inner scroll areas (wide tables, code blocks) use the browser's thin scrollbar.
 
 ## Adding a language
 
 1. Add a `:lang(xx)` block next to the others with `--ui`, `--body`, `--fs`, `--lh`, `--ls`, and `--measure`.
 2. Choose fonts that are installed (`fc-list`), with a system fallback last.
-3. Adding a language now means changing the renderer: add the `STRINGS` entry in report-kit (`Review.svelte`, `Chat.svelte`, `+page.svelte`) and the `:lang` font block in `src/app.css`, then rebuild and re-vendor the template per report-schema.md.
+3. Adding a language now means changing the renderer: add the `STRINGS` entry in report-kit (`Review.svelte`, `Chat.svelte`, `+page.svelte`) and the `:lang` font block in `src/app.css`, then rebuild; the skill's clone picks it up on the next `git pull`.
 4. Render a sample paragraph with mixed Latin text and digits, and check line breaks and spacing in a screenshot.

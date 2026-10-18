@@ -211,7 +211,7 @@ Compare cards. Mark the recommended option with `pick` and a chip; keep pros and
 Draw every chart and structured diagram — flows, lifecycles, interaction orders, data models, file trees — as hand-written inline SVG in a `figure` block. The page keeps zero JavaScript, and the diagram follows the report palette.
 
 - Set `viewBox` and no fixed `width`/`height`, so the figure scales.
-- Use `currentColor` and the template's CSS variables (`var(--accent)`, `var(--line-2)`, `var(--muted)`) for strokes and fills. Use at most one accent color plus gray.
+- Use `currentColor` and the template's CSS variables (`var(--color-accent)`, `var(--color-line-2)`, `var(--color-muted)`) for strokes and fills. Use at most one accent color plus gray.
 - Label lines and boxes directly; add a legend only when direct labels do not fit.
 - Bars and areas start at zero. Say the unit in the caption.
 - Text inside SVG uses `font-family="inherit"` and a `font-size` of at least 14.
@@ -225,11 +225,11 @@ Draw every chart and structured diagram — flows, lifecycles, interaction order
     font-family="inherit"
     font-size="15"
   >
-    <g fill="none" stroke="var(--line-2)" stroke-width="1.5">
+    <g fill="none" stroke="var(--color-line-2)" stroke-width="1.5">
       <rect x="1" y="20" width="120" height="48" rx="8" />
       <rect x="200" y="20" width="120" height="48" rx="8" />
       <rect x="399" y="20" width="120" height="48" rx="8" />
-      <path d="M121 44h79M320 44h79" stroke="var(--accent)" />
+      <path d="M121 44h79M320 44h79" stroke="var(--color-accent)" />
     </g>
     <g fill="currentColor" text-anchor="middle">
       <text x="61" y="49">Browser</text>
