@@ -8,7 +8,7 @@ license: MIT
 compatibility: Optional validation and scan script requires Python 3.11+ (or uv). Core writing and review workflows require no external tools.
 metadata:
   author: fang2hou
-  version: "1.4.0"
+  version: "1.5.0"
   sources: "Orwell 1946; Strunk & White 1959; Williams 1981; Pinker 2014; Gowers 1954; Vercel 2026; Lv & Zhu 1952; Zhu Dexi 1982; Wang Li 1943; Yu Kwang-chung 1987; Honda 1976; Kinoshita 1981; Bunkacho 2007/2022; Iori 2016; Grice 1975; Brown & Levinson 1987"
 ---
 
@@ -106,6 +106,7 @@ Test whether subjects and predicates pair naturally in the target language:
 - Replace zombie nominalizations and verbal false limbs (`achieve a reduction`, `进行优化`, `実行を行う`) with direct verbs.
 - Rewrite **spec-sheet voice** (`provides`, `is configurable`, `is explicitly labeled`), **personified artifacts** (`hand the browser a URL` $\to$ `the browser fetches the URL`; `the token holds` $\to$ `the token is stored`), and filler cadence verbs (`moves through`, `lands`, `carries`, `hits`) into literal actors and actions. Apply the **"by monkeys" test** for unintended passives and the **second-read test**: if you must re-read a sentence at speech pace to parse it, name the subject, action, and consequence directly.
 - Strip translationese scaffolding (`在……的背景下`, `通过……的方式`, `〜によって…が〜される`) when active clauses or native topic-comment flow express the thought directly.
+- Expand **telegraphic compression** into full predicates when prose is the target register: fused compounds doing finite-verb work (`直出`、`已清`、`同步改`、`换实现`), clipped locatives (`屏上`、`在三处`), and `每 + V + 一次` calques read as commit-log leakage; keep the shorthand in native headline genres (commit subjects, changelog bullets, titles) and prefer the accurate full term (`标签页` for browser tabs).
 - Resolve bilingual glosses and literal English metaphor calques with the language guide loaded in Step 1: settled domain terms over calques, no literal-translation-plus-loanword glosses in Japanese, first-mention English anchors kept in Chinese, settled compounds kept in English.
 
 ### Step 5: Check Pragmatic Presuppositions and Social Distance

@@ -50,7 +50,7 @@ skills/natural-writing/
 │   └── japanese.md           # Layer 2 Japanese (ja) realization guide
 ├── rules/
 │   ├── core.yaml             # Layer 1 structured rules (10 core principles)
-│   ├── zh-CN.yaml            # Layer 2 Chinese rules (8 rules linked to core.yaml)
+│   ├── zh-CN.yaml            # Layer 2 Chinese rules (9 rules linked to core.yaml)
 │   ├── en.yaml               # Layer 2 English rules (8 rules linked to core.yaml)
 │   └── ja.yaml               # Layer 2 Japanese rules (8 rules linked to core.yaml)
 ├── patterns/
