@@ -21,23 +21,23 @@ Contents:
 
 Use one component per idea. If two components could show the same content, pick the first match in this table.
 
-| The content is…                                                                                      | Use                                                              |
-| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| The result the reader must take away                                                                 | Summary box                                                      |
-| A warning, risk, or decision the reader must notice                                                  | Callout (`warn`, `risk`, `ok`, plain)                            |
-| 2–4 numbers that carry the main finding                                                              | Figures row                                                      |
-| A few facts about one thing (owner, version, date)                                                   | Key-value list                                                   |
-| Records with the same fields                                                                         | Table                                                            |
-| One measure across a few items                                                                       | Bars                                                             |
-| A simple trend over time                                                                             | Inline SVG (chart)                                               |
-| A branching process, a lifecycle, an interaction order, a data model, or a structure with many parts | Mermaid diagram via Pele ([references/diagrams.md](diagrams.md)) |
-| Options the reader weighs against each other                                                         | Compare cards                                                    |
-| An ordered procedure                                                                                 | Steps                                                            |
-| Text quoted from another language                                                                    | Pair                                                             |
-| Evidence most readers skip: logs, raw output                                                         | Details                                                          |
-| A status word inside a sentence or table cell                                                        | Chip                                                             |
-| A question for the user                                                                              | Review components                                                |
-| Anything else                                                                                        | Paragraphs and lists; they need no box                           |
+| The content is…                                                                                      | Use                                      |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------------------- |
+| The result the reader must take away                                                                 | Summary box                              |
+| A warning, risk, or decision the reader must notice                                                  | Callout (`warn`, `risk`, `ok`, plain)    |
+| 2–4 numbers that carry the main finding                                                              | Figures row                              |
+| A few facts about one thing (owner, version, date)                                                   | Key-value list                           |
+| Records with the same fields                                                                         | Table                                    |
+| One measure across a few items                                                                       | Bars                                     |
+| A simple trend over time                                                                             | Inline SVG (chart)                       |
+| A branching process, a lifecycle, an interaction order, a data model, or a structure with many parts | Inline SVG `figure` block (hand-written) |
+| Options the reader weighs against each other                                                         | Compare cards                            |
+| An ordered procedure                                                                                 | Steps                                    |
+| Text quoted from another language                                                                    | Pair                                     |
+| Evidence most readers skip: logs, raw output                                                         | Details                                  |
+| A status word inside a sentence or table cell                                                        | Chip                                     |
+| A question for the user                                                                              | Review components                        |
+| Anything else                                                                                        | Paragraphs and lists; they need no box   |
 
 Most sections need only headings, paragraphs, and at most one component. A page where every block sits in a box reads as noise.
 
@@ -208,9 +208,7 @@ Compare cards. Mark the recommended option with `pick` and a chip; keep pros and
 
 ## Diagrams and images
 
-Structured diagrams — flows, lifecycles, interaction orders, data models, file trees — are Mermaid blocks rendered to themed inline SVG by the bundled Pele script; see [diagrams.md](diagrams.md) for the types and the workflow. The page keeps zero JavaScript, and the diagram follows the report palette.
-
-Draw everything else as hand-written inline SVG — simple charts, bars, a small sketch of two boxes. Rules:
+Draw every chart and structured diagram — flows, lifecycles, interaction orders, data models, file trees — as hand-written inline SVG in a `figure` block. The page keeps zero JavaScript, and the diagram follows the report palette.
 
 - Set `viewBox` and no fixed `width`/`height`, so the figure scales.
 - Use `currentColor` and the template's CSS variables (`var(--accent)`, `var(--line-2)`, `var(--muted)`) for strokes and fills. Use at most one accent color plus gray.
@@ -313,7 +311,7 @@ Use this when no browser can render the page:
 
 - [ ] `<html lang>` matches the page language; `<title>` is set; there is one `h1`.
 - [ ] The masthead and summary placeholders from the template are gone.
-- [ ] Every table sits in `.table-wrap`; every hand-drawn SVG has a `viewBox` and no fixed width; no `<pre class="mermaid">` is left unrendered.
+- [ ] Every table sits in `.table-wrap`; every hand-drawn SVG has a `viewBox` and no fixed width.
 - [ ] Every form control has a `name`; radio groups share one `name`; every `value` is an ASCII ID; every visible label is in the page language.
 - [ ] Every `data-required` value names a control inside its `fieldset`.
 - [ ] No `<script src>`, `<link rel="stylesheet">`, web font, or remote image remains.

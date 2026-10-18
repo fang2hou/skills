@@ -1,9 +1,9 @@
 # Report JSON Reference
 
 The report is data, not markup: the agent writes `report.json`, and the renderer
-(fang2hou/report-kit, vendored prebuilt in `assets/report-template.html`) turns it
-into a single self-contained `index.html`. This file is the authoring contract;
-`scripts/build.py` guards the shape before injecting the data.
+(fang2hou/report-kit, cloned per Step 2 of the skill) compiles it into a single
+self-contained `index.html`. This file is the authoring contract; the renderer's
+zod schema (`src/lib/schema.ts`) enforces it at build time.
 
 Rich text fields (noted per block) hold a small trusted subset of HTML —
 `<strong>`, `<code>`, `<a href>`, `<span class="chip ok|warn|risk|accent">`,
@@ -36,21 +36,21 @@ hand-written template); never render untrusted input through these fields.
 One block per idea; most sections need only paragraphs plus at most one
 component. Pick by content shape using the table in [components.md](components.md).
 
-| Block       | Fields                                          | Rich text                        | Notes                                                                                                                                                                                |
-| ----------- | ----------------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `p`         | `text`                                          | yes                              | The default. Anything that needs no box.                                                                                                                                             |
-| `ul` / `ol` | `items: string[]`                               | yes                              | Plain lists.                                                                                                                                                                         |
-| `steps`     | `items: string[]`                               | yes                              | Ordered actions only; numbering is automatic.                                                                                                                                        |
-| `callout`   | `variant?: "ok"\|"warn"\|"risk"`, `text`        | yes                              | Plain for notes; a variant only when the status is real.                                                                                                                             |
-| `card`      | `text`                                          | yes                              | A framed aside. Use sparingly.                                                                                                                                                       |
-| `kv`        | `entries: {k, v}[]`                             | `v` yes                          | A few facts about one thing.                                                                                                                                                         |
-| `figures`   | `items: {value, label}[]`                       | no                               | 2–4 numbers that carry the finding; unit inside `value`.                                                                                                                             |
-| `table`     | `columns`, `rows: string[][]`, `num?: number[]` | cells yes                        | `num` lists right-aligned column indexes. Wrap chips and `<time>` in cells freely.                                                                                                   |
-| `bars`      | `items: {label, value, display}[]`, `max?`      | no                               | One measure across ≤ ~12 items; sort by value; `value ÷ max` sets the bar.                                                                                                           |
-| `compare`   | `wide?: boolean`, `cards[]`                     | `heading`, `text`, pros/cons yes | `cards[].pick` marks the recommendation; `cards[].badge` floats a small label on the card's top border (`推荐`). Keep pros/cons to three lines.                                      |
-| `pair`      | `tr`, `orig`, `origLang`                        | yes                              | A quote in another language: translation first, original keeps its language.                                                                                                         |
-| `details`   | `summary`, `pre?`, `body?: string[]`            | `body` yes                       | Evidence most readers skip. `pre` is plain text (already code-styled).                                                                                                               |
-| `figure`    | `svg`, `caption`, `wide?`                       | caption no                       | Inline SVG: `viewBox`, no fixed size, `currentColor` + CSS variables, text ≥ 14. For structured diagrams render Mermaid first — see [diagrams.md](diagrams.md) — then paste the SVG. |
+| Block       | Fields                                          | Rich text                        | Notes                                                                                                                                           |
+| ----------- | ----------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `p`         | `text`                                          | yes                              | The default. Anything that needs no box.                                                                                                        |
+| `ul` / `ol` | `items: string[]`                               | yes                              | Plain lists.                                                                                                                                    |
+| `steps`     | `items: string[]`                               | yes                              | Ordered actions only; numbering is automatic.                                                                                                   |
+| `callout`   | `variant?: "ok"\|"warn"\|"risk"`, `text`        | yes                              | Plain for notes; a variant only when the status is real.                                                                                        |
+| `card`      | `text`                                          | yes                              | A framed aside. Use sparingly.                                                                                                                  |
+| `kv`        | `entries: {k, v}[]`                             | `v` yes                          | A few facts about one thing.                                                                                                                    |
+| `figures`   | `items: {value, label}[]`                       | no                               | 2–4 numbers that carry the finding; unit inside `value`.                                                                                        |
+| `table`     | `columns`, `rows: string[][]`, `num?: number[]` | cells yes                        | `num` lists right-aligned column indexes. Wrap chips and `<time>` in cells freely.                                                              |
+| `bars`      | `items: {label, value, display}[]`, `max?`      | no                               | One measure across ≤ ~12 items; sort by value; `value ÷ max` sets the bar.                                                                      |
+| `compare`   | `wide?: boolean`, `cards[]`                     | `heading`, `text`, pros/cons yes | `cards[].pick` marks the recommendation; `cards[].badge` floats a small label on the card's top border (`推荐`). Keep pros/cons to three lines. |
+| `pair`      | `tr`, `orig`, `origLang`                        | yes                              | A quote in another language: translation first, original keeps its language.                                                                    |
+| `details`   | `summary`, `pre?`, `body?: string[]`            | `body` yes                       | Evidence most readers skip. `pre` is plain text (already code-styled).                                                                          |
+| `figure`    | `svg`, `caption`, `wide?`                       | caption no                       | Hand-written inline SVG: `viewBox`, no fixed size, `currentColor` + CSS variables, direct labels, text ≥ 14.                                    |
 
 `id` is optional on every block; it makes list keys structural for pages whose
 blocks repeat.
@@ -128,10 +128,10 @@ State comes back as `state.json` with `answers[id] = {value, label?}` and
 - Free text; `multiline` for answers longer than one line. Text answers are
   never required.
 
-## Regenerating the template
+## The renderer
 
-`assets/report-template.html` is a build artifact of
-[fang2hou/report-kit](https://github.com/fang2hou/report-kit): run
-`pnpm exec vite build` there and copy `build/index.html` over it. The marker
-`<script id="report-data" type="application/json">null</script>` (or at minimum
-a `<body>` tag) must survive; `build.py` fails loudly if it does not.
+Pages are compiled by [fang2hou/report-kit](https://github.com/fang2hou/report-kit),
+which this skill clones once and reuses (Step 2). Its `tools/build.ts` validates the
+JSON against the zod schema in `src/lib/schema.ts` — the authoritative version of this
+contract — then compiles and injects the data into a single `index.html`. If a field here
+and the schema ever disagree, the schema wins; fix this file in the same PR.
