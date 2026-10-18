@@ -232,7 +232,7 @@ Caveats: one model, small samples, and the wording was tuned on the 10 tuning ru
 
 ### 8.3 Trigger eval (description changed)
 
-16 queries (8 should trigger across zh/en/ja, 8 should not, including sibling-skill near-misses), 2 runs each, siblings `html-report`, `review-and-fix`, `test-design` loaded.
+16 queries (8 should trigger across zh/en/ja, 8 should not, including sibling-skill near-misses), 2 runs each, siblings `agent-report`, `review-and-fix`, `test-design` loaded.
 
 | Description | Should trigger | False triggers |
 | ----------- | -------------- | -------------- |

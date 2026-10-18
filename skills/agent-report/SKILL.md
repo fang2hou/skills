@@ -1,5 +1,5 @@
 ---
-name: html-report
+name: agent-report
 description: >
   Default output for any answer with several findings: a desktop HTML report or review
   page. Use unasked when told to investigate, summarize recent work or commits, compare,
@@ -8,7 +8,7 @@ license: MIT
 compatibility: Requires file write access and a browser. Building a page needs Node 24 + pnpm (the skill clones the renderer); review pages additionally need uv (or Python 3.11+) for the local server on 127.0.0.1.
 metadata:
   author: fang2hou
-  version: "2.1"
+  version: "2.2"
 ---
 
 # HTML Report
@@ -16,7 +16,7 @@ metadata:
 Turns findings into one calm HTML page for reading on a desktop screen, and turns decisions the user must make into a review page whose answers land in `state.json` for the agent to read.
 
 The page is data-driven: you write `report.json`, and the renderer
-([fang2hou/report-kit](https://github.com/fang2hou/report-kit), cloned by Step 2) compiles
+([fang2hou/agent-report-kit](https://github.com/fang2hou/agent-report-kit), cloned by Step 2) compiles
 it into a single self-contained `index.html`. You never write HTML, CSS, or JS for a page —
 content and chrome stay separated, and every page gets the same theme, fonts, and review
 machinery.
@@ -39,13 +39,13 @@ machinery.
 
 Instructions the user gives in the current conversation (language, layout, colors, file location) override these rules and the renderer defaults.
 
-1. **One self-contained file, compiled by the renderer.** Every page comes out of `node tools/build.ts` in the cloned report-kit repo, which validates `report.json`, compiles, and injects the data in one step. No CDN scripts, web fonts, or remote images, because the page must open offline and stay small. The page is read on a desktop monitor; do not add mobile layouts or test phone widths.
+1. **One self-contained file, compiled by the renderer.** Every page comes out of `node tools/build.ts` in the cloned agent-report-kit repo, which validates `report.json`, compiles, and injects the data in one step. No CDN scripts, web fonts, or remote images, because the page must open offline and stay small. The page is read on a desktop monitor; do not add mobile layouts or test phone widths.
 2. **Conclusion first.** The first screen holds a title that states the main finding and a summary box with 2–5 points. The reader decides from these whether to read on.
 3. **Prose through natural-writing.** Language quality — register, technical terms, sentence shape, CJK spacing — belongs to the `natural-writing` skill in this repository. Load it when drafting (Step 3) and review with it exactly once before hand-over (Step 6). [references/writing.md](references/writing.md) adds only the report-specific rules: structure, numbers, translated quotes, and question wording.
 4. **The reader's language.** Set the report's `lang` field to the language the user names, or else the language of their latest message (`zh-CN`, `ja`, `en`). Fonts, line breaking, and every UI string follow it. Never default to the language of the sources, the repository, or these instructions. A quote in another language goes in a `pair` block with the translation first, because the user decides from the translation and the agent acts on the original.
 5. **Answers come back through a file.** Review pages run the kit's server (`$kit/tools/serve.py`), and the agent reads `state.json`. Ask the user to copy and paste answers only when the server cannot run.
 6. **Budgets live in the kit.** The renderer sets the size and media budgets (inline-SVG figure rules, raster-image limits) — they are documented in `$kit/docs/report-schema.md` next to the schema that enforces them. Check what the compile step prints against that budget; a page that cannot stay inside it is carrying content that belongs in a linked file, not in the page.
-7. **The renderer owns the look.** Theme, components, default buttons, and chrome strings are the kit's code, documented in `$kit/docs/components.md` and `$kit/docs/typography.md` — changing them means changing report-kit, never the page. Do not fight the renderer with custom markup: if the content does not fit a component, the content shape is wrong. Style or component work in report-kit requires no change here.
+7. **The renderer owns the look.** Theme, components, default buttons, and chrome strings are the kit's code, documented in `$kit/docs/components.md` and `$kit/docs/typography.md` — changing them means changing agent-report-kit, never the page. Do not fight the renderer with custom markup: if the content does not fit a component, the content shape is wrong. Style or component work in agent-report-kit requires no change here.
 8. **Verify before handing over.** Build and render the page, and fix what you see (Step 6).
 
 ## Workflow
@@ -70,11 +70,11 @@ The purpose sets the page type, what the page leads with, and where the file goe
 ### Step 2: Create the working directory and fetch the renderer
 
 ```bash
-base="${TMPDIR:-/tmp}"; dir="${base%/}/html-report/$(date +%Y%m%d-%H%M)-<short-slug>"
+base="${TMPDIR:-/tmp}"; dir="${base%/}/agent-report/$(date +%Y%m%d-%H%M)-<short-slug>"
 mkdir -p "$dir"
-kit="$HOME/.local/share/report-kit"   # one clone, reused by every report
+kit="$HOME/.local/share/agent-report-kit"   # one clone, reused by every report
 if [ -d "$kit/.git" ]; then git -C "$kit" pull --ff-only -q && pnpm -C "$kit" install --silent; else
-  git clone --depth 1 https://github.com/fang2hou/report-kit "$kit" && pnpm -C "$kit" install --silent
+  git clone --depth 1 https://github.com/fang2hou/agent-report-kit "$kit" && pnpm -C "$kit" install --silent
 fi
 ```
 
@@ -183,6 +183,6 @@ For a new round of questions, create a new directory, because `wait` returns at 
 
 ## References
 
-- The cloned renderer repo (`$kit`) owns the template content: `docs/report-schema.md` (authoring contract), `docs/components.md` (content shapes, visual contract, read-through checklist), `docs/typography.md` (fonts and color tokens), and `tools/serve.py --help` (commands, HTTP API, exit codes). This skill deliberately carries none of it — changing the look, a component, or the server means changing report-kit, not this file.
+- The cloned renderer repo (`$kit`) owns the template content: `docs/report-schema.md` (authoring contract), `docs/components.md` (content shapes, visual contract, read-through checklist), `docs/typography.md` (fonts and color tokens), and `tools/serve.py --help` (commands, HTTP API, exit codes). This skill deliberately carries none of it — changing the look, a component, or the server means changing agent-report-kit, not this file.
 - The `natural-writing` skill (same repository): register, terms, and sentence shape per language (`en`, `zh-CN`, `ja`); loaded in Step 3 and reviewed with in Step 6.
 - [references/writing.md](references/writing.md): the report-specific prose rules — structure, numbers, quotes, questions — on top of natural-writing; read in Step 3.
