@@ -232,6 +232,58 @@ symptoms:
         verdict: "keep"
         reason: "Names a specific historical decade, hardware component, and quantitative bandwidth shift."
 
+  - id: symptom.zh.telegraphic_compression
+    layer: symptom
+    version: "1.0.0"
+    status: active
+    action_on_match: review_only
+    observed_since: "2026-10"
+    last_reviewed: "2026-10-19"
+    affected_models:
+      - "Agentic coding assistants drafting zh-CN status updates and session summaries under concision pressure"
+    languages:
+      - zh-CN
+    category: register
+    severity: medium
+    linked_rules:
+      - core.syntax.actors_and_actions
+      - zh.register.telegraphic_compression
+      - zh.terminology.technical_precision_and_calques
+      - zh.pragmatics.metaphor_and_intimacy_mismatch
+    surface_patterns:
+      - "直出"
+      - "同步改"
+      - "标签已清"
+      - "屏上"
+      - "里开好"
+      - "只换实现"
+      - "成本在三处"
+      - "同居一个文件"
+    why_it_occurs: >
+      Agents that draft commit messages, changelogs, and status lines all day over-generalize
+      headline shorthand into reader-facing prose: two-character fused compounds doing
+      finite-verb work ('直出、已清、同步改、换实现'), clipped locatives ('屏上、在三处'),
+      personifying compression ('模板与正文同居一个文件'), and noun terms conscripted as
+      verbs ('并实证窗口在屏上').
+    contextual_test:
+      - "Is the span a commit subject, changelog bullet, or heading where compressed shorthand is the native register?"
+      - "Does the clipped form drop load-bearing information the full form carries ('标签' vs '标签页', '隐藏实例' vs '不可见实例')?"
+    valid_contexts:
+      - "Commit subjects, CHANGELOG entries, and slide or section titles"
+      - "Settled four-character technical compounds naming one exact concept ('按需加载、故障隔离')"
+    revision_guidance: "Expand fused compounds into full predicates with explicit actors ('已经清理、直接生成、一起修改、替换实现方式'), restore clipped locatives ('屏幕上、在这三个地方'), and use the accurate full term ('标签页' for browser tabs)."
+    examples:
+      - before: "迁移完成后隐藏实例的重复标签已清，并实证窗口在屏上。"
+        after: "迁移完成后，我们已经清理了不可见实例中的重复标签页，并确认窗口已在屏幕上显示。"
+        context: "Agent reporting migration results to the user"
+        verdict: "rewrite"
+        reason: "'已清' and '实证' force re-parsing, '屏上' is a clipped locative, and '标签' blurs browser tabs with tags; full predicates read at speech pace."
+      - before: "- 新增 wait/chat/reply 子命令；隐藏实例的重复标签已清"
+        after: "- 新增 wait/chat/reply 子命令；隐藏实例的重复标签已清"
+        context: "CHANGELOG entry"
+        verdict: "keep"
+        reason: "Changelog bullets are a headline genre where compressed shorthand is native; expanding '已清' to '已经清理' would bloat the entry without adding information."
+
   - id: symptom.en.not_x_but_y_staging
     layer: symptom
     version: "1.2.0"

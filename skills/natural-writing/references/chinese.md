@@ -70,13 +70,15 @@ Chinese AI prose frequently imports pop-psychology or corporate-cult metaphors i
 
 - **Therapeutic / physical catching metaphors**: `稳稳地接住你的情绪`, `接住你的诉求`, `兜住底线`, `把问题收口`.
 - **Corporate buzzword clusters (互联网黑话)**: `赋能、抓手、闭环、沉淀、打通、拉齐、颗粒度、底层逻辑、顶层设计、组合拳、心智、水位、链路（非网络场景）`.
+- **Inanimate cohabitation**: human dwelling or kinship verbs applied to files, modules, and processes (`模板与正文同居一个文件`, `两个服务住在一个进程里`).
 
-| Context                         | Unnatural / Incongruous                                                        | Natural Revision                                                               | Verdict   |
-| ------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | --------- |
-| Technical Q&A / Workplace reply | `你的顾虑我稳稳地接住了，下面我们对齐一下颗粒度。`                             | `我理解你的顾虑，下面我们核对一下具体细节。`                                   | `rewrite` |
-| Product documentation           | `通过多维度的策略组合拳，为开发者深度赋能，打造极致的生态闭环。`               | `提供命令行工具与 SDK，帮助开发者在同一工作流内完成构建、测试与发布。`         | `rewrite` |
-| Sports / Physical narrative     | `外野手全速冲刺，在界墙前稳稳地接住了这记高飞球。`                             | `外野手全速冲刺，在界墙前稳稳地接住了这记高飞球。`                             | `keep`    |
-| Psychological counseling essay  | `面对处于急性哀伤期的来访者，咨询师首先要接住对方的崩溃感，而非急于分析原因。` | `面对处于急性哀伤期的来访者，咨询师首先要接住对方的崩溃感，而非急于分析原因。` | `keep`    |
+| Context                          | Unnatural / Incongruous                                                        | Natural Revision                                                               | Verdict   |
+| -------------------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------ | --------- |
+| Technical Q&A / Workplace reply  | `你的顾虑我稳稳地接住了，下面我们对齐一下颗粒度。`                             | `我理解你的顾虑，下面我们核对一下具体细节。`                                   | `rewrite` |
+| Product documentation            | `通过多维度的策略组合拳，为开发者深度赋能，打造极致的生态闭环。`               | `提供命令行工具与 SDK，帮助开发者在同一工作流内完成构建、测试与发布。`         | `rewrite` |
+| Sports / Physical narrative      | `外野手全速冲刺，在界墙前稳稳地接住了这记高飞球。`                             | `外野手全速冲刺，在界墙前稳稳地接住了这记高飞球。`                             | `keep`    |
+| Psychological counseling essay   | `面对处于急性哀伤期的来访者，咨询师首先要接住对方的崩溃感，而非急于分析原因。` | `面对处于急性哀伤期的来访者，咨询师首先要接住对方的崩溃感，而非急于分析原因。` | `keep`    |
+| Architecture note on file layout | `模板与正文同居一个文件，改起来互相牵连。`                                     | `模板与正文存放在同一个文件中，修改时会相互影响。`                             | `rewrite` |
 
 ---
 
@@ -95,12 +97,15 @@ Correlative patterns (`不是……而是……`, `并非……而是……`, `�
 
 Following Ye Shengtao (`ye-shengtao-1934`), natural Chinese (`辞达`) sits between stiff bureaucratic formulas (`官样套话`) and performative internet slang (`网络口水话`):
 
-| Register Defect               | Examples to Avoid in Professional/Expository Prose                          | Natural Standard Chinese Equivalent                                |
-| ----------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| **Internet slang / memes**    | `绝绝子、狠狠拿捏、直接给你全搞完、一把梭、yyds、家人们谁懂啊、真香`        | `效果显著、准确掌握、一次性全部处理、直接全量执行`                 |
-| **Casual spoken shorthand**   | `服务挂了、节点崩了、请求卡死了、深夜发版没人盯、把老接口干掉`              | `服务异常退出、节点不可用、请求阻塞、深夜无人值守发布、下线旧接口` |
-| **Performative chat fillers** | `说白了、其实吧、讲真、不夸张地说、你看啊`                                  | State the proposition directly without conversational particles    |
-| **Chatbot customer-service**  | `您好！非常高兴为您解答！希望以上内容对您有所帮助，如有疑问请随时告诉我哦~` | Omit wrapper entirely; begin with the answer and end on the point  |
+| Register Defect               | Examples to Avoid in Professional/Expository Prose                          | Natural Standard Chinese Equivalent                                                  |
+| ----------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| **Internet slang / memes**    | `绝绝子、狠狠拿捏、直接给你全搞完、一把梭、yyds、家人们谁懂啊、真香`        | `效果显著、准确掌握、一次性全部处理、直接全量执行`                                   |
+| **Casual spoken shorthand**   | `服务挂了、节点崩了、请求卡死了、深夜发版没人盯、把老接口干掉`              | `服务异常退出、节点不可用、请求阻塞、深夜无人值守发布、下线旧接口`                   |
+| **Performative chat fillers** | `说白了、其实吧、讲真、不夸张地说、你看啊`                                  | State the proposition directly without conversational particles                      |
+| **Chatbot customer-service**  | `您好！非常高兴为您解答！希望以上内容对您有所帮助，如有疑问请随时告诉我哦~` | Omit wrapper entirely; begin with the answer and end on the point                    |
+| **Commit-log shorthand**      | `直出、已清、同步改、换实现、屏上、在三处、在你的 Chrome 里开好`            | `直接生成、已经清理、一起修改、替换实现方式、屏幕上、在这三个地方、在 Chrome 中开启` |
+
+**Over-compression (`zh.register.telegraphic_compression`)** is the mirror defect of slang overcorrection: commit-message and release-note register leaks into reader-facing prose as fused compounds doing finite-verb work (`终稿用 prerender 直出内容`、`重复标签已清`、`并实证窗口在屏上`), clipped locatives (`屏上`、`在三处`), `每 + V + 一次` frames calqued from _every time_ (`功能每增长一次，这两处都要同步改`), and possessive locatives with resultative complements (`在你的 Chrome 里开好`). Expand them into full predicates (`直接生成`、`已经清理`、`一起修改`), restore the accurate full term (`标签页` for browser tabs, not `标签`), and keep the shorthand only in headline genres — commit subjects, changelog bullets, and section titles.
 
 ---
 
@@ -152,3 +157,4 @@ In Chinese technical writing:
 - Keep `%` and `°C` attached to the number: `内存占用下降 30%`.
 - Use full-width curly quotes `“……”` (and `‘……’` nested inside) in Chinese sentences; keep half-width quotes inside inline code and commands.
 - Avoid using `，即……` as a mechanical translation of English `, i.e.,`; connect clauses with a concrete verb (`耗时降至 50 ms，仅为原来的三分之一`), a colon, or parentheses.
+- After a colon that introduces a `、` enumeration, keep every item in one category; set an appositive qualifier off with parentheses instead of flattening it into the list: `接口不变：state.json 与 chat.json 的协议、wait、chat、reply 命令保持原样` $\to$ `接口不变（state.json 与 chat.json 的协议照旧）、wait、chat、reply 命令保持原样`.

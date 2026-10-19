@@ -86,13 +86,14 @@ rules:
     parent_principle: core.pragmatics.social_distance_and_register
     category: pragmatics
     severity: high
-    version: "1.0.0"
-    updated_at: "2026-10-18"
+    version: "1.1.0"
+    updated_at: "2026-10-19"
     principle: "Match metaphors and interpersonal warmth to the social distance and communicative purpose of the exchange."
     problem: "Pop-psychology metaphors ('稳稳地接住你的情绪') and corporate buzzword metaphors ('赋能、抓手、闭环、打通心智、对齐颗粒度') inject theatrical intimacy or hollow jargon into ordinary communication."
     triggers:
       - "Therapeutic or physical-catching metaphors ('接住、兜住、收口') applied to routine questions or tasks"
       - "Corporate buzzword clusters ('赋能、抓手、闭环、沉淀、颗粒度、组合拳、心智、底层逻辑') used instead of concrete descriptions"
+      - "Cohabitation or dwelling verbs applied to inanimate artifacts ('模板与正文同居一个文件', '两个服务住在一个进程里')"
     detection:
       - "Check whether the metaphor's source domain (e.g., catching a falling object, military combat, psychotherapy) fits the communicative frame."
       - "Evaluate Social Distance (D): does the relationship between writer and reader warrant emotional containment language?"
@@ -117,6 +118,11 @@ rules:
         context: "Clinical counseling training material"
         verdict: "keep"
         reason: "In grief counseling, '接住…悲伤与无助' accurately conveys therapeutic containment within its proper domain."
+      - before: "模板与正文同居一个文件，改起来互相牵连。"
+        after: "模板与正文存放在同一个文件中，修改时会相互影响。"
+        context: "Frontend architecture note"
+        verdict: "rewrite"
+        reason: "'同居' is a human cohabitation verb; applied to files it reads as cutesy personification where a plain spatial statement carries the same fact."
 
   - id: zh.logic.false_adversative_contrast
     layer: language
@@ -195,19 +201,65 @@ rules:
         verdict: "keep"
         reason: "Direct quotations of user research data must remain verbatim."
 
+  - id: zh.register.telegraphic_compression
+    layer: language
+    language: zh-CN
+    parent_principle: core.pragmatics.social_distance_and_register
+    category: register
+    severity: medium
+    version: "1.0.0"
+    updated_at: "2026-10-19"
+    principle: "Keep reader-facing prose in full predicate form; do not import commit-message and release-note shorthand (fused verb compounds, clipped locatives, verbless fragments) into running sentences."
+    problem: "Status lines drafted under concision pressure compress predicates into two- or three-character fused compounds ('直出、已清、同步改、换实现'), clip locatives ('屏上、在三处'), and flatten structure into heterogeneous '、' lists, so prose reads like a changelog entry and forces re-parsing."
+    triggers:
+      - "Fused compounds doing finite-verb work ('终稿用 prerender 直出内容', '重复标签已清', '这两处都要同步改', '只换实现')"
+      - "Evidential or academic nouns used as finite verbs ('并实证窗口在屏上' for '并确认窗口在屏幕上可见')"
+      - "Clipped locatives and nominals in prose ('屏上、在三处、终稿' for '屏幕上、在这三个地方、最终结果')"
+      - "'每 + verb + 一次' event frames calqued from 'every time' fused with clipped predicates ('功能每增长一次，这两处都要同步改')"
+      - "Possessive '在你的 X 里' locatives around tool names with resultative complements ('一律直接在你的 Chrome 里开好')"
+      - "Mixed-category items flattened into one '、' enumeration after a colon, hiding an appositive ('接口不变：协议、wait、chat、reply 命令保持原样')"
+    detection:
+      - "Apply the second-read test at speech pace: a span that forces re-parsing ('并实证窗口在屏上') is compression, not concision."
+      - "Check whether the clipped form drops load-bearing information the full form carries ('标签' vs '标签页', '隐藏实例' vs '不可见实例')."
+      - "Ask whether the surrounding genre is running prose for a reader or a headline genre (commit subject, changelog bullet, title) where shorthand is native."
+    revision_strategy:
+      - "Expand fused compounds into full predicates with explicit actors and complements ('已清' -> '已经清理', '直出' -> '直接生成', '同步改' -> '一起修改', '换实现' -> '替换实现方式')."
+      - "Restore clipped locatives and accurate full terms ('屏上' -> '屏幕上', '在三处' -> '在这三个地方', '标签' -> '标签页')."
+      - "Set off appositive qualifiers with parentheses so a colon enumeration keeps one category ('接口不变（state.json 与 chat.json 的协议）、wait、chat、reply 命令保持原样')."
+    exceptions:
+      - "Commit subjects, changelog bullets, and slide or section titles, where compressed shorthand is the native register"
+      - "Settled four-character technical compounds that name one exact concept ('按需加载、故障隔离')"
+      - "Quoted commands, logs, or CLI output kept verbatim"
+    sources:
+      - "lv-zhu-1952"
+      - "yu-kwangchung-1987"
+      - "ye-shengtao-1934"
+    examples:
+      - before: "终稿用 prerender 直出内容，并实证窗口在屏上。"
+        after: "最终结果由 prerender 直接生成，并已确认窗口在屏幕上可见。"
+        context: "Agentic session summary reported to a user"
+        verdict: "rewrite"
+        reason: "'直出' and '实证' are fused compounds that force re-parsing, '终稿' and '屏上' are clipped forms, and full predicates restore speech-pace readability."
+      - before: "chore: 移除死代码，收紧构建产物"
+        after: "chore: 移除死代码，收紧构建产物"
+        context: "Git commit subject"
+        verdict: "keep"
+        reason: "Commit subjects are a headline genre where compressed shorthand is native; expanding every predicate would bloat the line without adding information."
+
   - id: zh.collocation.natural_verb_object_pairing
     layer: language
     language: zh-CN
     parent_principle: core.clarity.meaning_chooses_word
     category: collocation
     severity: medium
-    version: "1.0.0"
-    updated_at: "2026-10-18"
+    version: "1.1.0"
+    updated_at: "2026-10-19"
     principle: "Pair verbs with objects and modifiers with heads that satisfy native Chinese semantic selection."
     problem: "Blended templates and hasty compression produce mismatched verb-object pairs ('培养水平', '强化低延迟', '沉淀动作') that jar native readers."
     triggers:
       - "Verb-object pairs where the verb's semantic action cannot apply to the object noun"
       - "Two coordinated verbs sharing one object when only one verb collocates with it ('培养和提高技术水平')"
+      - "Locative predicates attached to non-spatial abstract subjects ('实际成本在三处：…' when the intended claim is '实际要修改的地方有三处')"
     detection:
       - "Strip intervening modifiers and read the bare [Subject + Verb + Object] skeleton aloud."
       - "Verify that every coordinated verb in 'V1 和 V2 + Object' can independently govern the object."
@@ -229,6 +281,11 @@ rules:
         context: "QA summary report"
         verdict: "keep"
         reason: "'缩短…周期' and '提高…质量' are each paired with their natural verb and object."
+      - before: "这次重构的实际成本在三处：路由表、适配层和调用文档。"
+        after: "这次重构实际要修改三处：路由表、适配层和调用文档。"
+        context: "Refactor scope note"
+        verdict: "rewrite"
+        reason: "'成本' is not a spatial entity and cannot be predicated by '在三处'; the writer means the modifications fall in three places."
 
   - id: zh.rhetoric.parallelism_and_four_char_cliche
     layer: language
@@ -274,13 +331,14 @@ rules:
     parent_principle: core.fidelity.preserve_voice_and_facts
     category: terminology
     severity: high
-    version: "1.0.0"
-    updated_at: "2026-10-18"
+    version: "1.1.0"
+    updated_at: "2026-10-19"
     principle: "Use settled Chinese engineering terms or standard English identifiers rather than awkward literal metaphor calques or redundant textbook definitions."
     problem: "Translating English idioms literally ('金丝雀发布、快乐路径、摇树优化、单一事实来源') or adding parenthetical beginner definitions to standard terms makes technical Chinese unnatural."
     triggers:
       - "Literal metaphor calques ('金丝雀发布、快乐路径、爆炸半径、发布火车、摇树优化、理智检查、单一事实来源')"
       - "Parenthetical textbook definitions attached to standard terms ('幂等性（即多次执行结果一致）') in peer-level docs"
+      - "Clipped product or UI terms whose full form disambiguates the referent ('重复标签' where browser '标签页' is meant, not tags)"
     detection:
       - "Check whether Chinese engineering practice uses a settled Chinese term ('灰度发布、主流程、影响范围') or keeps the English identifier ('tree-shaking', 'fallback')."
       - "Verify whether the target audience consists of practitioners who already know standard domain terms."
