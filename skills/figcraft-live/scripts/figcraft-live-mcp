@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+# MCP server entry for FigCraft live editing.
+# Attached mode (default): ensure the desktop app is running with its control
+# channel, then bridge MCP to it so the user watches every edit.
+# Headless fallback: no app available, or --headless given.
+set -u
+
+PORT="${FIGCRAFT_CONTROL_PORT:-7979}"
+WAIT_SECONDS="${FIGCRAFT_LIVE_WAIT:-30}"
+
+log() { printf 'figcraft-live-mcp: %s\n' "$*" >&2; }
+
+find_cli() {
+  if [ -n "${FIGCRAFT_CLI:-}" ] && [ -x "$FIGCRAFT_CLI" ]; then
+    printf '%s\n' "$FIGCRAFT_CLI"
+  elif command -v figcraft-cli >/dev/null 2>&1; then
+    command -v figcraft-cli
+  elif [ -x "$HOME/.local/bin/figcraft-cli" ]; then
+    printf '%s\n' "$HOME/.local/bin/figcraft-cli"
+  fi
+}
+
+find_app() {
+  local candidate
+  for candidate in \
+    "${FIGCRAFT_APP:-}" \
+    /Applications/FigCraft.app \
+    "$HOME/Applications/FigCraft.app"; do
+    if [ -n "$candidate" ] && [ -d "$candidate" ]; then
+      printf '%s\n' "$candidate"
+      return
+    fi
+  done
+}
+
+listening() { nc -z 127.0.0.1 "$PORT" >/dev/null 2>&1; }
+
+CLI="$(find_cli)"
+if [ -z "$CLI" ]; then
+  log "figcraft-cli not found; install it (see the figcraft-live skill, Setup) or set FIGCRAFT_CLI"
+  exit 127
+fi
+
+headless() {
+  log "headless mode, no live preview: $1"
+  exec "$CLI" mcp "${@:2}"
+}
+
+if [ "${1:-}" = "--headless" ]; then
+  shift
+  headless "requested" "$@"
+fi
+
+if ! command -v nc >/dev/null 2>&1; then
+  headless "nc is required to probe the control port"
+fi
+
+if ! listening; then
+  APP="$(find_app)"
+  if [ -z "$APP" ] || [ "$(uname -s)" != "Darwin" ]; then
+    headless "FigCraft app not found or unsupported platform"
+  fi
+  log "starting $APP with control port $PORT"
+  open -n -g -a "$APP" --args --control "$PORT" || headless "could not launch $APP"
+  waited=0
+  while ! listening; do
+    if [ "$waited" -ge "$((WAIT_SECONDS * 4))" ]; then
+      headless "control port $PORT did not open within ${WAIT_SECONDS}s"
+    fi
+    sleep 0.25
+    waited=$((waited + 1))
+  done
+fi
+
+log "attached to the FigCraft app on port $PORT"
+exec "$CLI" mcp --attach "$PORT"
