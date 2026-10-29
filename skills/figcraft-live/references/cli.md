@@ -2,7 +2,7 @@
 
 Verified against `docs/cli.md` in storytold/figcraft and the v0.6.0 macOS
 release binary (2026-10). Install the prebuilt binary from GitHub Releases
-(`figcraft-cli-<version>-macos-universal.zip`; see SKILL.md Setup) or build
+(`figcraft-cli-<version>-macos-universal.zip`; see [setup.md](setup.md)) or build
 with `cargo build --release -p figcraft-cli` →
 `target/release/figcraft-cli`. "The CLI never panics on input." Exit codes:
 bad arguments → usage on stderr and exit 2; failures → exit 1.
@@ -111,7 +111,7 @@ Lists every command with label, shortcut, undoable flag (`*`), and parameter
 docs. `--json` for machine-readable output. This is the discovery entry
 point for the 400+ command registry.
 
-### `mcp [--attach PORT]`
+### `mcp [--attach PORT]` (the default interface for design work)
 
 Serves MCP on stdio; headless by default, or attached to an app started with
 `figcraft --control PORT`. Headless sessions can host/join/publish live
@@ -138,3 +138,18 @@ Use a release build; `cargo xtask bench` runs 1k/10k/50k plus UI benchmarks.
 `figcraft-server` (built separately via `cargo build --release -p
 figcraft-server`) manages share-link files and live sessions: `key`, `files`,
 `links`, `reports`, `block-ip`, `check`. See the upstream `docs/server.md`.
+
+## Export and import gotchas
+
+- **`run` is all-or-nothing.** A failing step exits 1 and writes no output
+  file.
+- **SVG/PDF export fails beyond 256 nesting levels** of visible descendants;
+  export a specific `--node` or reduce nesting.
+- **SVG export outlines all text** as glyph paths, with no `<text>` elements
+  to grep. Verify text positions from a rendered PNG, not the SVG markup.
+- **Directory export granularity.** `-o exports/` writes one file per
+  top-level frame (or per top-level layer when there are no frames), not one
+  per page.
+- **Format precedence.** `--format` wins, then the output extension, then
+  png; raster `--scale` max is 64.
+- **`.fig` import is best-effort**: check `info` notes for skipped features.
