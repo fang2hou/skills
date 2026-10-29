@@ -35,10 +35,20 @@ explicit call reconnects.
 
 ## Client registration
 
-Register one server, `figcraft`, at user level, pointing at the wrapper
+Register one server, `figcraft`, at project level, pointing at the wrapper
 `figcraft-live-mcp` (installed to `~/.local/bin` from the skill's
 `scripts/` directory). Use the absolute path: GUI-launched clients do not
 inherit the shell `PATH`, and JSON configs do not expand `~`.
+
+Not at user level: every connection of the live wrapper launches the app,
+so a user-level entry opens FigCraft in every session, design work or not.
+`scripts/figcraft-project-mcp [--client omp|claude] [--remove] [DIR]` does
+the project registration: it merges the entry into `DIR/.omp/mcp.json`
+(omp, default) or `DIR/.mcp.json` (Claude Code), is idempotent, and adds the
+file to `.git/info/exclude` because the entry holds a machine-specific
+absolute path (a warning replaces the exclusion when the file is already
+tracked). `--remove` deletes the entry, and the file when nothing else
+remains. It needs `jq` and an installed wrapper.
 
 Why a wrapper: `figcraft-cli mcp --attach PORT` exits at startup when no
 app is listening (omp reports `MCP subprocess closed stdout before
@@ -62,15 +72,16 @@ keeps running, with its documents, after the client exits.
 Optional second entry `figcraft-headless` with `"args": ["--headless"]` for
 unattended runs next to the live server.
 
-Claude Code:
+Install the wrapper once, then register per project:
 
 ```sh
 install -m 755 <skill-dir>/scripts/figcraft-live-mcp ~/.local/bin/
-claude mcp add --scope user figcraft -- "$HOME/.local/bin/figcraft-live-mcp"
+bash <skill-dir>/scripts/figcraft-project-mcp /path/to/project
 ```
 
-Claude Desktop, project `.mcp.json`, and omp (same `mcpServers` shape as
-the other servers there):
+The resulting entry, for clients configured by hand (Claude Desktop has no
+project scope; add it to its config only when you accept the app opening
+with every session):
 
 ```json
 {
@@ -81,8 +92,9 @@ the other servers there):
 ```
 
 Merge into the existing `mcpServers` object; never overwrite the file. omp
-keeps one `mcp.json` per profile (`~/.omp/profiles/<name>/agent/mcp.json`
-when `OMP_PROFILE` is set); edit the active one. In omp the tools mount as
+reads project `.omp/mcp.json` under every profile, so no per-profile edit is
+needed; delete any leftover user-level `figcraft` entry (any profile), which
+would launch the app in every session. In omp the tools mount as
 `xd://mcp__figcraft_<tool>` devices (for example
 `xd://mcp__figcraft_run_command`); write the tool's JSON arguments to that
 path, or call them from `eval` with `tool.mcp__figcraft_<tool>(args)`.
@@ -92,8 +104,9 @@ Extra `args` are passed to `figcraft-cli mcp` only in headless mode:
 touch). In live mode the app confines files from the flags it was started
 with, which the wrapper does not set.
 
-New servers load when the client reloads MCP servers or restarts, not in
-the running session. Until then use the CLI route from SKILL.md.
+New servers load when the client reloads MCP servers (`/mcp reload` in
+omp) or restarts, not in the running session. Until then use the CLI route
+from SKILL.md.
 
 ## Manual attached launch
 

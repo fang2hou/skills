@@ -5,10 +5,10 @@ description: >
   the user watches the canvas while the agent builds layouts, places images, and exports.
   Use for FigCraft or .figcraft work.
 license: MIT
-compatibility: macOS with the FigCraft desktop app for live editing; needs figcraft-cli (auto-installed to ~/.local/bin) and falls back to a headless session with no preview elsewhere.
+compatibility: macOS with the FigCraft desktop app for live editing; needs figcraft-cli (auto-installed to ~/.local/bin) and jq for project MCP registration; falls back to a headless session with no preview elsewhere.
 metadata:
   author: fang2hou
-  version: "2.1"
+  version: "2.2"
 ---
 
 # FigCraft Live
@@ -17,7 +17,8 @@ Design inside [FigCraft](https://github.com/storytold/figcraft) with the user
 watching. The default channel is live MCP: the agent creates layers, places
 images, and checks screenshots while the user sees each change on the canvas
 and can intervene. The wrapper `figcraft-live-mcp` starts the app and attaches
-automatically. Headless MCP (no window) and CLI `run` scripts are fallbacks
+automatically; the skill registers it per project, never globally, because
+every MCP connection launches the app. Headless MCP (no window) and CLI `run` scripts are fallbacks
 for unattended work, CI, and replayable batches.
 
 ## When to Use
@@ -48,7 +49,7 @@ document across calls with inline screenshots and every command (including
 
 | Situation                                                | Interface          | Entry point                                                        |
 | -------------------------------------------------------- | ------------------ | ------------------------------------------------------------------ |
-| Design, edit, add images, verify visually (default)      | MCP live           | MCP server `figcraft` = `figcraft-live-mcp` (app attached)         |
+| Design, edit, add images, verify visually (default)      | MCP live           | project MCP server `figcraft` = `figcraft-live-mcp` (app attached) |
 | App cannot start (no app, non-macOS, SSH), or unattended | MCP headless       | same server, automatic fallback; or `figcraft-live-mcp --headless` |
 | MCP tools not mounted in this session yet                | CLI run script     | `figcraft-cli run script.jsonl --out out.figcraft`                 |
 | Replayable batch, CI, or scripted exports                | CLI run script     | `figcraft-cli run` / `render` / `export`                           |
@@ -103,13 +104,18 @@ headless) in the first progress note.
    to headless.
 3. MCP: the session should list FigCraft tools (`list_commands`,
    `run_command`, `batch`, `screenshot`, …) under a `figcraft` server. Mounted
-   → call `inspect_ui` as the smoke test. Not registered → register `figcraft`
-   pointing at the wrapper's absolute path (commands and JSON for Claude Code,
-   Claude Desktop, and omp are in [references/mcp.md](references/mcp.md)). A
-   new registration is not live until the client reloads MCP servers: tell the
-   user and continue on the CLI route (`image.place` works there too).
+   → call `inspect_ui` as the smoke test. Not mounted → enable it for this
+   project only: run `bash <skill-dir>/scripts/figcraft-project-mcp
+   [--client claude] <project-root>` (omp writes `.omp/mcp.json`, Claude Code
+   `.mcp.json`; the script merges, is idempotent, and git-excludes the file
+   because it holds a machine-specific path; needs `jq`). Never register
+   `figcraft` at user level: every session would launch the app. The server
+   is not live until the user runs `/mcp reload` (omp) or restarts the client:
+   tell them, and continue on the CLI route meanwhile (`image.place` works
+   there too). Other clients: [references/mcp.md](references/mcp.md).
 4. The first MCP connection starts the app if needed (up to 30 s) and leaves
-   it running, so the user keeps the design open.
+   it running, so the user keeps the design open. When the project's design
+   work is over, `figcraft-project-mcp --remove <project-root>` unregisters it.
 
 ## Workflow
 
