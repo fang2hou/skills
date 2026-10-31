@@ -23,11 +23,11 @@ The opposite trap: a string search over the omp binary. Web engines and many mod
 
 For each audited ID, record: ID, where it is referenced (layer + key), ladder steps run, verdict (alive / dead / stale provider path), and the observation that decided it.
 
-| ID | Referenced by | Steps | Verdict | Evidence |
-| --- | --- | --- | --- | --- |
-| `openai-codex/gpt-image-1` | fallbackChains.image | 1 | stale provider path | catalog image kind: openai-codex has only `gpt-image-2`; `openrouter/openai/gpt-image-1` exists |
-| `typesafe/jev-latest` | modelRoles.judge | 1, 2 | alive | catalog judge kind; live call; usage table `typesafe / jev-1.14.0` |
-| `web/zai` | modelRoles.web | 1, 2 | alive | catalog search kind (22 engines); live web_search OK |
+| ID                         | Referenced by        | Steps | Verdict             | Evidence                                                                                        |
+| -------------------------- | -------------------- | ----- | ------------------- | ----------------------------------------------------------------------------------------------- |
+| `openai-codex/gpt-image-1` | fallbackChains.image | 1     | stale provider path | catalog image kind: openai-codex has only `gpt-image-2`; `openrouter/openai/gpt-image-1` exists |
+| `typesafe/jev-latest`      | modelRoles.judge     | 1, 2  | alive               | catalog judge kind; live call; usage table `typesafe / jev-1.14.0`                              |
+| `web/zai`                  | modelRoles.web       | 1, 2  | alive               | catalog search kind (22 engines); live web_search OK                                            |
 
 ## Known traps
 

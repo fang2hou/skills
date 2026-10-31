@@ -29,10 +29,10 @@ Compares the dotfiles omp config baseline against the installed omp version and 
 
 ## Inputs
 
-| Input | Required | Format | Example |
-| ----- | -------- | ------ | ------- |
-| Baseline version | No (auto-detected) | semver | `18.12.0` |
-| Report language | No (defaults to the user's language, typically `zh-CN`) | locale | `zh-CN` |
+| Input            | Required                                                | Format | Example   |
+| ---------------- | ------------------------------------------------------- | ------ | --------- |
+| Baseline version | No (auto-detected)                                      | semver | `18.12.0` |
+| Report language  | No (defaults to the user's language, typically `zh-CN`) | locale | `zh-CN`   |
 
 ## Hard Rules
 
