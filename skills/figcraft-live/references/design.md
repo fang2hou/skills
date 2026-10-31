@@ -39,8 +39,9 @@ header (`sizingH: fill`, `sizingV: hug`), content (`fill`/`fill`), footer
 (`fill`/`hug`). Equal-width rows come from `fill`, not from hand-set widths.
 
 Name each step with `as` and point later steps at it with `{"$ref": name}`
-instead of counting creation-order ids; the same lines work as MCP `batch`
-commands and as `figcraft-cli run` steps (verified on 0.12.1). This page
+instead of counting creation-order ids; the same lines work as
+`figcraft-live batch` commands and as `figcraft-cli run` steps (verified on
+0.12.1). This page
 with a nav row and content area solves to nav 390×56 and content 390×788:
 
 ```jsonl
@@ -151,10 +152,11 @@ center fixed-height text; center with a layout container instead.
 
 ## Verification loop (model first, pixels second)
 
-1. **Model assertions**: over MCP, `get_node {id, depth}` or
-   `inspect_document {depth}` report solved `width`/`height` and
-   `absoluteBounds`; on the CLI, `figcraft-cli convert out.figcraft
-   out.json` dumps every node's solved `width`/`height`/`transform`. Assert each
+1. **Model assertions**: live, `figcraft-live inspect <id> <depth>`
+   (`node.get`) or `figcraft-live inspect <depth>` (`document.inspect`)
+   report solved `width`/`height` and `absoluteBounds`; on the CLI,
+   `figcraft-cli convert out.figcraft out.json` dumps every node's solved
+   `width`/`height`/`transform`. Assert each
    frame's size matches intent; any unexpected `100×100` is a missing
    hug/fill declaration. This catches clipped or vanished elements that
    pixels alone make ambiguous.
@@ -168,9 +170,9 @@ center fixed-height text; center with a layout container instead.
    - Judge element gaps from the model: ink gaps include text leading, so a
      24 px `gap` renders as ~33–60 px of ink separation depending on
      line-height.
-3. Fix and re-verify: over MCP, `undo` the bad batch or patch the layer with
-   `set_properties`, then look again; on the CLI, rerun the whole `run`
-   script (it is atomic).
+3. Fix and re-verify: live, `figcraft-live exec edit.undo {}` the bad batch
+   or patch the layer with `node.set`, then look again; on the CLI, rerun
+   the whole `run` script (it is atomic).
 
 Extend the page skeleton section by section and verify each section with
 the loop above. Pixel checks include placed images: see
@@ -180,5 +182,5 @@ the loop above. Pixel checks include placed images: see
 
 Figma's agent guidance (auto layout for responsive intent, design tokens,
 semantic naming, breaking screens into sections, screenshot validation,
-WCAG) mapped onto figcraft's registry; see Figma's MCP skills documentation
+WCAG) mapped onto figcraft's registry; see Figma's agent-tooling documentation
 and `docs/` in the figcraft repository for the upstream principles.

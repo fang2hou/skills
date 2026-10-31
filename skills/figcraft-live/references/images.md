@@ -1,15 +1,15 @@
 # Adding images in FigCraft
 
-Verified against figcraft-cli 0.12.1 (headless MCP, attached MCP, and CLI
-command registry, 2026-10). The same `run_command` / `batch` calls work in
-both MCP modes; `figcraft-cli run` accepts the same `{command, params}`
-objects.
+Verified against figcraft-cli 0.12.1 (control channel via `figcraft-live`
+and the CLI command registry, 2026-10). The same `{command, params}`
+objects run through `figcraft-live exec` / `batch` and `figcraft-cli run`.
 
 Contents: command · placement patterns · adjustments · SVG and file import · generated and downloaded images · checks · errors
 
 ## Command
 
-`run_command {command: "image.place", params: {...}}`
+`figcraft-live exec image.place '{...}'` (same params inside `batch` steps
+and `figcraft-cli run` lines)
 
 | Param             | Meaning                                                                                     |
 | ----------------- | ------------------------------------------------------------------------------------------- |
@@ -65,7 +65,7 @@ Capture the shape's id from the first result; the `4` above is the id the
 previous calls happened to return, so never hard-code it.
 
 Background image behind content: place into the page frame with
-`parent`, then set `absolute: true` on it (`set_properties`) so auto layout
+`parent`, then set `absolute: true` on it (`node.set`) so auto layout
 does not push the content around, and keep it first in layer order
 (`node.reorder`).
 
@@ -107,7 +107,7 @@ call right after `image.place` adjusts the image just placed.
 
 - `file.import {path | data + name, x?, y?, center?}`: SVG becomes an
   editable frame of vectors and text; a raster file becomes an image layer.
-- `open_file {path}` opens a raster image as its own document.
+- `file.open {path}` opens a raster image as its own document.
 - For logos and icons prefer SVG: it stays editable and exports as vectors.
 
 ## Generated and downloaded images
@@ -116,8 +116,9 @@ FigCraft never fetches from the network, so get the bytes onto disk first:
 
 1. Download or generate into a project folder (for example `assets/`), with
    a descriptive name.
-2. Place by absolute `path`. Use base64 `data` only for in-memory images
-   (frames over 32 MiB are refused).
+2. Place by absolute `path`. Use base64 `data` only for in-memory images,
+   passed on stdin (`figcraft-live exec image.place -`); payloads over
+   32 MiB are refused.
 3. Keep the source file next to the `.figcraft` document; the document embeds
    the pixels, but regenerating or re-placing needs the original.
 
@@ -132,9 +133,10 @@ FigCraft never fetches from the network, so get the bytes onto disk first:
 
 ## Checks after placing
 
-1. `get_node {id}`: `width`/`height` as intended, and the `fills` list has
-   an `image` paint with `scale_mode` as chosen.
-2. `screenshot {ids: [frame]}`: the image is visible, not distorted, and
+1. `figcraft-live inspect <id>` (`node.get`): `width`/`height` as intended,
+   and the `fills` list has an `image` paint with `scale_mode` as chosen.
+2. `figcraft-live render out.png --ids '[<frame>]'`: the image is visible,
+   not distorted, and
    not clipped by a parent. A missing image almost always means a parent
    frame without `sizingH`/`sizingV`, or a `target` id that is not the
    shape you meant.

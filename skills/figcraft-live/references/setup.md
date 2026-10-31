@@ -1,8 +1,8 @@
 # FigCraft setup
 
-Install and verify `figcraft-cli` (the MCP server and batch runner) and note
-app quirks. SKILL.md links here when the CLI probe fails or the status check
-fails.
+Install and verify `figcraft-cli` (the headless batch runner and command
+registry browser) and note app quirks. SKILL.md links here when the CLI probe
+fails or the status check fails.
 
 Contents: probe · install (macOS) · status check · build from source · app notes
 

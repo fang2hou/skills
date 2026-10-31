@@ -111,12 +111,15 @@ Lists every command with label, shortcut, undoable flag (`*`), and parameter
 docs. `--json` for machine-readable output. This is the discovery entry
 point for the 400+ command registry.
 
-### `mcp [--attach PORT]` (the default interface for design work)
+### `mcp [--attach PORT]`
 
 Serves MCP on stdio; headless by default, or attached to an app started with
 `figcraft --control PORT`. Headless sessions can host/join/publish live
 sessions (`collab.*`) and use plugin directories (`plugin.directory.*`);
-one-shot `run` cannot (no network link). See [mcp.md](mcp.md).
+one-shot `run` cannot (no network link). This skill does not register the
+MCP server in any client (mounted servers launch with every session, which
+violates the demand gate); live work goes through the control channel via
+`figcraft-live` (see [control.md](control.md)).
 
 ### `plugin publish <folder> --server ws://host:port/[?key=KEY]`
 
