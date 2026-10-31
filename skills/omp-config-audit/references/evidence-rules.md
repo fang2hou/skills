@@ -32,6 +32,7 @@ For each audited ID, record: ID, where it is referenced (layer + key), ladder st
 ## Known traps
 
 - **Fail-soft roles**: a dead engine or fallback entry does not error; web_search keeps working through fallbacks and a dead image fallback is invisible while the primary serves. Only the ladder reveals it.
+- **Changelog prose can be stale about aliases**: 18.12.2's note "`jev-latest` … answered as `jev-1.13.0`" was true then; the judgment-cache `usage` table in 2026-10 showed `jev-1.14.0`. Live-test evidence outranks release-note prose for what an alias serves today.
 - **Strict selectors** (omp ≥ 18.14.0): provider-qualified selectors must match an exact catalog ID; near matches fail at selection time. A selector that was valid at adoption can rot when providers reshuffle their catalogs — verify every pinned ID each audit.
 - **`omp models list` vs `--kind all`**: the bare command is chat-only. Always use `--kind all` (or `--kind search` / `--kind image` / `--kind judge`) for non-chat IDs.
 - **Catalog role defaults move** between versions; machines that pin roles explicitly are unaffected — state which layers pin and which inherit.

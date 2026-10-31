@@ -61,7 +61,8 @@ Total notes are typically 150–350 lines per version; spawn 3 read-only scouts 
 
 ### Step 4: Key-level validation
 
-Run the bundled script: `python3 scripts/keycheck.py <schema.json> <layer.yaml>...`. It flattens each YAML layer and reports keys that are absent from the schema, after excluding children of record-typed parents (`modelRoles`, `retry.fallbackChains`, `task.agentModelOverrides`, `edit.modelVariants`, `providers.maxInFlightRequests`, `tools.approval`) — those children are dynamically named and schema-invisible, so a naive set-diff floods false positives. Zero stale keys is a real result; report it as such.
+4. Run the bundled script: `python3 scripts/keycheck.py <schema.json> <layer.yaml>...`. It flattens each YAML layer and reports keys that are absent from the schema, after excluding children of record-typed parents (`modelRoles`, `retry.fallbackChains`, `task.agentModelOverrides`, `edit.modelVariants`, `providers.maxInFlightRequests`, `tools.approval`) — those children are dynamically named and schema-invisible, so a naive set-diff floods false positives. Zero stale keys is a real result; report it as such.
+5. Record-valued keys whose values bind to a registry also need value checks, not just key checks: every `task.agentModelOverrides.<name>` must name a bundled agent (scout, reviewer, security-reviewer, seance, task, sonic — verify via `grep -ac "<name>" "$(readlink -f $(which omp))"` plus the `~/.omp/agent/agents` dir for custom agents; the 2026-10 audit found a `librarian` override that could never bind). A valid key with an unbindable value is a dead value.
 
 ### Step 5: Value liveness audit
 
