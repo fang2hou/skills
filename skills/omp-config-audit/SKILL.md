@@ -65,7 +65,7 @@ Run the bundled script: `python3 scripts/keycheck.py <schema.json> <layer.yaml>.
 
 ### Step 5: Value liveness audit
 
-For every model/engine ID referenced by `modelRoles.*` and `retry.fallbackChains.*`, follow the ladder in [references/evidence-rules.md](references/evidence-rules.md). Chat IDs are verified against `omp models list --json` selectors; decision models (TypeSafe Jev), web engines (`web/*`), and image-generation models are **not listed there** and need binary-grep context checks plus live in-session tests. Record the evidence next to each verdict; "probably dead" is not a deliverable.
+For every model/engine ID referenced by `modelRoles.*` and `retry.fallbackChains.*`, follow the ladder in [references/evidence-rules.md](references/evidence-rules.md). The decisive inventory is `omp models --kind all --json` (chat-only `omp models list` hides decision models, web engines, and image models; binary grep is a weak signal that wrongly condemns catalog-era IDs). Live-test load-bearing roles (judge / image / web) even when the catalog lists them, and treat "present under a different provider" as a stale-provider-path finding with replacement candidates. Record the evidence next to each verdict; "probably dead" is not a deliverable.
 
 ### Step 6: Behavior drift and adoption filter
 
@@ -84,11 +84,12 @@ Edit the layer YAMLs, then rebuild and verify on personal machines: `omp_profile
 ## Gotchas
 
 - `omp config list --json` returns **effective merged values**, not pristine defaults — a differing value means "we set it or a default", distinguish via the YAML layers.
-- The omp binary embeds its own CHANGELOG prose: binary `grep -c jev-latest` hits do not mean the model exists. Always inspect context (`grep -aoE '.{50}<id>.{50}'`); changelog-prose context is inconclusive and needs a live test.
+- Web engines and many models are catalog data entries, not compiled-in strings: binary grep zero-hits is not a death verdict, and nonzero hits are usually embedded CHANGELOG prose. Only the full catalog (`omp models --kind all --json`) plus a live test decide.
 - `~/.omp/cache/judgment-cache.db` table `usage` records the actual provider+model per judgment — ground truth for what the judge role really resolves to.
 - On macOS 27 (darwin 27) `gc.compress` is skipped entirely (APFS does not shrink); verify with `omp gc --compress` dry-run showing `0/N` before claiming it still matters.
 - Old omp versions are not installable (`mise ls-remote github-can1357-oh-my-pi` lists only recent tags), so schema-diffing against the baseline binary is impossible; CHANGELOG.md is the substitute.
 - A dead web-engine role fails soft: web_search keeps working through fallbacks, so breakage is invisible until you test which engine actually served a query.
+- Run the audit's verification slice in a fresh context (subagent with the skill, no conversation history) before delivering: the 2026-10 trial caught a wrong ladder rule the authoring session had already committed to.
 
 ## Output Contract
 
