@@ -53,6 +53,7 @@ Compares the dotfiles omp config baseline against the installed omp version and 
 
 - Release bodies for every gap version: `gh api repos/can1357/oh-my-pi/releases/tags/<tag> -q '.body'` into `/tmp/omp-audit/<tag>.md`.
 - Upstream changelog (authoritative; release bodies are its curated cut): `curl -sL https://raw.githubusercontent.com/can1357/oh-my-pi/main/packages/coding-agent/CHANGELOG.md`.
+- For an exact key-level diff when the changelog is ambiguous, compare the config source between tags via the GitHub compare API (`gh api repos/can1357/oh-my-pi/compare/<baseline>...<installed>` — focus on `packages/coding-agent/src/config*` and `docs/config-usage.md`).
 - Current config state: `omp config list --json > /tmp/omp-audit/schema.json` and the six layer files `~/dotfiles/omp/{base,personal.base,personal.normal,work.base,work.normal,work.secret}.yaml`.
 
 ### Step 3: Extract changes in parallel
