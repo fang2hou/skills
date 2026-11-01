@@ -1,48 +1,39 @@
 # Building designs in FigCraft: patterns and QA
 
-Construction doctrine distilled from Figma's official agent guidance
-(auto layout, tokens, semantic naming, section-by-section builds, screenshot
-verification) and adapted to figcraft's command registry. Every pattern and
-every pitfall below was verified against figcraft v0.6.0 (2026-10); the
-`as`/`$ref` skeleton, default fill, and icon sizing were re-verified on 0.12.1.
+Construction patterns and verification checks adapted from Figma's official agent guidance (auto layout, tokens, semantic naming, section-by-section builds, and visual QA) for FigCraft's command registry. Verified against FigCraft v0.6.0 through v0.12.1.
 
-Contents: the one rule that prevents most broken layouts · construction patterns · tokens before values · verification loop · where the guidance comes from
+Contents:
 
-## The one rule that prevents most broken layouts
+- [The one rule that prevents broken layouts](#the-one-rule-that-prevents-broken-layouts)
+- [Construction patterns](#construction-patterns)
+- [Tokens before values](#tokens-before-values)
+- [Verification loop (model first, pixels second)](#verification-loop-model-first-pixels-second)
+- [Provenance](#provenance)
 
-**An auto-layout frame never sizes itself.** Without `sizingH`/`sizingV`
-(or explicit width/height) a frame solves to a fixed 100×100, and frames
-clip their children by default (`clip: true`). Symptoms seen in practice:
+## The one rule that prevents broken layouts
 
-- A 156 px button rendered 96 px wide because its parent row frame was 100×100
-  and clipped it at the right edge.
-- A sibling button vanished entirely because it started past the parent's clip
-  edge.
-- A nav divider landed at y=99 instead of ~75 because the nav frame defaulted to
-  100 px tall; the layout only _looked_ right by accident.
+**An auto-layout frame never sizes itself automatically.** Without `sizingH` and `sizingV` (or explicit `width` and `height`), a frame defaults to a fixed `100×100` box with `clip: true`. Common failure symptoms:
 
-Declare sizing on **every** layout frame:
+- A `156` px button renders `96` px wide because its parent row frame stayed at `100×100` and clipped the right edge.
+- A second button in a row disappears completely because its `x` position starts past the parent's `100` px clip boundary.
+- A navigation divider lands at `y = 99` instead of `y = 75` because the nav frame defaulted to `100` px tall.
 
-| Declaration            | Use for                                                          |
-| ---------------------- | ---------------------------------------------------------------- |
-| `sizingH/-sizingV` hug | Content-sized: buttons, nav bars, badges, chips                  |
-| `sizingH` fill         | Stretch across parent: nav/footer rows in a page column          |
-| `sizingV` fill         | Take leftover space: main content area between header and footer |
-| explicit width/height  | The page frame itself (e.g. 1440×900, or a frame preset)         |
+Declare sizing on **every** auto-layout frame:
+
+| Declaration                     | When to use                                                                  |
+| ------------------------------- | ---------------------------------------------------------------------------- |
+| `sizingH` / `sizingV` = `"hug"` | Content-sized containers: buttons, nav bars, badges, chips                   |
+| `sizingH` = `"fill"`            | Full-width rows inside a vertical parent: headers, footers, cards, list rows |
+| `sizingV` = `"fill"`            | Flexible body containers that take remaining vertical space                  |
+| Explicit `width` / `height`     | Root page frames (for example `390×844` mobile or `1440×900` desktop)        |
 
 ## Construction patterns
 
 ### Page skeleton
 
-Page frame = vertical layout, fixed viewport size, `padding: 0`. Children:
-header (`sizingH: fill`, `sizingV: hug`), content (`fill`/`fill`), footer
-(`fill`/`hug`). Equal-width rows come from `fill`, not from hand-set widths.
+Give the root page frame a vertical layout, fixed viewport dimensions, and `padding: 0`. Typical children are a header (`sizingH: "fill"`, `sizingV: "hug"`), a main content area (`fill` / `fill`), and a footer (`fill` / `hug`). Let `sizingH: "fill"` create equal-width rows instead of calculating manual pixel widths.
 
-Name each step with `as` and point later steps at it with `{"$ref": name}`
-instead of counting creation-order ids; the same lines work as MCP `batch`
-tool commands and as `figcraft-cli run` steps (verified on
-0.12.1). This page
-with a nav row and content area solves to nav 390×56 and content 390×788:
+Bind each created frame with `as` and reference it in child steps with `{"$ref": "<name>"}` instead of counting numeric IDs. The same step objects work in both MCP `batch` and `figcraft-cli run`. In the example below, the `390×844` page solves to a `390×56` `nav` bar and a `390×788` `content` area:
 
 ```jsonl
 {"command": "frame.create", "as": "page", "params": {"x": 0, "y": 0, "width": 390, "height": 844, "name": "Home", "props": {"fill": "#FFFFFF", "layout": "vertical", "padding": 0}}}
@@ -51,14 +42,11 @@ with a nav row and content area solves to nav 390×56 and content 390×788:
 {"command": "frame.create", "as": "content", "params": {"parent": {"$ref": "page"}, "name": "content", "props": {"layout": "vertical", "sizingH": "fill", "sizingV": "fill", "padding": 20, "gap": 16}}}
 ```
 
-Frames get a white fill by default. Give transparent wrappers (rows,
-icon boxes, tab items) `"fill": "none"` or they paint white blocks over a
-tinted page.
+Frames default to an opaque white fill (`#FFFFFF`). Set `"fill": "none"` on structural wrapper frames (rows, icon holders, tab items) so they do not paint white rectangles over tinted backgrounds.
 
-### Icons without images
+### Vector icons
 
-An icon is a `vector` layer built from SVG path data, stroked, with no
-fill:
+Build icons as `vector` layers from SVG path data with a stroke and `"fill": "none"`:
 
 ```json
 {
@@ -80,38 +68,61 @@ fill:
 }
 ```
 
-Give one axis only (`height` above): the path keeps its aspect ratio.
-Setting both `width` and `height` stretches it to the box (a 6×12
-chevron became 24×24). For several icons of different shapes, wrap each in
-a fixed 24×24 frame with centered layout so labels and rows align.
-Brand logos and photos are images, not vectors: see
-[images.md](images.md).
+Pass only one dimension (`height` above) so the path scales proportionally. Passing both `width` and `height` stretches non-square paths to fill the bounding box (turning a `6×12` chevron into `24×24`). To align multiple icons of different proportions, place each vector inside a fixed `24×24` wrapper frame with centered layout and `"fill": "none"`. For brand logos and photos, use raster or imported SVG assets ([images.md](images.md)).
 
-### Button (the canonical hug pattern)
+### Button (canonical hug pattern)
 
 ```json
-{ "command": "frame.create", "as": "btn", "params": { "parent": { "$ref": "row" }, "name": "btn-primary", "props": { "layout": "horizontal", "sizingH": "hug", "sizingV": "hug", "padding": [15, 32, 15, 32], "cornerRadius": 10, "fill": "#111827", "mainAlign": "center", "crossAlign": "center" } } },
-{ "command": "node.create", "params": { "type": "text", "parent": { "$ref": "btn" }, "text": "Get in touch", "props": { "fontSize": 16, "fill": "#FFFFFF" } } }
+[
+  {
+    "command": "frame.create",
+    "as": "btn",
+    "params": {
+      "parent": { "$ref": "row" },
+      "name": "btn-primary",
+      "props": {
+        "layout": "horizontal",
+        "sizingH": "hug",
+        "sizingV": "hug",
+        "padding": [15, 32, 15, 32],
+        "cornerRadius": 10,
+        "fill": "#111827",
+        "mainAlign": "center",
+        "crossAlign": "center"
+      }
+    }
+  },
+  {
+    "command": "node.create",
+    "params": {
+      "type": "text",
+      "parent": { "$ref": "btn" },
+      "text": "Get in touch",
+      "props": { "fontSize": 16, "fill": "#FFFFFF" }
+    }
+  }
+]
 ```
 
-The layout engine centers the label; never place text over a
-rectangle with absolute coordinates, and never fix a label's width.
-A text node's box centers correctly even when its glyph ink does not fill
-the box symmetrically (side bearings).
+Let the auto-layout frame center the text label and compute the button size from padding. Never float text over a separate rectangle with absolute coordinates, and never hard-code a button label's width.
 
 ### Divider without a line node
 
-Give the frame a one-sided stroke instead of adding line layers:
+Add a single-sided stroke to the container frame instead of inserting extra line layers:
 
 ```json
-"stroke": "#E5E7EB", "strokeWeight": 1, "strokeSides": [false, false, true, false]
+{
+  "stroke": "#E5E7EB",
+  "strokeWeight": 1,
+  "strokeSides": [false, false, true, false]
+}
 ```
 
-`strokeSides` is `[top, right, bottom, left]` booleans.
+`strokeSides` is a four-boolean array: `[top, right, bottom, left]`.
 
-### Circle avatar / icon badge
+### Circle avatar or icon badge
 
-Frame with `cornerRadius` = half the size, layout-centered initials:
+Use a square frame with `cornerRadius` set to half its width/height and centered layout:
 
 ```json
 {
@@ -127,60 +138,30 @@ Frame with `cornerRadius` = half the size, layout-centered initials:
 }
 ```
 
-### Wrapping body text
+### Wrapping body text and vertical alignment
 
-Fixed width + `textAutoResize: "height"` (fixed width, hug height). Leave
-`textAutoResize` at its default (hug both) for headings and labels; use
-`none` only as a last resort.
-
-### Text alignment traps
-
-`textAlignVertical` accepts `top|middle|bottom` and does **not** geometrically
-center fixed-height text; center with a layout container instead.
+- **Multi-line body text**: Set an explicit `width` (or `sizingH: "fill"` inside a sized parent) with `textAutoResize: "height"` so the width stays fixed and the height hugs wrapped lines. Leave headings and short labels at the default (`hug` on both axes); avoid `textAutoResize: "none"`.
+- **Vertical centering**: `textAlignVertical` (`top` | `middle` | `bottom`) does not geometrically center fixed-height text boxes. Center text vertically by placing it inside an auto-layout frame with `crossAlign: "center"`.
 
 ## Tokens before values
 
-- One accent color; neutrals from a gray ramp (e.g. Tailwind-ish
-  `#111827`/`#4B5563`/`#6B7280`/`#E5E7EB`).
-- Spacing on a 4/8 scale (8, 16, 24, 32, 64, 80); one `gap` and one `padding`
-  rhythm per container level.
-- Name every layer semantically (`nav`, `hero-title`, `btn-primary-label`), since
-  `run` scripts and later edits both depend on names.
-- Check contrast **before** rendering: body text needs ≥ 4.5:1 (WCAG AA).
-  `#6B7280` on white ≈ 4.8:1 passes; `#9CA3AF` ≈ 2.8:1 fails and was caught
-  only because the check ran.
+- **Color palette**: Pick one accent color and a consistent neutral ramp (such as `#111827`, `#4B5563`, `#6B7280`, `#E5E7EB`).
+- **Spacing scale**: Stick to a `4`/`8` px scale (`8`, `16`, `24`, `32`, `64`, `80`) with one `gap` and `padding` rhythm per container depth.
+- **Semantic layer names**: Name every layer clearly (`nav`, `hero-title`, `btn-primary-label`) so `inspect` output and subsequent edits stay readable.
+- **WCAG contrast check**: Verify contrast before rendering. Body text requires at least `4.5:1` (WCAG AA): `#6B7280` on `#FFFFFF` (`4.8:1`) passes, whereas `#9CA3AF` on `#FFFFFF` (`2.8:1`) fails.
 
 ## Verification loop (model first, pixels second)
 
-1. **Model assertions**: MCP `inspect {id, depth}` (`node.get`) or
-   `inspect {depth}` (`document.inspect`)
-   report solved `width`/`height` and `absoluteBounds`; on the CLI,
-   `figcraft-cli convert out.figcraft out.json` dumps every node's solved
-   `width`/`height`/`transform`. Assert each
-   frame's size matches intent; any unexpected `100×100` is a missing
-   hug/fill declaration. This catches clipped or vanished elements that
-   pixels alone make ambiguous.
-2. **Pixel checks**: render, then verify:
-   - no ink on canvas edge rows/columns (nothing clipped at the frame);
-   - row-band structure matches the intended element sequence;
-   - color blobs appear where fills should be (sample exact hexes);
-   - label centroids sit inside their containers (expect a few px of glyph
-     side-bearing asymmetry; the model, not ink, is the centering truth);
-   - side margins clean (e.g. nothing left of x=80 on an 80 px-margin page).
-   - Judge element gaps from the model: ink gaps include text leading, so a
-     24 px `gap` renders as ~33–60 px of ink separation depending on
-     line-height.
-3. Fix and re-verify: MCP `exec {command: "edit.undo"}` the bad batch or
-   patch the layer with `node.set`, then look again; on the CLI, rerun
-   the whole `run` script (it is atomic).
+Run this two-step check after each section batch:
 
-Extend the page skeleton section by section and verify each section with
-the loop above. Pixel checks include placed images: see
-[images.md](images.md#checks-after-placing).
+1. **Model check (`inspect`)**: Call MCP `inspect {id, depth}` (`node.get`) or `inspect {depth}` (`document.inspect`) to inspect solved `width`, `height`, and `absoluteBounds` (or run `figcraft-cli convert out.figcraft out.json` on the CLI). Confirm that every frame solved to its intended dimensions and that no container silently fell back to `100×100`.
+2. **Pixel check (`render {ids: [<frame_id>]}`)**: Render the frame and verify:
+   - No ink touches the outer canvas edge (unless full-bleed is intended), confirming nothing is clipped.
+   - Top-to-bottom and left-to-right visual order matches the layout hierarchy.
+   - Expected background fills, strokes, and placed images are visible ([images.md](images.md#checks-after-placing)).
+   - Labels sit inside their containers. Judge spacing from the model's `gap` and `absoluteBounds` rather than raw ink pixel distance, because glyph ascenders/descenders and line-height add visual whitespace.
+3. **Repair and re-verify**: If a section fails verification, undo the batch with `exec {command: "edit.undo"}` or patch the specific layer with `exec {command: "node.set", params: {...}}`, then re-run `inspect` and `render`.
 
-## Where the guidance comes from
+## Provenance
 
-Figma's agent guidance (auto layout for responsive intent, design tokens,
-semantic naming, breaking screens into sections, screenshot validation,
-WCAG) mapped onto figcraft's registry; see Figma's agent-tooling documentation
-and `docs/` in the figcraft repository for the upstream principles.
+Adapted from Figma's official agent design guidance (auto layout for responsive structure, design tokens, semantic layer naming, section-by-section construction, visual QA, and WCAG contrast) mapped onto FigCraft's command registry.

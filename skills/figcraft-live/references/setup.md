@@ -1,30 +1,28 @@
 # FigCraft setup
 
-Install and verify `figcraft-cli` (the headless batch runner and command
-registry browser) and note app quirks. The MCP server
-(`scripts/figcraft-live-mcp`, `install -m 755` to `~/.local/bin`, server
-name `figcraft-live`) needs only `bash` and `jq`; registration lives in
-[mcp.md](mcp.md). SKILL.md links here when the CLI probe fails or the
-status check fails.
+Install and verify `figcraft-cli` (the headless batch runner and command registry browser) and review macOS app notes. The MCP server (`scripts/figcraft-live-mcp`, installed with `install -m 755` to `~/.local/bin` under the server name `figcraft-live`) requires only `bash` and `jq`; see [mcp.md](mcp.md) for client registration.
 
-Contents: probe · install (macOS) · status check · build from source · app notes
+Contents:
 
-## 1. Probe
+- [1. Probe for an existing CLI](#1-probe-for-an-existing-cli)
+- [2. Install the prebuilt release (macOS)](#2-install-the-prebuilt-release-macos)
+- [3. Run the status check](#3-run-the-status-check)
+- [4. Build from source (Rust 1.95+)](#4-build-from-source-rust-195)
+- [5. macOS app notes](#5-macos-app-notes)
+
+## 1. Probe for an existing CLI
 
 ```bash
 command -v figcraft-cli || command -v figcraft || command -v figcraft.cli
 ```
 
-- `figcraft-cli`: native CLI binary; use directly.
-- Linux AppImage: run `FigCraft.AppImage cli <subcommand>` in place of
-  `figcraft-cli`; on Linux snap the headless CLI is `figcraft.cli`.
-- The Homebrew `figcraft` cask and the macOS `.app` bundle contain no CLI
-  binary; neither satisfies this probe.
+- `figcraft-cli`: Native CLI binary; call it directly.
+- Linux AppImage: Run `FigCraft.AppImage cli <subcommand>` instead of `figcraft-cli`. On Linux Snap installs, the headless binary is `figcraft.cli`.
+- The Homebrew `figcraft` cask and the macOS `.app` bundle do not include `figcraft-cli`; neither satisfies this probe.
 
 ## 2. Install the prebuilt release (macOS)
 
-Download the latest universal zip, verify its SHA-256, and unpack into
-`~/.local/bin`:
+Download the latest universal release archive, verify its SHA-256 checksum, and install the binary into `~/.local/bin`:
 
 ```bash
 tag=$(curl -sIL -o /dev/null -w '%{url_effective}' https://github.com/storytold/figcraft/releases/latest | sed 's#.*/tag/##')
@@ -40,49 +38,36 @@ mv "$tmp"/figcraft-cli-*/figcraft-cli ~/.local/bin/
 chmod +x ~/.local/bin/figcraft-cli && rm -rf "$tmp"
 ```
 
-- Keep the zip's original asset filename: `shasum --check` matches names in
-  `SHA256SUMS.txt`, so a renamed file verifies nothing and fails with "no
-  file was verified".
-- Abort the install when the checksum line does not print `OK`.
-- Linux: download the release AppImage instead and call it as
-  `FigCraft.AppImage cli <subcommand>`. Windows has no standalone CLI zip;
-  build from source.
-- The current shell may not resolve `figcraft-cli` right after the install;
-  use the absolute path `~/.local/bin/figcraft-cli` for the rest of the
-  session. If a fresh shell still cannot find it, add
-  `export PATH="$HOME/.local/bin:$PATH"` to the shell rc.
+- **Preserve the archive filename**: `shasum --check` matches the exact filename recorded in `SHA256SUMS.txt`. Renaming the zip causes verification to fail with `no file was verified`.
+- **Stop on checksum failure**: Abort the installation if `shasum` does not print `OK`.
+- **Linux and Windows**: On Linux, download the release AppImage and invoke `FigCraft.AppImage cli <subcommand>`. Windows does not ship a standalone CLI archive; build from source instead.
+- **PATH resolution**: If the current shell caches command lookups, invoke `~/.local/bin/figcraft-cli` by absolute path for the rest of the session. If a new shell cannot find it, add `export PATH="$HOME/.local/bin:$PATH"` to your shell profile.
 
-## 3. Status check
+## 3. Run the status check
 
-Run it every time, including when the probe found a binary. Both commands
-must succeed before anything else:
+Run both commands before starting headless file work, even when Step 1 found an existing binary:
 
 ```bash
 figcraft-cli --version
 figcraft-cli commands --filter frame | head
 ```
 
-An existing install that fails here is stale or broken: report it and
-reinstall via step 2 (`~/.local/bin` shadows it on `PATH`).
+If either command fails, the installed binary is broken or outdated; reinstall it using Step 2 (`~/.local/bin` takes precedence on `PATH`).
 
-## 4. Build from source (Rust 1.95+; for dev versions)
+## 4. Build from source (Rust 1.95+)
+
+Use a source build when testing unreleased changes or running on platforms without a prebuilt CLI binary:
 
 ```bash
 git clone https://github.com/storytold/figcraft
 cd figcraft
-git clone https://github.com/storytold/craft-fonts ../craft-fonts # optional UI/text fonts
-cargo build --release -p figcraft-cli   # -> target/release/figcraft-cli
+git clone https://github.com/storytold/craft-fonts ../craft-fonts # optional UI and text fonts
+cargo build --release -p figcraft-cli # outputs target/release/figcraft-cli
 ```
 
-Not on crates.io (`cargo install figcraft-cli` does not work).
+`figcraft-cli` is not published to crates.io (`cargo install figcraft-cli` will fail).
 
-## App notes
+## 5. macOS app notes
 
-- **macOS double-click does not load `.figcraft` files (v0.6.0).** The app
-  declares the document type but does not handle LaunchServices document
-  Apple Events: double-click launches the app without the file, and a stale
-  registration blocks the launch with "cannot open" (repair with
-  `lsregister -f /Applications/FigCraft.app`). Open a file by dropping it
-  into the app window, with MCP `open_file`, or with
-  `open -a FigCraft --args <file>` (argv delivery works).
-- Brew installs the app: `brew install --cask figcraft`.
+- **Double-clicking `.figcraft` files in Finder does not open them (v0.6.0)**: The app bundle declares the document type in `Info.plist` but does not handle LaunchServices document Apple Events. Double-clicking opens an empty app window, and a stale LaunchServices registration can block launch with a `cannot open` dialog (reset it with `lsregister -f /Applications/FigCraft.app`). Open files with the MCP `ensure {path}` tool, by dragging the file into the window, or via `open -a FigCraft --args <file>`.
+- **Homebrew desktop install**: Run `brew install --cask figcraft` to install `/Applications/FigCraft.app`.

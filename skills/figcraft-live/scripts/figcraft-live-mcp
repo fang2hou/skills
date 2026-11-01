@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# figcraft-live-mcp: lazy MCP server (server name `figcraft-live`; deliberately not plain `figcraft`, which an official server may claim). for live FigCraft editing.
+# figcraft-live-mcp: lazy MCP server for live FigCraft editing (server name `figcraft-live`, leaving `figcraft` free for an official server).
 #
-# Mounts instantly and launches NOTHING: until a client calls the `ensure`
+# Mounts instantly and launches nothing: until a client calls the `ensure`
 # tool, the FigCraft desktop app never starts. Every other tool (status,
 # commands, inspect, render, exec, batch, stop) only reuses a running
 # instance. `ensure` adopts an already-running controllable instance first
@@ -18,7 +18,7 @@
 # may spend up to FIGCRAFT_START_WAIT launching the app.
 set -u
 
-SERVER_VERSION=4.1
+SERVER_VERSION=4.2
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/figcraft"
 DEFAULT_PORT=7979
 READ_TIMEOUT=65 # control-channel UI requests time out at 60 s
@@ -27,26 +27,58 @@ START_WAIT="${FIGCRAFT_START_WAIT:-30}"
 log() { printf 'figcraft-live-mcp: %s\n' "$*" >&2; }
 die() { printf '%s\n' "$*" >&2; exit 1; } # inside tool subshells: message to stderr, non-zero exit
 
-command -v jq >/dev/null 2>&1 || {
-  log "jq is required (brew install jq); the server cannot start"
-  exit 1
+usage() {
+  cat <<'EOF'
+Usage: figcraft-live-mcp [--project <dir>] [--version] [--help]
+
+Lazy stdio MCP server for the FigCraft desktop app (server name: figcraft-live).
+Mounts silently and starts the app only when the `ensure` tool is called.
+
+Options:
+  --project <dir>  Pin the repository root used for worktree port sharing
+  --version        Print server version and exit 0
+  -h, --help       Print this help message and exit 0
+
+Environment:
+  FIGCRAFT_APP         App bundle path (macOS) or binary/AppImage path (Linux)
+  FIGCRAFT_PORT        Pin the loopback control port (fails if busy with non-FigCraft)
+  FIGCRAFT_PROJECT     Default repository root (overridden by --project)
+  FIGCRAFT_START_WAIT  Max seconds to wait for control port on launch (default: 30)
+
+Exit codes:
+  0  Clean EOF on stdio, --help, or --version
+  1  Missing runtime dependency (jq)
+  2  Invalid command-line arguments
+EOF
 }
 
 project_dir="${FIGCRAFT_PROJECT:-.}"
 while [ $# -gt 0 ]; do
   case "$1" in
-    --project)
-      [ $# -ge 2 ] || { log "--project needs a directory"; exit 2; }
-      project_dir="$2"
-      shift 2
+    -h | --help)
+      usage
+      exit 0
       ;;
     --version)
       printf 'figcraft-live-mcp %s\n' "$SERVER_VERSION"
       exit 0
       ;;
-    *) shift ;;
+    --project)
+      [ $# -ge 2 ] || { log "--project requires a directory argument"; exit 2; }
+      project_dir="$2"
+      shift 2
+      ;;
+    *)
+      log "unknown option: $1 (run with --help for usage)"
+      exit 2
+      ;;
   esac
 done
+
+command -v jq >/dev/null 2>&1 || {
+  log "jq is required (brew install jq); the server cannot start"
+  exit 1
+}
 
 # ---- project identity: shared by every worktree of a repository ----------
 
@@ -364,7 +396,7 @@ t_stop() {
   force="$(jq -r '.force // false' <<<"$args")"
   resolve_running || die "nothing to stop: no running instance"
   if [ "$ORIGIN" != started ] && [ "$force" != "true" ]; then
-    die "this instance was adopted, not started by this server; app.quit closes every window WITHOUT asking about unsaved changes. Save first, then call stop with force: true"
+    die "this instance was adopted, not started by this server; app.quit closes every window without asking about unsaved changes. Save first, then call stop with force: true"
   fi
   rpc app.quit '{}' || die "app.quit failed (rc=$?)"
   ok_result "$(jq -cn --arg port "$rpc_port" '{stopped: true, port: $port}')"
@@ -389,12 +421,12 @@ TOOLS_LIST="$(cat <<'JSON'
   "tools": [
     {
       "name": "status",
-      "description": "Report the FigCraft instance: running, control port, origin (started/adopted), open windows and documents. Never starts the app.",
+      "description": "Report the FigCraft instance: running, control port, origin (started or adopted), and open windows and documents. Never starts the app.",
       "inputSchema": {"type": "object", "properties": {}}
     },
     {
       "name": "ensure",
-      "description": "The only tool that may launch the FigCraft app. Adopts an already-running controllable instance (one per repository, shared across worktrees and agent sessions); launches the app only when none runs. With path: opens the design file or reuses its open tab (reports already/new and staleness). With name: creates a new document. raise:true brings the window to the front. Announce the launch before calling.",
+      "description": "The only tool that may launch the FigCraft app. Adopts an already-running controllable instance (one per repository, shared across worktrees and agent sessions) or launches the app when none responds. With path: opens the design file or reuses its open tab (reporting already/new and stale). With name: creates a new document. With raise:true: brings the window to the front. Announce the launch before calling.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -406,7 +438,7 @@ TOOLS_LIST="$(cat <<'JSON'
     },
     {
       "name": "exec",
-      "description": "Run one registry command via engine.execute, e.g. {command: \"file.save\", params: {path: \"...\"}}. Requires the app to be running (call ensure first); never starts it.",
+      "description": "Run one registry command via engine.execute, e.g. {command: \"file.save\", params: {path: \"...\"}}. Requires a running instance (call ensure first); never starts the app.",
       "inputSchema": {
         "type": "object",
         "required": ["command"],
@@ -418,7 +450,7 @@ TOOLS_LIST="$(cat <<'JSON'
     },
     {
       "name": "batch",
-      "description": "Run many commands as ONE undo step (registry command.batch): {label?, commands: [{command, params, as?}]}. Name a step with as and reference it later with {\"$ref\": name}. Build one design section per batch.",
+      "description": "Run an array of commands as one undo step (registry command.batch): {label?, commands: [{command, params, as?}]}. Name a step with as and reference it later with {\"$ref\": name}. Build one design section per batch.",
       "inputSchema": {
         "type": "object",
         "required": ["commands"],
@@ -430,7 +462,7 @@ TOOLS_LIST="$(cat <<'JSON'
     },
     {
       "name": "inspect",
-      "description": "Model read: with id, node.get for one layer; without, document.inspect for the document (solved sizes, bounds, history). Requires the app running; never starts it.",
+      "description": "Read the document model: calls node.get for one layer when id is given, or document.inspect for the active document (solved sizes, absoluteBounds, undo history). Requires a running instance; never starts the app.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -441,7 +473,7 @@ TOOLS_LIST="$(cat <<'JSON'
     },
     {
       "name": "render",
-      "description": "Pixel check via ui.render: renders the given layer ids to PNG and returns the image inline plus its path. WITHOUT ids it renders the current SELECTION, not the page — pass ids explicitly. window:true captures the whole app window (ui.screenshot). Requires the app running; never starts it.",
+      "description": "Render layer ids to PNG via ui.render and return the image inline plus its path. Pass ids explicitly: omitting ids renders only the current selection, not the page. window:true captures the full app window (ui.screenshot). Requires a running instance; never starts the app.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -454,7 +486,7 @@ TOOLS_LIST="$(cat <<'JSON'
     },
     {
       "name": "commands",
-      "description": "List the in-app command registry (400+ ids with parameter docs), filtered by a regex on id/label. Requires the app running; for offline discovery use `figcraft-cli commands --filter TEXT`.",
+      "description": "List the in-app command registry (400+ ids with parameter docs), optionally filtered by a case-insensitive regex on id or label. Requires a running instance; for offline discovery run `figcraft-cli commands --filter <text>`.",
       "inputSchema": {
         "type": "object",
         "properties": {"filter": {"type": "string", "description": "regex, e.g. image|layout"}}
@@ -462,7 +494,7 @@ TOOLS_LIST="$(cat <<'JSON'
     },
     {
       "name": "stop",
-      "description": "Graceful app.quit of the instance this server started. Unsaved changes are DISCARDED — save first. Adopted instances need force:true.",
+      "description": "Call app.quit on an instance this server started. Discards unsaved changes, so save first. Adopted user instances require force:true.",
       "inputSchema": {
         "type": "object",
         "properties": {"force": {"type": "boolean"}}
@@ -473,7 +505,7 @@ TOOLS_LIST="$(cat <<'JSON'
 JSON
 )"
 
-INSTRUCTIONS='Lazy gateway to the FigCraft design app. Nothing starts until you call ensure: it adopts an already-running controllable instance first (one window per repository, shared across worktrees and agent sessions) and launches the app only when none runs — announce the launch first. Every other tool never starts the app. ensure {path} reports whether the design file was already open. Edit with batch (one undo step per section), save with exec file.save, verify with inspect and render (render needs explicit ids), and only stop instances this server started (force discards unsaved changes).'
+INSTRUCTIONS='Lazy gateway to the FigCraft desktop app. Nothing starts until you call ensure: it adopts an already-running controllable instance first (one window per repository, shared across worktrees and agent sessions) and launches the app only when none responds (announce the launch first). Every other tool never starts the app. ensure {path} reports whether the design file was already open and whether it is stale. Edit with batch (one undo step per section), save with exec file.save, verify with inspect and render (pass explicit ids to render), and stop only instances this server started (force discards unsaved changes).'
 
 dispatch() { # $1 request line; prints one JSON-RPC response (or nothing for notifications)
   local name args id_json result errfile
