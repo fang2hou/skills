@@ -5,46 +5,20 @@ Verified against `docs/control-protocol.md` in storytold/figcraft (v0.6.0,
 (2026-11): `window.list`, `engine.execute` (including `command.batch`),
 `document.inspect`, `node.get`, `ui.render` (selection and explicit ids),
 `file.new`/`file.save`/`file.close`, `app.quit`. This loopback protocol is
-the skill's live route, wrapped by the `figcraft-live` middleware below.
+what the skill's MCP server speaks; this page is the reference for
+debugging it and for raw socket access.
 
-Contents: middleware · start · message format · limits · methods · shell session example · where implemented
+Contents: start · message format · limits · methods · shell session example ·
+where implemented
 
-## The figcraft-live middleware
+## Tools to methods
 
-`figcraft-live` (from the skill's `scripts/`, installed to `~/.local/bin`)
-is the only supported way to drive this channel: it resolves the port,
-adopts or launches the app, and sends one request per connection. Raw
-socket sessions (bottom of this page) are for debugging it.
-
-| Subcommand                          | Control method                      | Starts the app |
-| ----------------------------------- | ----------------------------------- | -------------- |
-| `status`                            | `window.list` (probe only)          | never          |
-| `start`                             | adopt or launch                     | on demand      |
-| `stop [--force]`                    | `app.quit`                          | never          |
-| `exec <command> [params\|-]`        | `engine.execute`                    | when down      |
-| `batch [file\|-]`                   | `engine.execute` of `command.batch` | when down      |
-| `inspect [id] [depth]`              | `node.get` / `document.inspect`     | when down      |
-| `render [out.png] [--ids] [--ui] …` | `ui.render` / `ui.screenshot`       | when down      |
-| `rpc <method> [params\|-]`          | any method                          | never          |
-
-- `--project DIR` overrides the project directory (default: the working
-  directory). Project identity is `git rev-parse --git-common-dir` (shared
-  by every worktree), falling back to the directory path outside a
-  repository; state lives in `~/.local/state/figcraft-live/<key>`.
-- Port resolution order: `FIGCRAFT_PORT` (pinned; a busy non-FigCraft port
-  is a hard error), the remembered port, 7979, then a repo-derived port.
-  The first port answering as FigCraft is adopted (origin `adopted`); a
-  port this script launched is `started`, and only those may be `stop`ped
-  without `--force` (`app.quit` discards unsaved changes in every window).
-- Payloads: JSON inline, or `-` to read stdin (required for large base64
-  images; shell arguments cap out first). Params are validated with `jq`;
-  invalid JSON dies before anything reaches the app.
-- Replies print as one raw JSON line; errors are `{"ok": false, "error": …}`
-  while the script still exits 0 — check `ok`, not just the exit code.
-- Environment: `FIGCRAFT_APP`, `FIGCRAFT_PORT`, `FIGCRAFT_START_WAIT`
-  (launch wait seconds, default 30). Requires `bash`, `jq`, `nc`; launching
-  requires macOS `open`. A failed launch fails loudly — no silent headless
-  fallback; use the `figcraft-cli` file route for that.
+The skill's MCP server ([mcp.md](mcp.md)) maps its tools onto this channel:
+`status` → `window.list` (probe), `ensure` → adopt-or-launch plus
+`file.open`/`file.new`, `exec`/`batch` → `engine.execute` (batch is the
+registry command `command.batch`), `inspect` → `node.get`/
+`document.inspect`, `render` → `ui.render`/`ui.screenshot`, `commands` →
+`engine.commands`, `stop` → `app.quit`.
 
 ## Start
 

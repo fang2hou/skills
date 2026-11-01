@@ -1,8 +1,11 @@
 # FigCraft setup
 
 Install and verify `figcraft-cli` (the headless batch runner and command
-registry browser) and note app quirks. SKILL.md links here when the CLI probe
-fails or the status check fails.
+registry browser) and note app quirks. The MCP server
+(`scripts/figcraft-mcp`, `install -m 755` to `~/.local/bin`) needs only
+`bash` and `jq`; registration lives in
+[mcp.md](mcp.md). SKILL.md links here when the CLI probe fails or the
+status check fails.
 
 Contents: probe · install (macOS) · status check · build from source · app notes
 

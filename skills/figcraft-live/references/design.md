@@ -39,8 +39,8 @@ header (`sizingH: fill`, `sizingV: hug`), content (`fill`/`fill`), footer
 (`fill`/`hug`). Equal-width rows come from `fill`, not from hand-set widths.
 
 Name each step with `as` and point later steps at it with `{"$ref": name}`
-instead of counting creation-order ids; the same lines work as
-`figcraft-live batch` commands and as `figcraft-cli run` steps (verified on
+instead of counting creation-order ids; the same lines work as MCP `batch`
+tool commands and as `figcraft-cli run` steps (verified on
 0.12.1). This page
 with a nav row and content area solves to nav 390×56 and content 390×788:
 
@@ -152,8 +152,8 @@ center fixed-height text; center with a layout container instead.
 
 ## Verification loop (model first, pixels second)
 
-1. **Model assertions**: live, `figcraft-live inspect <id> <depth>`
-   (`node.get`) or `figcraft-live inspect <depth>` (`document.inspect`)
+1. **Model assertions**: MCP `inspect {id, depth}` (`node.get`) or
+   `inspect {depth}` (`document.inspect`)
    report solved `width`/`height` and `absoluteBounds`; on the CLI,
    `figcraft-cli convert out.figcraft out.json` dumps every node's solved
    `width`/`height`/`transform`. Assert each
@@ -170,8 +170,8 @@ center fixed-height text; center with a layout container instead.
    - Judge element gaps from the model: ink gaps include text leading, so a
      24 px `gap` renders as ~33–60 px of ink separation depending on
      line-height.
-3. Fix and re-verify: live, `figcraft-live exec edit.undo {}` the bad batch
-   or patch the layer with `node.set`, then look again; on the CLI, rerun
+3. Fix and re-verify: MCP `exec {command: "edit.undo"}` the bad batch or
+   patch the layer with `node.set`, then look again; on the CLI, rerun
    the whole `run` script (it is atomic).
 
 Extend the page skeleton section by section and verify each section with

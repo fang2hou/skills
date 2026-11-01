@@ -116,10 +116,10 @@ point for the 400+ command registry.
 Serves MCP on stdio; headless by default, or attached to an app started with
 `figcraft --control PORT`. Headless sessions can host/join/publish live
 sessions (`collab.*`) and use plugin directories (`plugin.directory.*`);
-one-shot `run` cannot (no network link). This skill does not register the
-MCP server in any client (mounted servers launch with every session, which
-violates the demand gate); live work goes through the control channel via
-`figcraft-live` (see [control.md](control.md)).
+one-shot `run` cannot (no network link). The skill does not register this
+upstream server: mounting it launches or warns with every session. Its lazy
+replacement, with file-open checks and instance sharing, is the skill's own
+server ([mcp.md](mcp.md)).
 
 ### `plugin publish <folder> --server ws://host:port/[?key=KEY]`
 
