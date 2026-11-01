@@ -1,146 +1,93 @@
 ---
 name: figcraft-live
 description: >
-  Pair-designs live in the FigCraft desktop app (github.com/storytold/figcraft) over MCP:
-  the user watches the canvas while the agent builds layouts, places images, and exports.
-  Use for FigCraft or .figcraft work.
+  Designs, inspects, renders, and exports in FigCraft (github.com/storytold/figcraft)
+  and .figcraft files via the lazy figcraft-live MCP server (mounts globally, opens
+  one shared app window on ensure) or headless figcraft-cli. Use for FigCraft work.
 license: MIT
-compatibility: macOS with the FigCraft desktop app for live editing; needs figcraft-cli (auto-installed to ~/.local/bin) and jq for project MCP registration; falls back to a headless session with no preview elsewhere.
+compatibility: >
+  Live editing requires the FigCraft desktop app and the figcraft-live-mcp server
+  (bash and jq; launching requires macOS open, or FIGCRAFT_APP pointing to the
+  binary or AppImage on Linux). Headless file work (inspect, render, export, run)
+  runs anywhere figcraft-cli is installed.
 metadata:
   author: fang2hou
-  version: "2.2"
+  version: "4.2"
 ---
 
 # FigCraft Live
 
-Design inside [FigCraft](https://github.com/storytold/figcraft) with the user
-watching. The default channel is live MCP: the agent creates layers, places
-images, and checks screenshots while the user sees each change on the canvas
-and can intervene. The wrapper `figcraft-live-mcp` starts the app and attaches
-automatically; the skill registers it per project, never globally, because
-every MCP connection launches the app. Headless MCP (no window) and CLI `run` scripts are fallbacks
-for unattended work, CI, and replayable batches.
+Drive live design in the FigCraft desktop app through the lazy `figcraft-live` MCP server (`scripts/figcraft-live-mcp`), or run headless file operations through `figcraft-cli`. The MCP server mounts in every session without starting anything; the app opens only when a task calls `ensure`, sharing at most one window per repository across worktrees and agents.
 
 ## When to Use
 
-- The user asks to design, mock up, or prototype a UI in FigCraft.
-- The user wants to watch, steer, or hand-tweak the design while the agent
-  edits it ("live", "preview", "pair on this design").
-- A `.figcraft` file (or a best-effort `.fig`/`.svg`/image import) needs
-  inspecting, converting, rendering, or exporting.
-- Design assets (PNG/SVG/WebP/PDF) or Dev-Mode code (CSS, HTML, React,
-  Leptos, SwiftUI, Compose) must be produced reproducibly.
+- Designing, editing, inspecting, or rendering `.figcraft` documents live in the FigCraft desktop app
+- Converting, rendering, exporting (`.png`, `.svg`, `.pdf`, `.fig`), or running atomic command scripts on `.figcraft`, `.fig`, `.svg`, or Figma REST `.json` files via `figcraft-cli`
+- Setting up or debugging the `figcraft-live` MCP server or the FigCraft loopback control channel
 
 ## When NOT to Use
 
-- The npm package `figcraft` (a TypeScript SVG-diagram library): a different
-  product; never `npm install figcraft`.
-- Administering `figcraft-server` (share links, keys, IP blocks): read the
-  upstream `docs/server.md`.
-- Developing FigCraft itself or writing WASM plugins: see the upstream
-  repository's contributing guide and `docs/plugins.md`.
+- Implementing web, HTML, or React UI code directly without FigCraft (use `frontend-design` or `shadcn`)
+- Building HTML reports or review dashboards (use `agent-report`)
 
-## Interfaces
+## The Demand Gate (Hard Rules)
 
-Default to live MCP: the wrapper launches the app with its control channel
-(port 7979), attaches `figcraft-cli mcp --attach` to it, and keeps one live
-document across calls with inline screenshots and every command (including
-`image.place`).
-
-| Situation                                                | Interface          | Entry point                                                        |
-| -------------------------------------------------------- | ------------------ | ------------------------------------------------------------------ |
-| Design, edit, add images, verify visually (default)      | MCP live           | project MCP server `figcraft` = `figcraft-live-mcp` (app attached) |
-| App cannot start (no app, non-macOS, SSH), or unattended | MCP headless       | same server, automatic fallback; or `figcraft-live-mcp --headless` |
-| MCP tools not mounted in this session yet                | CLI run script     | `figcraft-cli run script.jsonl --out out.figcraft`                 |
-| Replayable batch, CI, or scripted exports                | CLI run script     | `figcraft-cli run` / `render` / `export`                           |
-| Inspect/convert/render/export an existing file once      | CLI subcommands    | `figcraft-cli info\|convert\|render\|export`                       |
-| Raw low-level control without MCP                        | JSON control layer | [references/control.md](references/control.md)                     |
-
-All interfaces share one registry of 400+ commands (`frame.create`,
-`layout.add`, `image.place`, `component.create`, …): anything clickable in the
-UI has a command id usable from MCP `run_command`, the CLI, and the control
-channel. Tool names carry a client-specific prefix (for example
-`mcp__figcraft__run_command`); this skill uses the bare names.
-
-## Hard Rules
-
-1. Discover commands before using them (`list_commands {filter}` over MCP,
-   `figcraft-cli commands --filter <text>` on the CLI) and read their
-   parameter docs; guessed ids and params fail.
-2. Group related edits into one undo step with `batch`, one section per
-   batch. A failing batch rolls back entirely and the error names the step.
-3. Work in your own document and save it. Start with `file.new` (or
-   `open_file`) so the user's other tabs stay untouched, then `save_file
-   {path}` after each completed section. The saved `.figcraft` is the source
-   of truth; a headless document is lost when the server exits.
-4. The user shares the canvas. Re-read a layer with `get_node` before editing
-   anything the user may have touched. Do not use `pointer`, `key`, or
-   `type_text` unless asked: they act on the user's tool, selection, and
-   keyboard focus. Build section by section so the user sees steady
-   progress, and `select` the section just built to highlight it.
-5. In live mode a failed call may still have applied. Inspect the document
-   before retrying.
-6. Images enter only as a local file `path` or base64 `data` (no URL
-   parameter): obtain the file first, then place it. See
-   [references/images.md](references/images.md).
-7. Build with auto layout; never absolutely position text over shapes. Every
-   layout frame declares `sizingH`/`sizingV`, and body text needs contrast of
-   at least 4.5:1. See [references/design.md](references/design.md).
-8. A command succeeding is not a verified result: verify as in Step 4.
+- **Global silent mount**: Register `figcraft-live` at user scope. It answers `initialize` and `tools/list` from static data without opening a window or touching a socket, so multiple agents can mount it simultaneously.
+- **Only `ensure` may start the app**: `ensure` first checks for a running controllable FigCraft instance and adopts the user's window if found; it launches a new instance only when none responds. Always announce to the user before calling `ensure` when a launch is needed.
+- **All other tools never launch**: `status`, `commands`, `inspect`, `render`, `exec`, `batch`, and `stop` reuse the running instance or fail with a message pointing to `ensure`.
+- **No gate bypass or silent fallback**: Never launch the app manually via shell or a second MCP registration, because that bypasses the repository port lock and opens duplicate windows. If `ensure` fails, stop and report the error rather than silently switching to headless CLI editing.
 
 ## Setup
 
-Run this at the start of every FigCraft task without asking permission, and
-report the outcome (CLI found or installed; MCP mounted or not; live or
-headless) in the first progress note.
+One-time install (per machine, not per project):
 
-1. CLI: `command -v figcraft-cli`, then `figcraft-cli --version` and
-   `figcraft-cli commands --filter frame | head`. Missing or failing → install
-   or rebuild per [references/setup.md](references/setup.md) (checksum-verified
-   release into `~/.local/bin`; stop if the checksum is not `OK`).
-2. Wrapper: copy `scripts/figcraft-live-mcp` from this skill's directory to
-   `~/.local/bin/` (`install -m 755`) and re-copy when the skill's copy
-   differs. Live mode needs macOS `open` and `nc`; without them it falls back
-   to headless.
-3. MCP: the session should list FigCraft tools (`list_commands`,
-   `run_command`, `batch`, `screenshot`, …) under a `figcraft` server. Mounted
-   → call `inspect_ui` as the smoke test. Not mounted → enable it for this
-   project only: run `bash <skill-dir>/scripts/figcraft-project-mcp
-   [--client claude] <project-root>` (omp writes `.omp/mcp.json`, Claude Code
-   `.mcp.json`; the script merges, is idempotent, and git-excludes the file
-   because it holds a machine-specific path; needs `jq`). Never register
-   `figcraft` at user level: every session would launch the app. The server
-   is not live until the user runs `/mcp reload` (omp) or restarts the client:
-   tell them, and continue on the CLI route meanwhile (`image.place` works
-   there too). Other clients: [references/mcp.md](references/mcp.md).
-4. The first MCP connection starts the app if needed (up to 30 s) and leaves
-   it running, so the user keeps the design open. When the project's design
-   work is over, `figcraft-project-mcp --remove <project-root>` unregisters it.
+1. **MCP server**: Run `install -m 755 <skill-dir>/scripts/figcraft-live-mcp ~/.local/bin/` (requires `bash` and `jq`). Register it at user scope with a `>= 60000` ms timeout (`ensure` waits up to 30s for cold launch):
+   - omp: add to `~/.omp/agent/mcp.json`
+   - Claude Code: `claude mcp add --scope user figcraft-live ~/.local/bin/figcraft-live-mcp`
+   - Full config snippets: [references/mcp.md](references/mcp.md)
+2. **Headless CLI**: Install `figcraft-cli` from the GitHub release and verify its SHA-256 checksum: [references/setup.md](references/setup.md).
 
-## Workflow
+**Per-task readiness check** (report in your first progress note): confirm that the session lists the `figcraft-live` tools and that `figcraft-cli --version` succeeds. Neither check starts the app.
 
-### Step 1: Connect, then open or start a document
+## Inputs & Environment
 
-- `inspect_ui`: `backend: "headless"` means the user cannot watch (say so and
-  offer screenshots or exported PNGs); otherwise the app is attached and
-  `status.documents` counts the open tabs.
-- Existing file: `open_file {path}` returns an outline plus any
-  `warnings`/`repairs`. CLI: `figcraft-cli info design.figcraft --json`.
-- New design: `run_command {command: "file.new", params: {name?}}` (or
-  `file.newFromTemplate`) even when tabs are open. A fresh app with zero
-  documents rejects every edit with `no open document`. Reuse your document
-  for the rest of the session; each `file.new` adds a tab.
+| Input / Variable      | Required | Default / Format                              | Purpose                                                       |
+| --------------------- | -------- | --------------------------------------------- | ------------------------------------------------------------- |
+| Document `path`       | No       | Repo-relative or absolute `.figcraft` path    | Passed to `ensure {path}` and `file.save`                     |
+| Document `name`       | No       | String (for example `"Mobile App"`)           | Passed to `ensure {name}` when creating a new unsaved tab     |
+| `FIGCRAFT_APP`        | No       | `/Applications/FigCraft.app` or binary path   | Overrides app bundle (macOS) or binary/AppImage path (Linux)  |
+| `FIGCRAFT_PORT`       | No       | Auto (`7979` or repo-derived `7979..7979+60`) | Pins the loopback control port; busy non-FigCraft port errors |
+| `FIGCRAFT_PROJECT`    | No       | Server working directory (`.` / `--project`)  | Pins the repository root used for worktree port sharing       |
+| `FIGCRAFT_START_WAIT` | No       | `30` (seconds)                                | Max wait for the control port to open on launch               |
 
-### Step 2: Discover commands
+## MCP Tools
 
-`list_commands {filter: "image"}` (or `layout`, `frame`, …) returns each
-command's id, shortcut, and parameter doc.
+Every tool accepts a JSON object and returns one JSON text block containing the control channel reply (`ok` / `error`). Clients prefix tool names with the server name (for example `mcp__figcraft_live_status` in omp).
 
-### Step 3: Make the edit
+| Tool                                   | Starts App             | Purpose                                                                                                                                                                   |
+| -------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `status {}`                            | Never                  | Reports `{running, port, origin, windows}` (`origin` is `started` or `adopted`).                                                                                          |
+| `ensure {path?, name?, raise?}`        | **Yes — the only one** | Adopts or launches the shared instance. `path` opens the file or reuses its tab (reporting `already`/`new` and `stale`); `name` creates a new tab; `raise: true` focuses. |
+| `exec {command, params?}`              | Never                  | Executes one registry command (`file.save`, `node.set`, `select.set`, `edit.undo`, `image.place`, `inspect.code`).                                                        |
+| `batch {label?, commands[]}`           | Never                  | Runs an array of commands as a single undo step (`command.batch`). Name steps with `as` and reference them later with `{"$ref": "<name>"}`. Build one section per batch.  |
+| `inspect {id?, depth?}`                | Never                  | Reads the model: calls `node.get` when `id` is an integer, or `document.inspect` otherwise (returns solved sizes, `absoluteBounds`, and undo history).                    |
+| `render {ids, scale?, path?, window?}` | Never                  | Renders PNG via `ui.render` and returns the image inline. **Pass `ids` explicitly**: omitting `ids` renders the current selection, not the page. `window: true` captures. |
+| `commands {filter?}`                   | Never                  | Lists the 400+ in-app commands filtered by a case-insensitive regex on `id` or `label`. Offline equivalent: `figcraft-cli commands --filter <text>`.                      |
+| `stop {force?}`                        | Never                  | Calls `app.quit` on an instance this server started (`origin: started`). Discards unsaved changes; adopted instances require `force: true` after saving.                  |
 
-Build one section at a time with `batch`. Name a step with `as` and reference
-its new id with `{"$ref": name}` instead of counting ids; this also works in
-`figcraft-cli run` scripts:
+### Standard Live Session
+
+1. **Check state**: Call `status` to see whether an instance is running and which documents are open.
+2. **Open or adopt (`ensure`)**: Call `ensure {path: "design/app.figcraft"}` (or `ensure {name: "..."}` for a new document), announcing the launch first if no instance is running. If `ensure` fails, stop and report the error rather than editing whatever tab happens to be active.
+3. **Discover commands**: Call `commands {filter: "layout"}` (or run `figcraft-cli commands --filter layout`) whenever you are unsure of a command ID or its parameters.
+4. **Build section by section**: Send one design section per `batch` call using `as` and `{"$ref": "<name>"}` bindings, and record the returned node IDs.
+5. **Verify model then pixels**:
+   - Call `inspect` to check solved `width`, `height`, and `absoluteBounds` (any unexpected `100×100` frame means `sizingH`/`sizingV` is missing).
+   - Call `render {ids: [<frame_id>]}` to confirm nothing is clipped and fills and text appear where expected.
+6. **Save**: Call `exec {command: "file.save", params: {path: "design/app.figcraft"}}` after each verified section. The saved `.figcraft` file on disk is the source of truth.
+7. **Wind down**: Leave the app open while design work continues. When the task finishes, save first and call `stop` only if this server started the instance (`origin: started`).
+
+Section batch example (using `as` and `$ref` instead of counting IDs):
 
 ```json
 {
@@ -186,105 +133,77 @@ its new id with `{"$ref": name}` instead of counting ids; this also works in
 }
 ```
 
-Print each result's ids and `warnings`; do not discard them. Single layers can
-use `create_node` / `set_properties`. Images: `run_command {command:
-"image.place", params: {path, parent, width, height}}` (see
-[references/images.md](references/images.md)). More patterns (buttons, icons,
-dividers, avatars) are in [references/design.md](references/design.md).
+## Editing Rules
 
-CLI fallback: write the same `{"command", "params"}` objects, one per line, to
-`script.jsonl` and run `figcraft-cli run script.jsonl --in base.figcraft --out
-out.figcraft`. It is atomic: any failing step exits 1 and saves nothing, so
-fix the step and rerun the whole script.
+1. **Discover before calling**: Guessed command IDs and parameter names fail; check `commands` (or `figcraft-cli commands` offline) first.
+2. **One section per `batch`**: Each `batch` is one undo step. A failing step rolls back the entire batch and identifies the failing command.
+3. **Stay in your target tab**: Open your target document with `ensure` and run `file.save` after each section. Never edit a tab you did not open; check `status` if active tab state is unclear.
+4. **Respect the shared canvas**: Because the user may be working in the same window, `inspect` a layer before modifying it, and never send raw input commands (`ui.pointer`, `ui.key`, `ui.type`) unless asked. Highlight completed work with `select.set` followed by `view.zoomSelection`.
+5. **Inspect before retrying**: A timed-out or failed call may still have mutated the document; run `inspect` before sending a retry.
+6. **Local or base64 images only**: `image.place` accepts a local `path` or base64 `data`, never a URL. Download remote images to disk first: [references/images.md](references/images.md).
+7. **Explicit auto-layout sizing and contrast**: Declare `sizingH` and `sizingV` on every auto-layout frame, and keep body text contrast at `>= 4.5:1` (WCAG AA): [references/design.md](references/design.md).
+8. **Verify every section**: A command returning `ok: true` only proves the engine accepted the call; run the Step 5 model and pixel checks before moving on.
 
-### Step 4: Verify (model first, pixels second)
+## Worktrees and Multiple Agents
 
-1. Model: `get_node {id, depth}` or `inspect_document {depth}` give solved
-   `width`/`height` and `absoluteBounds` (CLI: `figcraft-cli convert
-   out.figcraft check.json`). A frame at `100×100` means a missing
-   `sizingH`/`sizingV`, with children silently clipped.
-2. Pixels: `screenshot {ids?, scale?}` or `export` without `path` returns the
-   image inline (CLI: `figcraft-cli render out.figcraft -o check.png`). Look
-   for: nothing clipped at the canvas edge, the intended element order, fills
-   where expected, labels inside containers, every placed image visible and
-   cropped as intended. Judge gaps from the model, not ink, because ink
-   includes text leading.
-3. Fix with `undo` or `set_properties`, then verify again before the next
-   section.
+- **One window per repository**: The server keys instances by `git rev-parse --git-common-dir`, so every worktree of a repository resolves to the same control port. When multiple agents run across worktrees, the first `ensure` call launches the app under a directory lock and the others adopt that instance.
+- **Stale-tab and overwrite guards**: Keep one canonical `.figcraft` path per design in the repository. `ensure {path}` reuses an already-open tab for that path and sets `stale: true` if the disk file changed since the tab loaded it. `file.save` refuses to overwrite a file modified on disk by another session; reload the tab before passing `overwrite: true`.
+- **No concurrent writers on one file**: The shared instance serializes incoming commands on the UI thread, but it does not merge conflicting edits to the same document.
+- **Protect user-owned windows**: Only call `stop` on instances with `origin: started`; `origin: adopted` windows belong to the user and lose unsaved work on `app.quit`.
 
-### Step 5: Save and export
+## Headless File Route (`figcraft-cli`)
 
-- `save_file {path}` (or `--out` on `run`). Keep the `.figcraft` archive as the
-  editable source.
-- Assets: `export {ids, format, scale, path}` (inline image without `path`), or
-  `figcraft-cli export out.figcraft -o exports/ --scale 2`. Options (`--node`,
-  `--format`, PDF bleed and crop marks) and export quirks are in
-  [references/cli.md](references/cli.md).
-- Dev-Mode code: `run_command {command: "inspect.code"}` on the selection
-  emits CSS/HTML/React/Leptos/SwiftUI/Compose.
+Use `figcraft-cli` when no live window is needed (file inspection, asset export, CI pipelines, Linux servers without a display, or when the demand gate must remain closed):
 
-## Conventions
+| Task                                    | Command                                                               |
+| --------------------------------------- | --------------------------------------------------------------------- |
+| Inspect or convert a file               | `figcraft-cli info <file> [--json]`, `convert <in> <out>`             |
+| Render a page or export frame assets    | `render <file> -o out.png`, `export <file> -o dir/ --scale 2`         |
+| Run atomic scripted edits (1 undo unit) | `figcraft-cli run script.jsonl --in base.figcraft --out out.figcraft` |
+| Search the 400+ command registry        | `figcraft-cli commands --filter <text> [--json]`                      |
 
-- Coordinates are page units, y grows down; `x`/`y` are relative to the parent.
-- Colors are `"#RRGGBB"` or `"#RRGGBBAA"`.
-- Creation commands return `{"id": N}`: capture ids from results or use
-  `as`/`$ref`; never assume them.
-- Every mutation is one undo step; programmatic calls never open dialogs.
-- Live sessions use the app's fonts, system fonts included. For CI-stable
-  renders use the CLI with `--no-system-fonts` (or `FIGCRAFT_NO_SYSTEM_FONTS=1`).
+`figcraft-cli run` accepts the same `{command, params, as?}` objects as MCP `batch`. Full CLI reference: [references/cli.md](references/cli.md).
 
 ## Failure Handling
 
-| Symptom                                                    | Cause and action                                                                               |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `no open document`, or `screenshot` says the page is empty | Fresh app: run `file.new` or `open_file`.                                                      |
-| `inspect_ui` reports `backend: "headless"`                 | No app: the wrapper fell back (reason on its stderr). Tell the user; continue without preview. |
-| A frame solves to 100×100, or an element is missing        | Parent frame lacks `sizingH`/`sizingV`; fix the parent, not the child.                         |
-| `unsupported image: …format could not be determined`       | Not an image file, or wrong path; check the file, convert to PNG/JPG/WebP.                     |
-| `automation path rejected`                                 | File outside the app's or server's `--automation-read-root`/`-write-root`; move the file.      |
-| Attached call fails with "may have completed"              | Transport loss after send: `get_node`/`inspect_document`, then retry only if not applied.      |
-| New MCP server not listed                                  | Client has not reloaded servers; tell the user, use the CLI route meanwhile.                   |
+| Symptom                                             | Recovery Action                                                                                                                        |
+| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Tool returns `"not running; call the ensure tool"`  | Expected before the first `ensure`; announce the launch and call `ensure`.                                                             |
+| `ensure` fails with an app or port launch error     | Stop and report the error; switch to headless `figcraft-cli` only with the user's explicit approval.                                   |
+| `ensure` returns `stale: true`                      | The file changed on disk since the tab opened: reload via `exec {command: "file.open", params: {path, reload: true}}` or ask the user. |
+| `no open document`                                  | The active tab was closed; call `ensure` again with `path` or `name`.                                                                  |
+| Frame solves to `100×100` or children disappear     | The parent auto-layout frame is missing `sizingH`/`sizingV` (and clips children by default); set `sizingH`/`sizingV` on the parent.    |
+| Render is tiny, empty, or shows one widget          | `render` without `ids` exports only the current selection; pass the target frame IDs in `ids: [<id>]`.                                 |
+| `unsupported image: format could not be determined` | The path is missing or not a supported raster format; convert the file to PNG, JPG, or WebP first.                                     |
+| `automation path rejected`                          | Target path lies outside the app's `--automation-read-root` or `--automation-write-root` flags; move the file inside the allowed root. |
+| `control request queue is full`                     | The 8-slot socket/UI queue is saturated; wait briefly and send smaller `batch` payloads.                                               |
+| `stop` refuses an adopted instance                  | Expected safeguard against losing unsaved user work; save all open documents first, then call `stop {force: true}` only if asked.      |
 
 ## Gotchas
 
-- **Auto-layout frames never size themselves.** Without `sizingH`/`sizingV`
-  (or explicit width/height) a frame solves to a fixed 100×100, and frames
-  clip children by default.
-- **Frames default to a white fill.** Wrappers need `"fill": "none"`.
-- **Vector icons stretch** when both `width` and `height` are given; give one.
-  See [references/design.md](references/design.md).
-- **An app already running without the control port cannot be attached.** The
-  wrapper opens a second instance (`open -n`), so two FigCraft windows appear.
-  Never kill the user's instance; let them quit it.
-- **The attached app survives the MCP session** with its unsaved documents
-  still open; a headless document does not.
-- **`image.place` input**: a local path or base64 `data` only. In live mode
-  the app opens the path, so it must exist on that machine and sit inside
-  `--automation-read-root` when one is set.
-- **Headless-only features**: `collab.*` and plugin-directory commands need an
-  MCP session (live or headless); one-shot `run` has no network link.
+- **Auto-layout frames default to `100×100` and clip**: An auto-layout frame never sizes itself automatically. Without `sizingH`/`sizingV` (or explicit `width`/`height`), it stays `100×100` with `clip: true` and truncates overflowing children.
+- **Frames default to a white fill**: Set `"fill": "none"` on structural wrapper frames (rows, icon containers, tab items) so they do not paint opaque white boxes over tinted backgrounds.
+- **Vector icons stretch if both dimensions are set**: Pass only `height` (or only `width`) on `vector` nodes so the SVG path preserves its aspect ratio.
+- **Uncontrolled app windows cannot be adopted**: If the user opened FigCraft without `--control <port>`, `ensure` cannot attach to it and will launch a second controllable instance. Leave the user's window alone and never kill it.
+- **Never hard-code node IDs**: Creation commands return `{"id": N}`; capture returned IDs or bind them with `as` and `{"$ref": "<name>"}`. Coordinates use page units (`y` downward), `x`/`y` are relative to the parent frame, and colors use `#RRGGBB` or `#RRGGBBAA`.
+- **Font reproducibility**: Live sessions index system fonts; pass `--no-system-fonts` (or `FIGCRAFT_NO_SYSTEM_FONTS=1`) on `figcraft-cli` for deterministic CI renders.
 
 ## Output Contract
 
-On completion, report:
+When finishing a FigCraft task, report:
 
-1. The interface used (live MCP, headless MCP, or CLI, and why when not live;
-   headless means the user could not watch).
-2. The document path(s) created or modified, with key node ids and names.
-3. Every placed image (source path, target node id, mode) and every exported
-   asset path with format and scale.
-4. How the result was verified (model check, pixel check) and any warnings the
-   tools printed.
+1. **Interface used**: Live MCP (`origin: started` or `adopted`, plus `port`) or headless `figcraft-cli` (and why live mode was not used).
+2. **Documents modified**: File paths and key created/updated node IDs and names.
+3. **Images and exports**: Every placed image (`source`, target node, `mode`) and exported asset (`path`, format, `scale`).
+4. **Verification results**: Model check (`inspect` solved bounds), pixel check (`render` findings), and any `note:` or tool warnings.
 
 ## References
 
-- [references/mcp.md](references/mcp.md): MCP tool catalogue, the wrapper,
-  client registration (Claude Code, Claude Desktop, omp), session loop.
-- [references/images.md](references/images.md): `image.place`, fills, avatars,
-  adjustments, SVG import, image checks.
-- [references/design.md](references/design.md): construction patterns (page
-  skeleton, buttons, icons, tokens) and the verification checklist.
-- [references/setup.md](references/setup.md): CLI probe, install, build, app notes.
-- [references/cli.md](references/cli.md): `figcraft-cli` subcommands, flags,
-  exit codes, export gotchas.
-- [references/control.md](references/control.md): raw JSON control protocol.
+| Topic                                                     | Reference                                      |
+| --------------------------------------------------------- | ---------------------------------------------- |
+| MCP server architecture, client registration, env, debug  | [references/mcp.md](references/mcp.md)         |
+| Loopback JSON control protocol (`127.0.0.1`), limits, RPC | [references/control.md](references/control.md) |
+| Placing, masking, adjusting, and verifying images         | [references/images.md](references/images.md)   |
+| Auto-layout construction patterns, tokens, and QA loop    | [references/design.md](references/design.md)   |
+| `figcraft-cli` probe, checksum install, and macOS quirks  | [references/setup.md](references/setup.md)     |
+| `figcraft-cli` subcommands, flags, exit codes, gotchas    | [references/cli.md](references/cli.md)         |

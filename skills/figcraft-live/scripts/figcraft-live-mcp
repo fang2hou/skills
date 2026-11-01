@@ -1,76 +1,563 @@
 #!/usr/bin/env bash
-# MCP server entry for FigCraft live editing.
-# Attached mode (default): ensure the desktop app is running with its control
-# channel, then bridge MCP to it so the user watches every edit.
-# Headless fallback: no app available, or --headless given.
+# figcraft-live-mcp: lazy MCP server for live FigCraft editing (server name `figcraft-live`, leaving `figcraft` free for an official server).
+#
+# Mounts instantly and launches nothing: until a client calls the `ensure`
+# tool, the FigCraft desktop app never starts. Every other tool (status,
+# commands, inspect, render, exec, batch, stop) only reuses a running
+# instance. `ensure` adopts an already-running controllable instance first
+# and launches the app only when none runs — one window per repository,
+# shared by every worktree and every agent session, so several agents never
+# pile up windows. See references/mcp.md in the figcraft-live skill for
+# registration snippets per client.
+#
+# Requires bash and jq. Launching the app needs macOS `open`, or
+# FIGCRAFT_APP pointing at the app bundle / binary / AppImage elsewhere.
+# Environment: FIGCRAFT_APP, FIGCRAFT_PORT (pin the control port),
+# FIGCRAFT_PROJECT (pin the project root), FIGCRAFT_START_WAIT (seconds,
+# default 30). Set the client's MCP timeout to at least 60000 ms: `ensure`
+# may spend up to FIGCRAFT_START_WAIT launching the app.
 set -u
 
-PORT="${FIGCRAFT_CONTROL_PORT:-7979}"
-WAIT_SECONDS="${FIGCRAFT_LIVE_WAIT:-30}"
+SERVER_VERSION=4.2
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/figcraft"
+DEFAULT_PORT=7979
+READ_TIMEOUT=65 # control-channel UI requests time out at 60 s
+START_WAIT="${FIGCRAFT_START_WAIT:-30}"
 
 log() { printf 'figcraft-live-mcp: %s\n' "$*" >&2; }
+die() { printf '%s\n' "$*" >&2; exit 1; } # inside tool subshells: message to stderr, non-zero exit
 
-find_cli() {
-  if [ -n "${FIGCRAFT_CLI:-}" ] && [ -x "$FIGCRAFT_CLI" ]; then
-    printf '%s\n' "$FIGCRAFT_CLI"
-  elif command -v figcraft-cli >/dev/null 2>&1; then
-    command -v figcraft-cli
-  elif [ -x "$HOME/.local/bin/figcraft-cli" ]; then
-    printf '%s\n' "$HOME/.local/bin/figcraft-cli"
-  fi
+usage() {
+  cat <<'EOF'
+Usage: figcraft-live-mcp [--project <dir>] [--version] [--help]
+
+Lazy stdio MCP server for the FigCraft desktop app (server name: figcraft-live).
+Mounts silently and starts the app only when the `ensure` tool is called.
+
+Options:
+  --project <dir>  Pin the repository root used for worktree port sharing
+  --version        Print server version and exit 0
+  -h, --help       Print this help message and exit 0
+
+Environment:
+  FIGCRAFT_APP         App bundle path (macOS) or binary/AppImage path (Linux)
+  FIGCRAFT_PORT        Pin the loopback control port (fails if busy with non-FigCraft)
+  FIGCRAFT_PROJECT     Default repository root (overridden by --project)
+  FIGCRAFT_START_WAIT  Max seconds to wait for control port on launch (default: 30)
+
+Exit codes:
+  0  Clean EOF on stdio, --help, or --version
+  1  Missing runtime dependency (jq)
+  2  Invalid command-line arguments
+EOF
+}
+
+project_dir="${FIGCRAFT_PROJECT:-.}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -h | --help)
+      usage
+      exit 0
+      ;;
+    --version)
+      printf 'figcraft-live-mcp %s\n' "$SERVER_VERSION"
+      exit 0
+      ;;
+    --project)
+      [ $# -ge 2 ] || { log "--project requires a directory argument"; exit 2; }
+      project_dir="$2"
+      shift 2
+      ;;
+    *)
+      log "unknown option: $1 (run with --help for usage)"
+      exit 2
+      ;;
+  esac
+done
+
+command -v jq >/dev/null 2>&1 || {
+  log "jq is required (brew install jq); the server cannot start"
+  exit 1
+}
+
+# ---- project identity: shared by every worktree of a repository ----------
+
+PROJECT_SOURCE="$(
+  cd "$project_dir" >/dev/null 2>&1 || exit 1
+  git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || pwd -P
+)" || PROJECT_SOURCE="$PWD"
+PROJECT_KEY="$(printf '%s' "$PROJECT_SOURCE" | shasum | cut -c1-10)"
+STATE_FILE="$STATE_DIR/$PROJECT_KEY"
+
+derived_port() {
+  local h
+  h="$(printf '%s' "$PROJECT_SOURCE" | shasum | tr -cd '0-9a-f')"
+  printf '%d' "$((DEFAULT_PORT + 0x${h:0:8} % 61))"
+}
+
+state_port() { [ -f "$STATE_FILE" ] && sed -n 's/^port=//p' "$STATE_FILE"; }
+state_origin() { [ -f "$STATE_FILE" ] && sed -n 's/^origin=//p' "$STATE_FILE"; }
+write_state() { # $1 port, $2 origin
+  mkdir -p "$STATE_DIR"
+  printf 'port=%s\norigin=%s\nrepo=%s\n' "$1" "$2" "$PROJECT_SOURCE" >"$STATE_FILE"
 }
 
 find_app() {
   local candidate
-  for candidate in \
-    "${FIGCRAFT_APP:-}" \
-    /Applications/FigCraft.app \
-    "$HOME/Applications/FigCraft.app"; do
-    if [ -n "$candidate" ] && [ -d "$candidate" ]; then
-      printf '%s\n' "$candidate"
-      return
-    fi
+  for candidate in "${FIGCRAFT_APP:-}" /Applications/FigCraft.app "$HOME/Applications/FigCraft.app"; do
+    [ -d "$candidate" ] && { printf '%s\n' "$candidate"; return; }
   done
 }
 
-listening() { nc -z 127.0.0.1 "$PORT" >/dev/null 2>&1; }
+# ---- control channel (one request, one reply line, per connection) --------
 
-CLI="$(find_cli)"
-if [ -z "$CLI" ]; then
-  log "figcraft-cli not found; install it (see the figcraft-live skill, Setup) or set FIGCRAFT_CLI"
-  exit 127
-fi
+port_open() { (exec 3<>/dev/tcp/127.0.0.1/"$1") >/dev/null 2>&1; }
 
-headless() {
-  log "headless mode, no live preview: $1"
-  exec "$CLI" mcp "${@:2}"
+rpc_port=
+REPLY=
+rpc() { # $1 method, $2 params JSON object; rc: 0 ok, 2 connect, 3 timeout
+  local method="$1" params="$2" line rc
+  REPLY=
+  if ! { exec 3<>/dev/tcp/127.0.0.1/"$rpc_port"; } 2>/dev/null; then return 2; fi
+  printf '%s\n' "$(jq -cn --arg m "$method" --argjson p "$params" '{id: 1, method: $m, params: $p}')" >&3 || {
+    exec 3<&- 3>&-
+    return 2
+  }
+  IFS= read -r -t "$READ_TIMEOUT" line <&3
+  rc=$?
+  exec 3<&- 3>&-
+  [ "$rc" -eq 0 ] || return 3
+  REPLY="$line"
 }
 
-if [ "${1:-}" = "--headless" ]; then
-  shift
-  headless "requested" "$@"
-fi
+is_figcraft() { # $1 port
+  rpc_port="$1"
+  rpc window.list '{}' || return 1
+  jq -e '.ok == true' >/dev/null 2>&1 <<<"$REPLY"
+}
 
-if ! command -v nc >/dev/null 2>&1; then
-  headless "nc is required to probe the control port"
-fi
-
-if ! listening; then
-  APP="$(find_app)"
-  if [ -z "$APP" ] || [ "$(uname -s)" != "Darwin" ]; then
-    headless "FigCraft app not found or unsupported platform"
-  fi
-  log "starting $APP with control port $PORT"
-  open -n -g -a "$APP" --args --control "$PORT" || headless "could not launch $APP"
-  waited=0
-  while ! listening; do
-    if [ "$waited" -ge "$((WAIT_SECONDS * 4))" ]; then
-      headless "control port $PORT did not open within ${WAIT_SECONDS}s"
+lock() { # serialize concurrent launches (two agents, same repo)
+  local waited=0
+  mkdir -p "$STATE_DIR"
+  while ! mkdir "$STATE_DIR/.lock" 2>/dev/null; do
+    if [ "$waited" -ge 180 ]; then
+      rmdir "$STATE_DIR/.lock" 2>/dev/null && log "broke a stale launch lock"
+      break
     fi
     sleep 0.25
     waited=$((waited + 1))
   done
-fi
+  trap 'rmdir "$STATE_DIR/.lock" 2>/dev/null' EXIT
+}
 
-log "attached to the FigCraft app on port $PORT"
-exec "$CLI" mcp --attach "$PORT"
+launch_on() { # $1 port; rc 1 with LAUNCH_ERR on failure
+  local app binary waited
+  LAUNCH_ERR=
+  if [ "$(uname -s)" = "Darwin" ]; then
+    app="$(find_app)"
+    [ -n "$app" ] || { LAUNCH_ERR="FigCraft.app not found; set FIGCRAFT_APP or install the app"; return 1; }
+    open -n -g -a "$app" --args --control "$1" || { LAUNCH_ERR="could not launch $app"; return 1; }
+  else
+    binary="${FIGCRAFT_APP:-}"
+    [ -x "$binary" ] || binary="$(command -v FigCraft.AppImage 2>/dev/null)" || binary=
+    [ -n "$binary" ] || { LAUNCH_ERR="set FIGCRAFT_APP to the FigCraft binary or AppImage"; return 1; }
+    nohup "$binary" --control "$1" >/dev/null 2>&1 &
+  fi
+  waited=0
+  while ! port_open "$1"; do
+    if [ "$waited" -ge "$((START_WAIT * 4))" ]; then
+      LAUNCH_ERR="control port $1 did not open within ${START_WAIT}s"
+      return 1
+    fi
+    sleep 0.25
+    waited=$((waited + 1))
+  done
+}
+
+candidate_ports() { # ordered: pinned, remembered, default, then repo-derived
+  local d
+  d="$(derived_port)"
+  printf '%s\n' "${FIGCRAFT_PORT:-}" "$(state_port)" "$DEFAULT_PORT" "$d" "$((d + 1))" "$((d + 2))"
+}
+
+ORIGIN=
+ensure_instance() { # sets rpc_port/ORIGIN; the ONLY path that launches the app
+  local p state_p
+  state_p="$(state_port)"
+
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    if is_figcraft "$p"; then
+      [ -n "${FIGCRAFT_PORT:-}" ] && [ "$p" != "$FIGCRAFT_PORT" ] && continue
+      rpc_port="$p"
+      ORIGIN=adopted
+      if [ "$p" = "$state_p" ] && [ -n "$(state_origin)" ]; then
+        ORIGIN="$(state_origin)"
+      fi
+      write_state "$p" "$ORIGIN"
+      return 0
+    fi
+    if [ -n "${FIGCRAFT_PORT:-}" ] && [ "$p" = "$FIGCRAFT_PORT" ] && port_open "$p"; then
+      ENSURE_ERR="FIGCRAFT_PORT=$p is busy and is not FigCraft"
+      return 1
+    fi
+  done < <(candidate_ports)
+
+  lock
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    port_open "$p" && continue # closed port: take it
+    launch_on "$p" || { ENSURE_ERR="$LAUNCH_ERR"; return 1; }
+    is_figcraft "$p" || { ENSURE_ERR="the app opened but did not answer on port $p"; return 1; }
+    write_state "$p" started
+    rpc_port="$p"
+    ORIGIN=started
+    return 0
+  done < <(candidate_ports)
+  ENSURE_ERR="no free control port near $DEFAULT_PORT"
+  return 1
+}
+
+resolve_running() { # like ensure_instance but never launches
+  local p state_p
+  state_p="$(state_port)"
+  while IFS= read -r p; do
+    [ -n "$p" ] || continue
+    [ -n "${FIGCRAFT_PORT:-}" ] && [ "$p" != "$FIGCRAFT_PORT" ] && continue
+    if is_figcraft "$p"; then
+      rpc_port="$p"
+      ORIGIN=adopted
+      [ "$p" = "$state_p" ] && ORIGIN="$(state_origin)"
+      [ -n "$ORIGIN" ] || ORIGIN=adopted
+      return 0
+    fi
+  done < <(candidate_ports)
+  return 1
+}
+
+require_running() {
+  resolve_running || die "FigCraft is not running; call the ensure tool first (only ensure starts the app)"
+}
+
+exec_cmd() { # $1 command id, $2 params JSON object; reply in REPLY
+  local payload
+  payload="$(jq -cn --arg c "$1" --argjson p "$2" '{command: $c, params: $p}')"
+  rpc engine.execute "$payload" || die "control channel failed on port $rpc_port (rc=$?)"
+}
+
+# ---- MCP plumbing -----------------------------------------------------------
+
+ok_result() { # $1..N text blocks (JSON already)
+  jq -cn --arg t "$1" '{content: [{type: "text", text: $t}]}'
+}
+
+image_result() { # $1 base64 (no newlines), $2 mimeType, $3 caption text
+  jq -cn --arg d "$1" --arg m "$2" --arg t "$3" \
+    '{content: [{type: "image", data: $d, mimeType: $m}, {type: "text", text: $t}]}'
+}
+
+error_result() { # $1 message
+  jq -cn --arg t "$1" '{content: [{type: "text", text: $t}], isError: true}'
+}
+
+# ---- tools --------------------------------------------------------------------
+
+t_status() {
+  local args="$1"
+  if resolve_running; then
+    rpc window.list '{}' || die "control channel failed on port $rpc_port"
+    ok_result "$(jq -cn --argjson port "$rpc_port" --arg origin "$ORIGIN" \
+      --argjson windows "$(jq -c '.result // []' <<<"$REPLY")" \
+      '{running: true, port: $port, origin: $origin, windows: $windows}')"
+  else
+    ok_result '{"running": false, "hint": "call ensure to adopt or start the app"}'
+  fi
+}
+
+t_ensure() {
+  local args="$1" path name raise abs reply doc
+  path="$(jq -r '.path // ""' <<<"$args")"
+  name="$(jq -r '.name // ""' <<<"$args")"
+  raise="$(jq -r '.raise // false' <<<"$args")"
+  ensure_instance || die "cannot start FigCraft: ${ENSURE_ERR:-unknown}"
+  local origin="$ORIGIN" port="$rpc_port"
+  doc=null
+  if [ -n "$path" ]; then
+    case "$path" in /*) abs="$path" ;; *) abs="$PWD/$path" ;; esac
+    exec_cmd file.open "{\"path\":$(jq -n --arg v "$abs" '$v')}"
+    reply="$REPLY"
+    if ! jq -e '.ok == true' >/dev/null 2>&1 <<<"$reply"; then
+      die "file.open failed: $(jq -r '.error // "unknown error"' <<<"$reply")"
+    fi
+    doc="$(printf '%s' "$reply" | jq -c '.result | if has("index")
+      then {opened: "already", index: .index, stale: (.stale // false)}
+      else {opened: "new", summary: .} end')"
+  elif [ -n "$name" ]; then
+    exec_cmd file.new "{\"name\":$(jq -n --arg v "$name" '$v')}"
+    die_on_error_reply
+    doc="$(printf '%s' "$REPLY" | jq -c '.result | {opened: "new", tab: .}')"
+  fi
+  if [ "$raise" = "true" ]; then
+    rpc window.focus '{"id": 0}' >/dev/null 2>&1 || true
+  fi
+  ok_result "$(jq -cn --arg origin "$origin" --argjson port "$port" --argjson doc "$doc" \
+    '{instance: $origin, port: $port, document: $doc}')"
+}
+
+die_on_error_reply() {
+  if ! jq -e '.ok == true' >/dev/null 2>&1 <<<"$REPLY"; then
+    die "command failed: $(jq -r '.error // "unknown error"' <<<"$REPLY")"
+  fi
+}
+
+t_exec() {
+  local args="$1" cmd params
+  cmd="$(jq -r '.command // ""' <<<"$args")"
+  [ -n "$cmd" ] || die "exec needs {command, params?}"
+  params="$(jq -c '.params // {}' <<<"$args")"
+  require_running
+  exec_cmd "$cmd" "$params"
+  ok_result "$REPLY"
+}
+
+t_batch() {
+  local args="$1" payload
+  payload="$(jq -ce 'if type == "object" and (.commands | type == "array") and (.commands | length > 0)
+    then . else error("shape") end' <<<"$args")" ||
+    die "batch needs {label?, commands: [{command, params, as?}]}"
+  require_running
+  exec_cmd command.batch "$payload"
+  ok_result "$REPLY"
+}
+
+t_inspect() {
+  local args="$1" id depth
+  id="$(jq -r '.id // ""' <<<"$args")"
+  depth="$(jq -r '.depth // 2' <<<"$args")"
+  require_running
+  if [ -n "$id" ] && [ -z "${id//[0-9]/}" ]; then
+    rpc node.get "{\"id\":$id,\"depth\":$depth}" || die "inspect failed (rc=$?)"
+  else
+    rpc document.inspect "{\"depth\":$depth}" || die "inspect failed (rc=$?)"
+  fi
+  ok_result "$REPLY"
+}
+
+t_render() {
+  local args="$1" out ids scale window payload w h
+  out="$(jq -r '.path // ""' <<<"$args")"
+  ids="$(jq -c '.ids // empty' <<<"$args")"
+  scale="$(jq -r '.scale // empty' <<<"$args")"
+  window="$(jq -r '.window // false' <<<"$args")"
+  [ -n "$out" ] || {
+    out="${TMPDIR:-/tmp}/figcraft/render-$(date +%Y%m%d%H%M%S).png"
+    mkdir -p "$(dirname "$out")"
+  }
+  payload="$(jq -cn --arg path "$out" '{path: $path}')"
+  [ -n "$scale" ] && payload="$(jq -c --argjson s "$scale" '. + {scale: $s}' <<<"$payload")"
+  [ -n "$ids" ] && payload="$(jq -c --argjson a "$ids" '. + {ids: $a}' <<<"$payload")"
+  require_running
+  if [ "$window" = "true" ]; then
+    rpc ui.screenshot "$payload" || die "screenshot failed (rc=$?)"
+  else
+    rpc ui.render "$payload" || die "render failed (rc=$?)"
+  fi
+  die_on_error_reply
+  w="$(printf '%s' "$REPLY" | jq -r '.result.width // "?"')"
+  h="$(printf '%s' "$REPLY" | jq -r '.result.height // "?"')"
+  [ -f "$out" ] || die "render reported success but $out is missing"
+  local b64 size
+  size=$(wc -c <"$out" | tr -d ' ')
+  if [ "$size" -gt 8388608 ]; then
+    ok_result "$(jq -cn --arg p "$out" '{path: $p, note: "image too large to inline (>8 MB); read the file"}')"
+    return
+  fi
+  b64="$(openssl base64 -A -in "$out" 2>/dev/null || base64 <"$out" | tr -d '\n')"
+  local dims=""
+  if [ "$w" != "?" ] && [ "$h" != "?" ]; then dims="${w}x${h}, "; fi
+  image_result "$b64" "image/png" "rendered $out (${dims}${size} bytes)"
+}
+
+t_commands() {
+  local args="$1" filter
+  filter="$(jq -r '.filter // ""' <<<"$args")"
+  require_running
+  rpc engine.commands '{}' || die "commands failed (rc=$?)"
+  if [ -n "$filter" ]; then
+    ok_result "$(printf '%s' "$REPLY" | jq -c --arg f "$filter" \
+      '[.result[] | select((.id | test($f; "i")) or ((.label // "") | test($f; "i"))) | {id, label, params}]')"
+  else
+    ok_result "$REPLY"
+  fi
+}
+
+t_stop() {
+  local args="$1" force
+  force="$(jq -r '.force // false' <<<"$args")"
+  resolve_running || die "nothing to stop: no running instance"
+  if [ "$ORIGIN" != started ] && [ "$force" != "true" ]; then
+    die "this instance was adopted, not started by this server; app.quit closes every window without asking about unsaved changes. Save first, then call stop with force: true"
+  fi
+  rpc app.quit '{}' || die "app.quit failed (rc=$?)"
+  ok_result "$(jq -cn --arg port "$rpc_port" '{stopped: true, port: $port}')"
+}
+
+call_tool() { # $1 name, $2 arguments JSON; prints an MCP result object
+  case "$1" in
+    status) t_status "$2" ;;
+    ensure) t_ensure "$2" ;;
+    exec) t_exec "$2" ;;
+    batch) t_batch "$2" ;;
+    inspect) t_inspect "$2" ;;
+    render) t_render "$2" ;;
+    commands) t_commands "$2" ;;
+    stop) t_stop "$2" ;;
+    *) die "unknown tool: $1" ;;
+  esac
+}
+
+TOOLS_LIST="$(cat <<'JSON'
+{
+  "tools": [
+    {
+      "name": "status",
+      "description": "Report the FigCraft instance: running, control port, origin (started or adopted), and open windows and documents. Never starts the app.",
+      "inputSchema": {"type": "object", "properties": {}}
+    },
+    {
+      "name": "ensure",
+      "description": "The only tool that may launch the FigCraft app. Adopts an already-running controllable instance (one per repository, shared across worktrees and agent sessions) or launches the app when none responds. With path: opens the design file or reuses its open tab (reporting already/new and stale). With name: creates a new document. With raise:true: brings the window to the front. Announce the launch before calling.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {"type": "string", "description": "design file to open (absolute or cwd-relative), e.g. design/app.figcraft"},
+          "name": {"type": "string", "description": "new document name (file.new) when no path is given"},
+          "raise": {"type": "boolean", "description": "bring the app window to the front"}
+        }
+      }
+    },
+    {
+      "name": "exec",
+      "description": "Run one registry command via engine.execute, e.g. {command: \"file.save\", params: {path: \"...\"}}. Requires a running instance (call ensure first); never starts the app.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["command"],
+        "properties": {
+          "command": {"type": "string", "description": "command id, e.g. file.save, node.set, select.set, edit.undo, image.place, inspect.code"},
+          "params": {"type": "object", "description": "command parameters"}
+        }
+      }
+    },
+    {
+      "name": "batch",
+      "description": "Run an array of commands as one undo step (registry command.batch): {label?, commands: [{command, params, as?}]}. Name a step with as and reference it later with {\"$ref\": name}. Build one design section per batch.",
+      "inputSchema": {
+        "type": "object",
+        "required": ["commands"],
+        "properties": {
+          "label": {"type": "string"},
+          "commands": {"type": "array", "items": {"type": "object"}}
+        }
+      }
+    },
+    {
+      "name": "inspect",
+      "description": "Read the document model: calls node.get for one layer when id is given, or document.inspect for the active document (solved sizes, absoluteBounds, undo history). Requires a running instance; never starts the app.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "number"},
+          "depth": {"type": "number", "description": "child depth (default 2)"}
+        }
+      }
+    },
+    {
+      "name": "render",
+      "description": "Render layer ids to PNG via ui.render and return the image inline plus its path. Pass ids explicitly: omitting ids renders only the current selection, not the page. window:true captures the full app window (ui.screenshot). Requires a running instance; never starts the app.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ids": {"type": "array", "items": {"type": "number"}},
+          "scale": {"type": "number"},
+          "path": {"type": "string", "description": "output PNG path (default a temp file)"},
+          "window": {"type": "boolean"}
+        }
+      }
+    },
+    {
+      "name": "commands",
+      "description": "List the in-app command registry (400+ ids with parameter docs), optionally filtered by a case-insensitive regex on id or label. Requires a running instance; for offline discovery run `figcraft-cli commands --filter <text>`.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {"filter": {"type": "string", "description": "regex, e.g. image|layout"}}
+      }
+    },
+    {
+      "name": "stop",
+      "description": "Call app.quit on an instance this server started. Discards unsaved changes, so save first. Adopted user instances require force:true.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {"force": {"type": "boolean"}}
+      }
+    }
+  ]
+}
+JSON
+)"
+
+INSTRUCTIONS='Lazy gateway to the FigCraft desktop app. Nothing starts until you call ensure: it adopts an already-running controllable instance first (one window per repository, shared across worktrees and agent sessions) and launches the app only when none responds (announce the launch first). Every other tool never starts the app. ensure {path} reports whether the design file was already open and whether it is stale. Edit with batch (one undo step per section), save with exec file.save, verify with inspect and render (pass explicit ids to render), and stop only instances this server started (force discards unsaved changes).'
+
+dispatch() { # $1 request line; prints one JSON-RPC response (or nothing for notifications)
+  local name args id_json result errfile
+  id_json="$(jq -c '.id // null' <<<"$1" 2>/dev/null)"
+  name="$(jq -r '.params.name // ""' <<<"$1" 2>/dev/null)"
+  args="$(jq -c '.params.arguments // {}' <<<"$1" 2>/dev/null)"
+  errfile="$(mktemp "${TMPDIR:-/tmp}/figcraft-live-mcp.XXXXXX")"
+  result="$(call_tool "$name" "$args" 2>"$errfile")"
+  if [ $? -ne 0 ] || [ -z "$result" ]; then
+    result="$(error_result "$(head -c 2000 "$errfile")")"
+  fi
+  rm -f "$errfile"
+  jq -cn --argjson id "$id_json" --argjson r "$result" '{jsonrpc: "2.0", id: $id, result: $r}'
+}
+
+# ---- stdio loop --------------------------------------------------------------
+
+while IFS= read -r line; do
+  method="$(jq -r '.method // ""' <<<"$line" 2>/dev/null)" || method=""
+  has_id="$(jq -r 'if has("id") then "true" else "false" end' <<<"$line" 2>/dev/null)"
+  id_json="$(jq -c '.id // null' <<<"$line" 2>/dev/null)"
+  case "$method" in
+    initialize)
+      [ "$has_id" = true ] || continue
+      client_pv="$(jq -r '.params.protocolVersion // ""' <<<"$line" 2>/dev/null)"
+      case "$client_pv" in
+        2025-06-18 | 2025-03-26 | 2024-11-05) pv="$client_pv" ;;
+        *) pv="2025-06-18" ;;
+      esac
+      jq -cn --argjson id "$id_json" --arg pv "$pv" --arg inst "$INSTRUCTIONS" --arg v "$SERVER_VERSION" \
+        '{jsonrpc: "2.0", id: $id, result: {protocolVersion: $pv, capabilities: {tools: {listChanged: false}}, serverInfo: {name: "figcraft-live", version: $v}, instructions: $inst}}'
+      ;;
+    notifications/*) ;;
+    ping)
+      [ "$has_id" = true ] && jq -cn --argjson id "$id_json" '{jsonrpc: "2.0", id: $id, result: {}}'
+      ;;
+    tools/list)
+      [ "$has_id" = true ] || continue
+      jq -cn --argjson id "$id_json" --argjson tools "$TOOLS_LIST" \
+        '{jsonrpc: "2.0", id: $id, result: $tools}'
+      ;;
+    tools/call)
+      [ "$has_id" = true ] && dispatch "$line"
+      ;;
+    "")
+      # not JSON or blank: parse error
+      jq -cn '{jsonrpc: "2.0", id: null, error: {code: -32700, message: "parse error"}}' <<<"$line" 2>/dev/null ||
+        printf '%s\n' '{"jsonrpc":"2.0","id":null,"error":{"code":-32700,"message":"parse error"}}'
+      ;;
+    *)
+      [ "$has_id" = true ] && jq -cn --argjson id "$id_json" --arg m "$method" \
+        '{jsonrpc: "2.0", id: $id, error: {code: -32601, message: ("method not found: " + $m)}}'
+      ;;
+  esac
+done

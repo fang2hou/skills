@@ -1,206 +1,103 @@
-# FigCraft MCP reference
+# The figcraft-live MCP server
 
-Verified against `docs/mcp.md` in storytold/figcraft (main, 2026-10) and
-exercised on figcraft-cli 0.12.1: both modes answer `initialize`, expose the
-same 18 tools (`list_commands`, `run_command`, `batch`, `create_node`,
-`set_properties`, `inspect_document`, `get_node`, `select`, `export`,
-`screenshot`, `open_file`, `save_file`, `undo`, `redo`, `pointer`, `key`,
-`type_text`, `inspect_ui`), and place images. The server lives in
-`crates/mcp` and is launched through the CLI.
+`scripts/figcraft-live-mcp` (installed to `~/.local/bin/figcraft-live-mcp`) is a self-contained Bash MCP server registered under the name **`figcraft-live`**. It avoids the bare name `figcraft`, which an official FigCraft server may claim later. The script runs a stdio JSON-RPC loop that proxies an 8-tool surface onto the app's loopback control channel ([control.md](control.md)). It was verified against the live app and `figcraft-cli` 0.12.1 on macOS (Bash 3.2) over raw stdio across every tool, cold-port launch, instance adoption, and the `stop` guard.
 
-Contents: modes · protocol · client registration (wrapper) · manual attached launch · session loop · tools · example calls · conventions
+Contents:
 
-## Modes
+- [Design](#design)
+- [Registration](#registration)
+- [Environment and CLI flags](#environment-and-cli-flags)
+- [Protocol](#protocol)
+- [Debugging](#debugging)
 
-| Command                          | Backend                                                                   |
-| -------------------------------- | ------------------------------------------------------------------------- |
-| `figcraft-cli mcp`               | Headless: in-process engine, one untitled document, no window, CPU render |
-| `figcraft-cli mcp --attach PORT` | Attached: drives a running app started with `figcraft --control PORT`     |
+## Design
 
-`--attach` also accepts `host:port`; the control channel listens on
-127.0.0.1 only. Build first (`cargo build --release -p figcraft-cli`) and
-call the binary by absolute path (`target/release/figcraft-cli`). Linux
-AppImage: `FigCraft.AppImage cli mcp` works in place of `figcraft-cli mcp`.
+- **Lazy by construction**: `initialize` and `tools/list` reply from static JSON without opening a socket or launching a process. The server sends the first control-channel byte only when a tool call requires it, and only `ensure` can launch the app. Because the server is a single Bash read loop, you can mount it across every session and run multiple sessions concurrently.
+- **Instance resolution** (used by `ensure` and read/write tools):
+  1. `FIGCRAFT_PORT` if set (if that port is busy with a non-FigCraft process, resolution fails immediately).
+  2. The remembered port for this repository (`~/.local/state/figcraft/<key>`).
+  3. Port `7979`, then a deterministic port derived from `git rev-parse --git-common-dir` (identical across every worktree of a repository, ensuring one window per repo), then the next two sequential ports.
+- **Adopt vs. start**: The first candidate port that answers `window.list` as FigCraft is **adopted** (`origin: adopted`). Adopted windows belong to the user and persist across sessions; `stop` refuses to close them without `force: true`. If no candidate port answers, `ensure` acquires a `mkdir` lock in the state directory and launches the app on the first closed candidate port (`open -n -g` on macOS so the window opens in the background). Concurrent agents waiting on the lock adopt the winner's instance. A server-launched instance is marked `origin: started` and can be closed with `stop` (`app.quit`, which discards unsaved changes).
+- **Tool semantics**: Every tool returns the control channel's reply as a single JSON text block containing `ok` or `error`. `render` also returns the rendered PNG inline as MCP image content when the file is 8 MB or smaller. Each control call opens one TCP connection with a 65s read timeout (the app's UI thread times out after 60s).
 
-## Protocol
+## Registration
 
-Newline-delimited JSON-RPC 2.0 over stdio; MCP `2025-06-18` (clients on
-`2025-03-26` and `2024-11-05` accepted). Frames are capped at 32 MiB before
-the newline; oversized input yields JSON-RPC error `-32600` and closes the
-session.
+Register the server at user scope so it is available everywhere without per-project setup. Set the client's MCP timeout to at least `60000` ms, because `ensure` may wait up to `FIGCRAFT_START_WAIT` (default 30s) when cold-launching the app.
 
-Attached-mode caveat: calls are never auto-replayed after a transport
-failure because the edit may have applied; inspect before retrying. The next
-explicit call reconnects.
+### omp
 
-## Client registration
-
-Register one server, `figcraft`, at project level, pointing at the wrapper
-`figcraft-live-mcp` (installed to `~/.local/bin` from the skill's
-`scripts/` directory). Use the absolute path: GUI-launched clients do not
-inherit the shell `PATH`, and JSON configs do not expand `~`.
-
-Not at user level: every connection of the live wrapper launches the app,
-so a user-level entry opens FigCraft in every session, design work or not.
-`scripts/figcraft-project-mcp [--client omp|claude] [--remove] [DIR]` does
-the project registration: it merges the entry into `DIR/.omp/mcp.json`
-(omp, default) or `DIR/.mcp.json` (Claude Code), is idempotent, and adds the
-file to `.git/info/exclude` because the entry holds a machine-specific
-absolute path (a warning replaces the exclusion when the file is already
-tracked). `--remove` deletes the entry, and the file when nothing else
-remains. It needs `jq` and an installed wrapper.
-
-Why a wrapper: `figcraft-cli mcp --attach PORT` exits at startup when no
-app is listening (omp reports `MCP subprocess closed stdout before
-responding`), so registering it directly warns in every session and fails
-whenever the app is closed. The wrapper removes that:
-
-1. If `127.0.0.1:$FIGCRAFT_CONTROL_PORT` (default 7979) is closed, it
-   launches the app with `open -n -g -a FigCraft.app --args --control PORT`
-   and waits up to `FIGCRAFT_LIVE_WAIT` seconds (default 30) for the port.
-2. Port open: `exec figcraft-cli mcp --attach PORT` (live mode).
-3. No app, a launch error, a timeout, a non-macOS host, or `--headless`:
-   `exec figcraft-cli mcp` (headless; any extra args are passed through).
-
-It logs its choice on stderr (`attached to the FigCraft app on port 7979`
-or `headless mode, no live preview: <reason>`). Environment overrides:
-`FIGCRAFT_CLI`, `FIGCRAFT_APP`, `FIGCRAFT_CONTROL_PORT`,
-`FIGCRAFT_LIVE_WAIT`. Exit code 127 (message on stderr) means
-`figcraft-cli` was not found. The launched app is not tied to the MCP session: it
-keeps running, with its documents, after the client exits.
-
-Optional second entry `figcraft-headless` with `"args": ["--headless"]` for
-unattended runs next to the live server.
-
-Install the wrapper once, then register per project:
-
-```sh
-install -m 755 <skill-dir>/scripts/figcraft-live-mcp ~/.local/bin/
-bash <skill-dir>/scripts/figcraft-project-mcp /path/to/project
-```
-
-The resulting entry, for clients configured by hand (Claude Desktop has no
-project scope; add it to its config only when you accept the app opening
-with every session):
+Add to `~/.omp/agent/mcp.json` (or `~/.omp/profiles/<name>/agent/mcp.json` for a named profile), then run `/mcp reload`:
 
 ```json
 {
   "mcpServers": {
-    "figcraft": { "command": "/Users/<you>/.local/bin/figcraft-live-mcp" }
-  }
-}
-```
-
-Merge into the existing `mcpServers` object; never overwrite the file. omp
-reads project `.omp/mcp.json` under every profile, so no per-profile edit is
-needed; delete any leftover user-level `figcraft` entry (any profile), which
-would launch the app in every session. In omp the tools mount as
-`xd://mcp__figcraft_<tool>` devices (for example
-`xd://mcp__figcraft_run_command`); write the tool's JSON arguments to that
-path, or call them from `eval` with `tool.mcp__figcraft_<tool>(args)`.
-Extra `args` are passed to `figcraft-cli mcp` only in headless mode:
-`--no-system-fonts` (CI-stable text), `--automation-read-root DIR` /
-`--automation-write-root DIR` (confine which files images and exports may
-touch). In live mode the app confines files from the flags it was started
-with, which the wrapper does not set.
-
-New servers load when the client reloads MCP servers (`/mcp reload` in
-omp) or restarts, not in the running session. Until then use the CLI route
-from SKILL.md.
-
-## Manual attached launch
-
-Only when debugging the wrapper. macOS (the app bundle ships the app
-binary but no CLI):
-
-```sh
-/Applications/FigCraft.app/Contents/MacOS/FigCraft --control 7979
-```
-
-Wait for `FigCraft control server listening on 127.0.0.1:7979`, then run
-`figcraft-cli mcp --attach 7979`. Confinement flags (`--automation-read-root`,
-`--automation-write-root`) go on the app command, not on `mcp --attach`.
-The app starts with no document: call `run_command {command: "file.new"}`
-(or `open_file`) before editing, or every call fails with `no open
-document`. The wrapper uses `open -n` so a second instance starts with
-`--control` even while the user's own instance is running (observed: both
-ran side by side).
-
-## Session loop
-
-1. `list_commands {filter}` for any command not already documented here.
-2. `inspect_ui` (headless reports `"backend": "headless"`), then
-   `run_command {command: "file.new"}`; reuse that document for the whole
-   session.
-3. Per section: `batch` the creates (and `image.place` calls), then
-   `get_node` / `inspect_document` for the solved model, then `screenshot`
-   to look at pixels. Fix and repeat; `undo` reverts a bad batch.
-4. `save_file {path}` after each section (headless state is in memory only).
-5. `export {ids, format, scale, path}` for deliverables.
-
-## Tools
-
-| Tool                                                                              | Behavior                                                                                                                                |
-| --------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `list_commands {filter?}`                                                         | Every command: id, label, menu, shortcut, undoable flag, params doc.                                                                    |
-| `run_command {command, params}`                                                   | Run any registry command (`align.left`, `layout.add`, `component.create`, `instance.place`, `inspect.code`, `file.newFromTemplate`, …). |
-| `batch {commands: [{command, params}], label?}`                                   | Several commands as one undo step.                                                                                                      |
-| `create_node {type, x, y, width, height, parent, index, name, text, path, props}` | Returns `{id, node}`.                                                                                                                   |
-| `set_properties {ids, props}`                                                     | `node.set` on layers.                                                                                                                   |
-| `inspect_document {depth, allPages}`                                              | Document as JSON.                                                                                                                       |
-| `get_node {id, depth}`                                                            | One layer as JSON.                                                                                                                      |
-| `select {ids}`                                                                    | Replace the selection.                                                                                                                  |
-| `export {ids, format, scale \| size, path?, bleed?, cmyk?, svgOutlineText?, …}`   | png/jpg/svg/webp/pdf/fig; without `path`, returns MCP image content inline.                                                             |
-| `screenshot {ids?, scale?, maxSize?, window?}`                                    | PNG of the page, layers, or app window.                                                                                                 |
-| `open_file {path, variables?}` / `save_file {path?}`                              | Open `.figcraft`, `.json`, `.fig`, `.svg`, images; save the document.                                                                   |
-| `undo` / `redo`                                                                   | Step the undo history.                                                                                                                  |
-| `pointer {kind, x, y, to?, steps?, tool?, shift, alt, cmd, pressure?}`            | Mouse gestures.                                                                                                                         |
-| `key {key, shift, alt, cmd}`                                                      | Shortcuts as if typed.                                                                                                                  |
-| `type_text {text, id?}`                                                           | Type into the edited text, or replace a text layer.                                                                                     |
-| `inspect_ui {}`                                                                   | Tool, view, status, and windows (attached mode).                                                                                        |
-
-## Example calls
-
-Start from a template:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 1,
-  "method": "tools/call",
-  "params": {
-    "name": "run_command",
-    "arguments": { "command": "file.newFromTemplate", "params": { "template": "dashboard" } }
-  }
-}
-```
-
-Shape builder:
-
-```json
-{
-  "jsonrpc": "2.0",
-  "id": 2,
-  "method": "tools/call",
-  "params": {
-    "name": "run_command",
-    "arguments": {
-      "command": "shapeBuilder.merge",
-      "params": {
-        "ids": [2, 3],
-        "points": [
-          [120, 80],
-          [160, 80]
-        ]
-      }
+    "figcraft-live": {
+      "type": "stdio",
+      "command": "/Users/your_username/.local/bin/figcraft-live-mcp",
+      "timeout": 120000
     }
   }
 }
 ```
 
-## Conventions
+Tools mount as `xd://mcp__figcraft_live_<tool>` (for example `xd://mcp__figcraft_live_ensure`; omp normalizes the hyphen to an underscore). Project-scoped `.omp/mcp.json` uses the same structure if you prefer per-repository registration.
 
-Coordinates, colors, ids, undo semantics, and the never-open-dialogs rule
-are as in the "Conventions" section of SKILL.md. Headless fonts match
-the desktop app; pass `--no-system-fonts` or set `FIGCRAFT_NO_SYSTEM_FONTS=1`
-for CI-stable renders.
+### Claude Code (user scope)
+
+```sh
+claude mcp add --scope user figcraft-live ~/.local/bin/figcraft-live-mcp
+```
+
+### Claude Desktop
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "figcraft-live": {
+      "command": "/Users/your_username/.local/bin/figcraft-live-mcp"
+    }
+  }
+}
+```
+
+Always use an absolute path in JSON configs because GUI-launched clients do not inherit your shell `PATH`. Do not register the upstream `figcraft-cli mcp` subcommand in its place: `figcraft-cli mcp` is not lazy and either launches a process or prints warnings on every session start.
+
+## Environment and CLI flags
+
+| Variable / Flag       | Effect                                                                      |
+| --------------------- | --------------------------------------------------------------------------- |
+| `FIGCRAFT_APP`        | App bundle path on macOS (`/Applications/FigCraft.app`) or binary on Linux  |
+| `FIGCRAFT_PORT`       | Pins the loopback control port; fails if busy with a non-FigCraft process   |
+| `FIGCRAFT_PROJECT`    | Pins the project root directory (default: the server's working directory)   |
+| `FIGCRAFT_START_WAIT` | Maximum seconds to wait for the control port on cold launch (default: `30`) |
+| `--project <dir>`     | CLI flag equivalent to `FIGCRAFT_PROJECT`                                   |
+| `--version`           | Prints `figcraft-live-mcp <version>` and exits `0`                          |
+| `--help` / `-h`       | Prints usage, environment variables, and exit codes, then exits `0`         |
+
+**Exit codes**: `0` on clean EOF, `--help`, or `--version`; `1` when `jq` is missing; `2` on invalid CLI arguments. Tool-level errors inside the JSON-RPC loop return MCP `isError: true` result blocks instead of terminating the server.
+
+**Runtime dependencies**: `bash` (3.2 or newer) and `jq`. Inline PNG encoding uses `openssl` or `base64`. Launching the app uses `open` on macOS, or `FIGCRAFT_APP` / `FigCraft.AppImage` on Linux.
+
+## Protocol
+
+The server speaks newline-delimited JSON-RPC 2.0 over stdio for MCP protocol versions `2025-06-18`, `2025-03-26`, and `2024-11-05`:
+
+- `initialize`: Returns `capabilities.tools` and embeds the demand-gate summary in `instructions` so every client session receives the contract automatically.
+- `tools/list`, `tools/call`, `ping`: Handled directly in the stdio loop.
+- `notifications/*`: Ignored silently.
+- Error handling: Non-JSON lines return `-32700` (`parse error`), and unknown methods return `-32601` (`method not found`). Tool execution runs in a subshell; any nonzero exit or `die` message is caught and returned as a normal MCP tool result with `isError: true` so the server process never crashes.
+
+## Debugging
+
+Test the server directly over stdio (one JSON-RPC line per request):
+
+```sh
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
+  '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"status","arguments":{}}}' \
+  | ~/.local/bin/figcraft-live-mcp | jq .
+```
+
+Use `status` to inspect port resolution, remove stale state files under `~/.local/state/figcraft/` if ports changed, and inspect the app directly over the loopback socket ([control.md](control.md)) when needed. The server writes only startup and launch diagnostics to stderr.
