@@ -1,7 +1,10 @@
-# The figcraft MCP server
+# The figcraft-live MCP server
 
-`scripts/figcraft-mcp` (installed to `~/.local/bin/figcraft-mcp`) is a
-self-contained bash MCP server: a stdio JSON-RPC loop that proxies a small
+`scripts/figcraft-live-mcp` (installed to
+`~/.local/bin/figcraft-live-mcp`) is a self-contained bash MCP server
+serving under the name **`figcraft-live`** — deliberately not plain
+`figcraft`, which an official FigCraft server may claim later. It is a
+stdio JSON-RPC loop that proxies a small
 tool surface onto the app's loopback control channel
 ([control.md](control.md)). Exercised against the live app with
 figcraft-cli 0.12.1 on macOS (bash 3.2) and verified over raw stdio: every
@@ -53,23 +56,23 @@ named profile reads `~/.omp/profiles/<name>/agent/mcp.json` instead; then
 ```json
 {
   "mcpServers": {
-    "figcraft": {
+    "figcraft-live": {
       "type": "stdio",
-      "command": "/Users/<you>/.local/bin/figcraft-mcp",
+      "command": "/Users/<you>/.local/bin/figcraft-live-mcp",
       "timeout": 120000
     }
   }
 }
 ```
 
-Tools mount as `xd://mcp__figcraft_<tool>` (for example
-`xd://mcp__figcraft_ensure`); project `.omp/mcp.json` works identically
-when you want it per-repo only.
+Tools mount as `xd://mcp__figcraft_live_<tool>` (for example
+`xd://mcp__figcraft_live_ensure`; omp normalizes the hyphen); project
+`.omp/mcp.json` works identically when you want it per-repo only.
 
 Claude Code (user scope):
 
 ```sh
-claude mcp add --scope user figcraft ~/.local/bin/figcraft-mcp
+claude mcp add --scope user figcraft-live ~/.local/bin/figcraft-live-mcp
 ```
 
 Claude Desktop — `~/Library/Application Support/Claude/claude_desktop_config.json`:
@@ -77,7 +80,7 @@ Claude Desktop — `~/Library/Application Support/Claude/claude_desktop_config.j
 ```json
 {
   "mcpServers": {
-    "figcraft": { "command": "/Users/<you>/.local/bin/figcraft-mcp" }
+    "figcraft-live": { "command": "/Users/<you>/.local/bin/figcraft-live-mcp" }
   }
 }
 ```
@@ -119,7 +122,7 @@ Drive the server by hand — one JSON-RPC line in, one line out:
 printf '%s\n' \
   '{"jsonrpc":"2.0","id":0,"method":"initialize","params":{"protocolVersion":"2025-06-18"}}' \
   '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"status","arguments":{}}}' \
-  | ~/.local/bin/figcraft-mcp | jq .
+  | ~/.local/bin/figcraft-live-mcp | jq .
 ```
 
 Check the resolution state with `status`, delete stale state under

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# figcraft-mcp: lazy MCP server for live FigCraft editing.
+# figcraft-live-mcp: lazy MCP server (server name `figcraft-live`; deliberately not plain `figcraft`, which an official server may claim). for live FigCraft editing.
 #
 # Mounts instantly and launches NOTHING: until a client calls the `ensure`
 # tool, the FigCraft desktop app never starts. Every other tool (status,
@@ -18,13 +18,13 @@
 # may spend up to FIGCRAFT_START_WAIT launching the app.
 set -u
 
-SERVER_VERSION=4.0
+SERVER_VERSION=4.1
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/figcraft"
 DEFAULT_PORT=7979
 READ_TIMEOUT=65 # control-channel UI requests time out at 60 s
 START_WAIT="${FIGCRAFT_START_WAIT:-30}"
 
-log() { printf 'figcraft-mcp: %s\n' "$*" >&2; }
+log() { printf 'figcraft-live-mcp: %s\n' "$*" >&2; }
 die() { printf '%s\n' "$*" >&2; exit 1; } # inside tool subshells: message to stderr, non-zero exit
 
 command -v jq >/dev/null 2>&1 || {
@@ -41,7 +41,7 @@ while [ $# -gt 0 ]; do
       shift 2
       ;;
     --version)
-      printf 'figcraft-mcp %s\n' "$SERVER_VERSION"
+      printf 'figcraft-live-mcp %s\n' "$SERVER_VERSION"
       exit 0
       ;;
     *) shift ;;
@@ -480,7 +480,7 @@ dispatch() { # $1 request line; prints one JSON-RPC response (or nothing for not
   id_json="$(jq -c '.id // null' <<<"$1" 2>/dev/null)"
   name="$(jq -r '.params.name // ""' <<<"$1" 2>/dev/null)"
   args="$(jq -c '.params.arguments // {}' <<<"$1" 2>/dev/null)"
-  errfile="$(mktemp "${TMPDIR:-/tmp}/figcraft-mcp.XXXXXX")"
+  errfile="$(mktemp "${TMPDIR:-/tmp}/figcraft-live-mcp.XXXXXX")"
   result="$(call_tool "$name" "$args" 2>"$errfile")"
   if [ $? -ne 0 ] || [ -z "$result" ]; then
     result="$(error_result "$(head -c 2000 "$errfile")")"
@@ -504,7 +504,7 @@ while IFS= read -r line; do
         *) pv="2025-06-18" ;;
       esac
       jq -cn --argjson id "$id_json" --arg pv "$pv" --arg inst "$INSTRUCTIONS" --arg v "$SERVER_VERSION" \
-        '{jsonrpc: "2.0", id: $id, result: {protocolVersion: $pv, capabilities: {tools: {listChanged: false}}, serverInfo: {name: "figcraft", version: $v}, instructions: $inst}}'
+        '{jsonrpc: "2.0", id: $id, result: {protocolVersion: $pv, capabilities: {tools: {listChanged: false}}, serverInfo: {name: "figcraft-live", version: $v}, instructions: $inst}}'
       ;;
     notifications/*) ;;
     ping)

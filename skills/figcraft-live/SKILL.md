@@ -8,18 +8,20 @@ description: >
   headlessly via figcraft-cli. Use for FigCraft or .figcraft work.
 license: MIT
 compatibility: >
-  live editing: the FigCraft desktop app plus the figcraft-mcp server (bash
+  live editing: the FigCraft desktop app plus the figcraft-live-mcp server
+  (bash
   and jq; launching needs macOS open, or FIGCRAFT_APP pointing at the
   binary/AppImage elsewhere); file work (inspect, render, export, run):
   anywhere figcraft-cli runs.
 metadata:
   author: fang2hou
-  version: "4.0"
+  version: "4.1"
 ---
 
 # FigCraft Live
 
-One lazy MCP server, `figcraft` (this skill's `scripts/figcraft-mcp`), is the
+One lazy MCP server, `figcraft-live` (this skill's
+`scripts/figcraft-live-mcp`), is the
 live interface to the FigCraft desktop app: it mounts in every session
 without starting anything, and the app opens only when a design task actually
 needs it — at most one window per repository, shared by every worktree and
@@ -45,24 +47,24 @@ render, export, atomic scripts) without the app.
 
 One-time install (per machine, not per project):
 
-1. Server: `install -m 755 <skill-dir>/scripts/figcraft-mcp
+1. Server: `install -m 755 <skill-dir>/scripts/figcraft-live-mcp
    ~/.local/bin/` (needs `bash` and `jq`). Register it globally for your
    client — omp: `~/.omp/agent/mcp.json`; Claude Code: `claude mcp add
-   --scope user figcraft ~/.local/bin/figcraft-mcp`; snippets and the
-   timeout caveat: [references/mcp.md](references/mcp.md).
+   --scope user figcraft-live ~/.local/bin/figcraft-live-mcp`; snippets
+   and the timeout caveat: [references/mcp.md](references/mcp.md).
 2. CLI (headless file route, offline command discovery):
    `figcraft-cli` from the GitHub release, checksum-verified:
    [references/setup.md](references/setup.md).
 
 Per-task check, reported in the first progress note: the session lists the
-`figcraft` tools (mounted), `figcraft-cli --version` works (file route
+`figcraft-live` tools (mounted), `figcraft-cli --version` works (file route
 ready). Neither check starts the app.
 
 ## Tools
 
 All tools take a single JSON object and reply with one text block of JSON
 (the control channel's reply, `ok`/`error` inside). Tool names carry the
-client's server prefix (omp: `mcp__figcraft_status`, …).
+client's server prefix (omp: `mcp__figcraft_live_status`, …).
 
 | Tool                                   | Starts the app         | Purpose                                                                                                                                                                                   |
 | -------------------------------------- | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
