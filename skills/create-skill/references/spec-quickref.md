@@ -6,7 +6,6 @@ Contents:
 
 - [Frontmatter fields](#frontmatter-fields)
 - [Client constraints](#client-constraints)
-- [Client-specific fields](#client-specific-fields)
 - [Directory structure](#directory-structure)
 - [Content rules](#content-rules)
 - [Progressive disclosure](#progressive-disclosure)
@@ -68,22 +67,6 @@ Some clients validate more strictly than the specification. Meet these so one sk
 - `name` does not contain the reserved words `anthropic` or `claude`.
 - Upload paths for Claude apps and the Skills API accept only the six spec fields above and reject any other frontmatter key.
 - Descriptions are listed under a shared context budget and may be cut short; a description that front-loads its use case survives truncation.
-
-## Client-Specific Fields
-
-Use these only when the user targets that client. In a portable skill, express the same intent in the body (for example a confirmation step) instead.
-
-| Need                                 | Client mechanism                                                                                                                   |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Run only on explicit user request    | Claude Code and Cursor: `disable-model-invocation: true`; Codex: `policy.allow_implicit_invocation: false` in `agents/openai.yaml` |
-| Hide from the user's command menu    | Claude Code: `user-invocable: false`                                                                                               |
-| Extra trigger text                   | Claude Code: `when_to_use` (counts toward the same truncation cap as `description`)                                                |
-| Named arguments                      | Claude Code: `argument-hint`, `arguments`, `$ARGUMENTS`, `$N`                                                                      |
-| Run in an isolated subagent          | Claude Code: `context: fork` with `agent`                                                                                          |
-| Scope to file paths                  | Cursor and Claude Code: `paths`                                                                                                    |
-| Display name, icon, MCP dependencies | Codex: `agents/openai.yaml` beside `SKILL.md`                                                                                      |
-
-Client field sets change between releases. Before relying on one, read the target client's current skills documentation.
 
 ## Directory Structure
 

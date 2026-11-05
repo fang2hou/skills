@@ -147,10 +147,10 @@ Exit 0 dispatches; any FAIL row means stop and fix first.
 
 ### Step 4: Dispatch agents
 
-One `hc run` per task; the brief is the first task (a send to a booting agent can be dropped). Check `hc templates` first for a fitting role; otherwise launch the installed agent kind directly (`omp` is common; pick from what the user runs):
+One `hc run` per task; the brief is the first task (a send to a booting agent can be dropped). Check `hc templates` first for a fitting role; otherwise launch the agent CLI the user already runs, as `<agent-cmd>`:
 
 ```bash
-hc run --bg --outlive-parent --name <slug> --cwd "$WT_ROOT/<slug>" omp '<full self-contained brief>'
+hc run --bg --outlive-parent --name <slug> --cwd "$WT_ROOT/<slug>" <agent-cmd> '<full self-contained brief>'
 # record .address; verify the brief landed:
 hc get <slug>        # state live; status should become working within seconds
 ```
@@ -176,7 +176,7 @@ Only when the user asked to watch the run: create one space for it and adopt eac
 ```bash
 herdr-app do space.new --name "<repo> parallel" --folder "$PROJECT"   # record the id; Step 9 closes it
 hc run --bg --outlive-parent --name <slug> --cwd "$WT_ROOT/<slug>" \
-  --label herdr.space=<space-id> -- omp '<brief>'                     # one tab per agent in that space
+  --label herdr.space=<space-id> -- <agent-cmd> '<brief>'                 # one tab per agent in that space
 ```
 
 ### Step 5: Monitor and dynamically schedule (Orchestrator Loop)
@@ -339,7 +339,7 @@ Stop and ask the user when landing mode is ambiguous, a merge needs force-pushin
 - Agent status is program-reported (`hc get`); screen text is evidence only for humans. `hc send` waits for the program to pause — don't stack sends to a `working` agent.
 - An `idle` agent still holds its terminal and name until `hc kill` + `hc rm`; squash-merged branches require `git branch -D` after merge proof; resolve rebase conflicts inside the branch's worktree, never the main checkout.
 - Labels `herdr.space`/`herdr.tab` put a terminal on the person's screen; a worker without them is invisible in the window but fully controllable via `hc`.
-- Codex workers must run with `--no-daemon`, or their commands execute outside hc.
+- If an agent CLI delegates commands to its own background daemon, its commands execute outside hc; start it in its in-process (no-daemon) mode.
 
 ## Output Contract
 
