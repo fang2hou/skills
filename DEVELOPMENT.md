@@ -12,7 +12,7 @@ mise install
 
 | Tool      | Version | Purpose                                                                         | Managed via |
 | --------- | ------- | ------------------------------------------------------------------------------- | ----------- |
-| Node.js   | 24      | Runs the `npx skills` distribution CLI                                          | `mise.toml` |
+| Node.js   | lts     | Runs the `npx skills` distribution CLI                                          | `mise.toml` |
 | prek      | latest  | Runs the configured Git hooks for staged changes and commit messages            | `mise.toml` |
 | Cocogitto | latest  | Validates Conventional Commit messages locally and the pull request title in CI | `mise.toml` |
 | Gitleaks  | latest  | Scans tracked content for secrets during validation                             | `mise.toml` |
