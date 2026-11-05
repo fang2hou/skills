@@ -1,5 +1,5 @@
 [tools]
-node = "24"
+node = "lts"
 prek = "latest"
 cocogitto = "latest"
 gitleaks = "latest"
