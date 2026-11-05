@@ -184,7 +184,7 @@ Use the pattern that matches the work: **Gotchas**, **output-format template**, 
 
 Prefer instructions; add a script only when the work must be deterministic or the agent would otherwise rewrite the same logic on every run. Only when the skill will ship `scripts/`, load [references/script-design.md](references/script-design.md) before writing a script; it defines the non-interactive interface, robustness, and packaging requirements.
 
-**Step 2: Write frontmatter.** For complete field rules and client-specific fields, see [references/spec-quickref.md](references/spec-quickref.md).
+**Step 2: Write frontmatter.** For complete field rules and client constraints, see [references/spec-quickref.md](references/spec-quickref.md).
 
 ```yaml
 ---

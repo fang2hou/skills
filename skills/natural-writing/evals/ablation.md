@@ -3,7 +3,7 @@
 This document defines the ablation and `improve-skill` trial-run protocol for `natural-writing` and records two empirical evaluations:
 
 1. A five-system zero-n-gram-leakage ablation scored by an independent blinded judge subagent (`BlindedJudgeV2`).
-2. A live field trial on `pi` agent + `zai/glm-5.3-flashx` (2026-10-18): 9 technical-report cases (zh-CN / en / ja × Frontend / Backend / Architecture), directly judged by the primary model, driving the `v1.1.0 → v1.2.1` optimization.
+2. A live field trial on a CLI agent + `zai/glm-5.3-flashx` (2026-10-18): 9 technical-report cases (zh-CN / en / ja × Frontend / Backend / Architecture), directly judged by the primary model, driving the `v1.1.0 → v1.2.1` optimization.
 
 Contents:
 
@@ -12,7 +12,7 @@ Contents:
 - [3. Mechanical Assertion Matrix & Blinded Rubric Results](#3-mechanical-assertion-matrix--blinded-rubric-results)
 - [4. Case-by-Case Qualitative Analysis](#4-case-by-case-qualitative-analysis)
 - [5. Key Findings on Layer 2, Layer 3, and v1.1.0 Improvements](#5-key-findings-on-layer-2-layer-3-and-v110-improvements)
-- [6. Field Trial: pi + zai/glm-5.3-flashx (v1.2.x)](#6-field-trial-pi--zaiglm-53-flashx-v12x)
+- [6. Field Trial: CLI agent + zai/glm-5.3-flashx (v1.2.x)](#6-field-trial-cli-agent--zaiglm-53-flashx-v12x)
 - [7. Reproducing the Evaluation](#7-reproducing-the-evaluation)
 - [8. improve-skill Pass: v1.2.1 → v1.3.0](#8-improve-skill-pass-v121--v130)
 
@@ -116,11 +116,11 @@ _(Note: Single-run wall-clock times reflect one parallel subagent execution per 
 
 ---
 
-## 6. Field Trial: pi + zai/glm-5.3-flashx (v1.2.x)
+## 6. Field Trial: CLI agent + zai/glm-5.3-flashx (v1.2.x)
 
 ### 6.1 Setup
 
-- **Harness**: `pi --model zai/glm-5.3-flashx --no-session --no-skills --skill skills/natural-writing --mode json -p <prompt>` (model registered in `~/.pi/agent/models.json` as a verbatim clone of the `glm-5.3-flash` catalog entry with only `id`/`name` changed).
+- **Harness**: a non-interactive CLI agent run with model `zai/glm-5.3-flashx`, session persistence off, only `skills/natural-writing` loaded, JSON event output, and the case prompt passed on the command line (the model was registered as a verbatim clone of the `glm-5.3-flash` catalog entry with only `id`/`name` changed). The agent's name is omitted on purpose; any CLI agent with these switches reproduces the setup.
 - **Matrix**: 9 cases — zh-CN / en / ja × Frontend / Backend / Architecture Design. Each prompt embeds a realistic draft mixing AI inflation, internet slang, officialese, translationese, literal calques, and hard engineering figures, and requests a full Markdown technical report.
 - **Judging**: the primary model directly read every output and tool-call trace (no subagents). Scores below are the strict re-judgment after dock verification-narration leaks and case-specific residuals.
 - **Rounds**: Round 1 = `v1.1.0`; Round 2 = `v1.2.0`; Round 3 = `v1.2.1` (tightened output contract + repaired `fact-check`), re-running only the 4 cases that leaked validator narration in Round 2.
@@ -161,10 +161,7 @@ _(Note: Single-run wall-clock times reflect one parallel subagent execution per 
 
 ### 6.5 Re-running the Field Trial
 
-```bash
-pi --model zai/glm-5.3-flashx --no-session --no-skills \
-   --skill skills/natural-writing --mode json -p "<case prompt>"
-```
+Run the case prompt through a non-interactive CLI agent with model `zai/glm-5.3-flashx`, session persistence off, only `skills/natural-writing` loaded, and JSON event output.
 
 Keep total concurrency ≤ 2 (the zai endpoint returns `429 code 1302` above that) and run cases sequentially or with per-case scratch directories when the agent writes temporary fact-check files.
 
@@ -192,7 +189,7 @@ uv run skills/natural-writing/scripts/validate.py --mode fact-check \
 
 ## 8. improve-skill Pass: v1.2.1 → v1.3.0
 
-Method: `improve-skill` phases 0–5. The pre-edit snapshot of v1.2.1 is the baseline; each trial run is a fresh `pi` process (`zai/glm-5.3-flashx`, `--no-skills --skill <dir> --mode json`) in an isolated scratch directory outside the repository, which mimics an installed skill. The primary model scored the static audit and read the outputs; objective assertions were graded by script. Harnesses and raw artifacts live in `~/.local/share/natural-writing-evals/` (`trigger_eval.py`, `trial_run.py`, `trial_analyze.py`, per-batch directories).
+Method: `improve-skill` phases 0–5. The pre-edit snapshot of v1.2.1 is the baseline; each trial run is a fresh agent process (`zai/glm-5.3-flashx`, only the skill under test loaded, JSON event output) in an isolated scratch directory outside the repository, which mimics an installed skill. The primary model scored the static audit and read the outputs; objective assertions were graded by script. Harnesses and raw artifacts live in `~/.local/share/natural-writing-evals/` (`trigger_eval.py`, `trial_run.py`, `trial_analyze.py`, per-batch directories).
 
 ### 8.1 Scorecard (strict static audit, same-context)
 
