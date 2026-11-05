@@ -39,15 +39,26 @@ Drive live design in the FigCraft desktop app through the lazy `figcraft-live` M
 
 ## Setup
 
-One-time install (per machine, not per project):
+**Preflight (every task, before any other FigCraft call; neither check starts the app):**
 
-1. **MCP server**: Run `install -m 755 <skill-dir>/scripts/figcraft-live-mcp ~/.local/bin/` (requires `bash` and `jq`). Register it at user scope with a `>= 60000` ms timeout (`ensure` waits up to 30s for cold launch):
-   - omp: add to `~/.omp/agent/mcp.json`
-   - Claude Code: `claude mcp add --scope user figcraft-live ~/.local/bin/figcraft-live-mcp`
-   - Full config snippets: [references/mcp.md](references/mcp.md)
-2. **Headless CLI**: Install `figcraft-cli` from the GitHub release and verify its SHA-256 checksum: [references/setup.md](references/setup.md).
+1. Confirm that the session lists the `figcraft-live` tools, and that `figcraft-cli --version` succeeds.
+2. If the tools are listed, continue; nothing else to install.
+3. If they are missing, install and register the MCP server yourself from the spec below. Work out from your own environment's documentation how it registers MCP servers; do not assume a particular client. Tell the user before changing any global configuration, and tell them if a reload or session restart is needed before the tools appear.
+4. If registration fails or cannot be done from this environment, stop and report the error. Do not launch the app by hand or fall back to headless CLI editing.
+5. Report the preflight result in your first progress note.
 
-**Per-task readiness check** (report in your first progress note): confirm that the session lists the `figcraft-live` tools and that `figcraft-cli --version` succeeds. Neither check starts the app.
+**MCP server spec:**
+
+| Item      | Value                                                                                        |
+| --------- | -------------------------------------------------------------------------------------------- |
+| Name      | `figcraft-live`                                                                              |
+| Transport | stdio, no arguments                                                                          |
+| Install   | `install -m 755 <skill-dir>/scripts/figcraft-live-mcp ~/.local/bin/` (requires `bash`, `jq`) |
+| Command   | Absolute path of the installed script; do not rely on `PATH`                                 |
+| Scope     | User or global, not per project                                                              |
+| Timeout   | At least 60 seconds (`ensure` waits up to 30s on a cold launch)                              |
+
+Server internals, environment variables, and debugging: [references/mcp.md](references/mcp.md). The headless `figcraft-cli` installs from the GitHub release with a SHA-256 check: [references/setup.md](references/setup.md).
 
 ## Inputs & Environment
 
@@ -62,7 +73,7 @@ One-time install (per machine, not per project):
 
 ## MCP Tools
 
-Every tool accepts a JSON object and returns one JSON text block containing the control channel reply (`ok` / `error`). Clients prefix tool names with the server name (for example `mcp__figcraft_live_status` in omp).
+Every tool accepts a JSON object and returns one JSON text block containing the control channel reply (`ok` / `error`). Clients may namespace tool names with the server name (for example `figcraft_live_status` or `mcp__figcraft_live_status`); use the form your client lists.
 
 | Tool                                   | Starts App             | Purpose                                                                                                                                                                   |
 | -------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
