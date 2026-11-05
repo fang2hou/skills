@@ -141,6 +141,12 @@ for skill_dir in "${directories[@]}"; do
   fi
 done
 
+agent_names='oh-my-pi|omp|codex|opencode|copilot|windsurf|aider|claude code|claude desktop'
+while IFS= read -r hit; do
+  printf 'FAIL agent-neutrality: %s\n' "$hit" >&2
+  ((failed += 1))
+done < <(grep -rnEwi --include='*.md' --include='*.sh' --exclude-dir=natural-writing -e "$agent_names" "$root" || true)
+
 printf 'SUMMARY: %d passed, %d warnings, %d failed\n' "$passed" "$warned" "$failed"
 if ((failed > 0)); then
   exit 1

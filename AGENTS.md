@@ -60,6 +60,7 @@ Do not infer UI language from conversation language.
 
 ## Project Conventions
 
+- Keep skill instructions agent-neutral: name no specific coding agent, client, or vendor product in any `SKILL.md` or reference. Describe the capability or contract instead (for example the MCP server spec, not a client's config path). `scripts/check-skills.sh` fails on known agent names; `natural-writing` is excluded because it catalogs model families as data.
 - A skill directory's name must exactly match the `name` field in its `SKILL.md` frontmatter.
 - Keep each skill's `references/` directory one level deep; keep `SKILL.md` below 500 lines when the workflow can remain complete and clear.
 - Write every skill in English. The frontmatter, `When to Use`, and `When NOT to Use` contain no Chinese, Japanese, or Korean text; non-English text appears only as an example inside a rule about that language or as UI strings a skill ships.
