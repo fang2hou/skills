@@ -22,47 +22,13 @@ Contents:
 
 ## Registration
 
-Register the server at user scope so it is available everywhere without per-project setup. Set the client's MCP timeout to at least `60000` ms, because `ensure` may wait up to `FIGCRAFT_START_WAIT` (default 30s) when cold-launching the app.
+Registration is the agent's job: see the spec table in [SKILL.md](../SKILL.md#setup) for name, transport, command, scope, and timeout. Constraints that apply to every client:
 
-### omp
-
-Add to `~/.omp/agent/mcp.json` (or `~/.omp/profiles/<name>/agent/mcp.json` for a named profile), then run `/mcp reload`:
-
-```json
-{
-  "mcpServers": {
-    "figcraft-live": {
-      "type": "stdio",
-      "command": "/Users/your_username/.local/bin/figcraft-live-mcp",
-      "timeout": 120000
-    }
-  }
-}
-```
-
-Tools mount as `xd://mcp__figcraft_live_<tool>` (for example `xd://mcp__figcraft_live_ensure`; omp normalizes the hyphen to an underscore). Project-scoped `.omp/mcp.json` uses the same structure if you prefer per-repository registration.
-
-### Claude Code (user scope)
-
-```sh
-claude mcp add --scope user figcraft-live ~/.local/bin/figcraft-live-mcp
-```
-
-### Claude Desktop
-
-Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
-
-```json
-{
-  "mcpServers": {
-    "figcraft-live": {
-      "command": "/Users/your_username/.local/bin/figcraft-live-mcp"
-    }
-  }
-}
-```
-
-Always use an absolute path in JSON configs because GUI-launched clients do not inherit your shell `PATH`. Do not register the upstream `figcraft-cli mcp` subcommand in its place: `figcraft-cli mcp` is not lazy and either launches a process or prints warnings on every session start.
+- Use an absolute command path; GUI-launched clients do not inherit your shell `PATH`.
+- Keep the effective timeout at or above 60 seconds, because `ensure` may wait up to `FIGCRAFT_START_WAIT` (default 30s) on a cold launch. Some clients take the timeout in seconds, others in milliseconds.
+- Tool names may be namespaced by the server name, and a client may normalize the hyphen to an underscore. Use the exact names the client lists.
+- Do not register the upstream `figcraft-cli mcp` subcommand in its place: it is not lazy and either launches a process or prints warnings on every session start.
+- Verify after registering with the stdio test in [Debugging](#debugging).
 
 ## Environment and CLI flags
 
