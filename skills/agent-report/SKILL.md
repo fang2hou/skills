@@ -5,10 +5,10 @@ description: >
   page. Use unasked when told to investigate, summarize recent work or commits, compare,
   audit, or explain a system, or when the user must decide several questions.
 license: MIT
-compatibility: Requires file write access and a browser. Requires Node 24 + pnpm for the kit. Interactive reports run one local SvelteKit Node service on 127.0.0.1; the agent must keep polling during collection. PDF export additionally requires a Chromium browser (Chrome, or Edge on Windows). Background subagents are optional.
+compatibility: Requires file write access and a browser. Requires Node 24 + pnpm for the kit. Interactive reports run one local SvelteKit Node service on 127.0.0.1; the agent must keep polling during collection. Automated CLI PDF export additionally requires a Chromium-compatible binary (or use any browser's Print to PDF). Background subagents are optional.
 metadata:
   author: fang2hou
-  version: "2.4"
+  version: "2.5"
 ---
 
 # Agent Report
@@ -133,24 +133,32 @@ pnpm -C "$kit" export:pdf "$dir/report.json" "$dir/report.pdf"
 These are separate commands: generate only the requested format. HTML stays
 interactive for offline reading, with local form drafts but no service or chat.
 PDF preserves the report and questions in a print layout; details are expanded.
-If no Chromium browser is found, set `CHROME_BIN` to an installed one — the kit discovers Chrome and
-Chromium on macOS and Linux, and Chrome then Edge (per-user and system paths) on Windows. Or offer
-browser Print → Save as PDF. Do not claim a PDF exists until verified.
+`export:pdf` invokes a headless Chromium binary (auto-discovering common Chrome,
+Chromium, or Edge paths, or using `CHROME_BIN` for any compatible Chromium
+browser). If none is available or the user prefers another browser, export HTML
+or serve locally and offer browser Print → Save as PDF. Do not claim a PDF exists
+until verified.
 
 ### Step 6: Verify
 
-Verify before the user opens the page, so test answers never reach them.
+Verify before the user opens the page, so test answers never reach them. Do not require or force Google Chrome when the harness provides its own browser tool or the user wants to verify in another browser.
 
 1. Check an HTML export against the size budget in the kit’s schema guide. For a PDF, render pages and inspect page breaks, wide tables, and the last page for missing content.
-2. Load the page at 1280 px wide with a browser tool, or take a headless screenshot with any Chromium binary — the same discovery as `export:pdf` (Chrome, Chromium, Edge on Windows): `"<browser-binary>" --headless --screenshot="$dir/check.png" --window-size=1280,2400 "<url-or-file-url>"`. Check the screenshot, the console for errors, and that `document.documentElement.scrollWidth` does not exceed `clientWidth`. Confirm the UI chrome (summary heading, submit button) is in `lang`. This headless run is only for checking; Step 7 opens the page for the user.
-3. Exercise review autosave, Submit, a text-selection question, and a follow-up in a separate scratch session. Poll its events, post a reply, and confirm it appears in the browser. Stop that scratch session. Do not write test responses into the real review or delete state while a service is running.
-4. Check TOC links at the actual desktop/panel width: every section, the review area, and each question must jump to a unique target. For HTML exports, verify both `file://` and ordinary static HTTP hosting: no connection chip, chat, or `/api/*` requests. Report renderer defects rather than patching the generated file.
-5. If no browser runs at all, walk the report JSON against the read-through checklist at the end of `$kit/docs/components.md`, and say in the hand-over that the page was checked by reading only.
-6. Run the single prose review: `natural-writing` in `review` mode over the page text in the page language, plus the report checklist at the end of [references/writing.md](references/writing.md). Fix what it flags, rebuild, and hand over — there is no second review round.
+2. Choose the verification route by what the environment provides, in order:
+   - **Interactive browser tool (preferred)**: Use the harness's built-in browser tool, configured browser automation, or the browser the user asked for (any engine) at 1280 px wide. Check the rendered view, console errors, `document.documentElement.scrollWidth <= clientWidth`, and that the UI chrome (summary heading, submit button) is in `lang`.
+   - **Headless screenshot fallback (static only)**: Only when no interactive browser tool is available and a Chromium-compatible binary (`CHROME_BIN` or an installed Chromium/Chrome/Edge binary) exists, capture a layout check: `"<browser-binary>" --headless --screenshot="$dir/check.png" --window-size=1280,2400 "<url-or-file-url>"`. Note that a static screenshot cannot check console errors, horizontal overflow metrics, or interactive flows.
+   - **Read-only / user-verified fallback**: If no automated browser runs (or verification is deferred to the user's own browser), walk `report.json` against the read-through checklist at the end of `$kit/docs/components.md`, and state in the hand-over what was checked by reading only vs. awaiting browser confirmation.
+3. When an interactive browser tool is available, exercise review autosave, Submit, a text-selection question, and a follow-up in a separate scratch session: poll its events, post a reply, confirm it appears in the browser, and stop that scratch session. Do not write test responses into the real review or delete state while a service is running.
+4. When checking in a browser at desktop/panel width, verify TOC links (every section, the review area, and each question jump to a unique target). For HTML exports, verify both `file://` and ordinary static HTTP hosting: no connection chip, chat, or `/api/*` requests. Report renderer defects rather than patching the generated file.
+5. Run the single prose review: `natural-writing` in `review` mode over the page text in the page language, plus the report checklist at the end of [references/writing.md](references/writing.md). Fix what it flags, rebuild, and hand over — there is no second review round.
 
 ### Step 7: Open, hand over, and collect answers
 
-1. Open the URL, or the file path for a plain report (the `~/Downloads` or docs copy when one was made), in the user's default browser: `open "<url-or-file>"` on macOS, `xdg-open` on Linux, `start "" "<url-or-file>"` in Windows cmd or `Start-Process "<url-or-file>"` in PowerShell. Do not name a browser with `open -a`.
+1. Present and open the URL (or the file path for a plain report, using the `~/Downloads` or docs copy when one was made) in the target browser by priority:
+   - If the user named a specific browser, open it there (or let them open the link there).
+   - If the agent harness provides an integrated browser or preview pane for user hand-over, open the URL or file there rather than forcing an external OS browser.
+   - Otherwise, open it in the OS default browser (`open "<url-or-file>"` on macOS, `xdg-open "<url-or-file>"` on Linux, `start "" "<url-or-file>"` in Windows cmd, or `Start-Process "<url-or-file>"` in PowerShell) — never hardcode Chrome or another browser with `open -a` unless requested.
+   - Always include the clickable URL or file path in chat so the user can open or inspect it in any browser they prefer.
 2. Reply with one line on what the page holds and its path or URL. For a review page, also say what the user needs to decide and that Submit sends the answers back.
 3. Assign one collection owner. Use a background subagent if the harness can keep it running and deliver its messages while you work. Give it the report directory, kit path, evidence/context, last acknowledged cursor, and the following job: poll at most every 5 seconds, answer explanation questions on the page, forward new decisions and modification requests to the main agent, acknowledge handled events, and stop when told the discussion is complete. The main agent owns execution and file changes.
 4. If no suitable subagent exists, the **main agent performs the same loop**. Keep the turn active while awaiting webpage input; do not hand over a final response and expect a shell process to wake an inactive model. Agents without subagent support use this foreground loop. Tell the user they can now answer or ask on the page.
@@ -230,7 +238,7 @@ For a new round of questions, create a new directory, so prior submissions and e
 
 ## Output Contract
 
-1. The final page path (the `~/Downloads` or docs copy when one was made), the URL when served, opened in the default browser.
+1. The final page path (the `~/Downloads` or docs copy when one was made) and the URL when served, opened in the harness, user-requested, or default browser (or handed over with the link when no GUI opener is available).
 2. One chat line on what the page holds and, for a review page, what the user must decide.
 3. After a review: decisions, unanswered items, and verified session closure; state files stay available. For exports, state the generated formats and any format that could not be verified.
 
